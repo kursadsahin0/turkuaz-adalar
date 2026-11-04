@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="sea" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b6ffe9" />
+      <stop offset="0.45" stop-color="#61f5e3" />
+      <stop offset="1" stop-color="#169a9a" />
+    </linearGradient>
+    <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe9bd" />
+      <stop offset="1" stop-color="#f1d29a" />
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#61f5e3" stop-opacity="0.55" />
+      <stop offset="1" stop-color="#61f5e3" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#062c36" />
+  <circle cx="32" cy="32" r="27" fill="url(#glow)" />
+  <path d="M32 9 53 25 44 51 20 51 11 25Z" fill="url(#sea)" stroke="#e9fffa" stroke-opacity="0.45" stroke-width="1.5" />
+  <path d="M32 9 11 25h42Z" fill="#d7fff6" fill-opacity="0.36" />
+  <path d="M32 9v42M11 25l21 26 21-26" fill="none" stroke="#044a52" stroke-opacity="0.42" stroke-width="1.4" />
+  <path d="M17 53h30l-3 5H20Z" fill="url(#sand)" />
+</svg>

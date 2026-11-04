@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Python (Blender build scripts)
+__pycache__/
+*.pyc
+
+# Blender autosave backups (the .blend itself is tracked)
+*.blend1
+*.blend2
+
+# Local tool settings
+.devin/
+
+# Stale partial copy of two monetization files from an earlier session.
+# The real sources live in turkuaz-adalar/src/systems/monetization/.
+/turkuaz/
+
+# The game project has its own .gitignore files for node_modules, dist,
+# and Android build output / generated web assets.

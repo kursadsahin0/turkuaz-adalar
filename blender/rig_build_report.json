@@ -1,0 +1,143 @@
+{
+  "character": "TurkuazRunner",
+  "blender_version": "5.2.3 LTS",
+  "fps": 30,
+  "units": "meters",
+  "height_meters": 1.75,
+  "mesh": {
+    "name": "TK_CharacterMesh",
+    "vertices": 18640,
+    "triangles": 37010,
+    "material_slots": 24,
+    "materials": [
+      "TK_Mat_Jacket",
+      "TK_Mat_Cream",
+      "TK_Mat_JacketDark",
+      "TK_Mat_Gold",
+      "TK_Mat_Shorts",
+      "TK_Mat_Leather",
+      "TK_Mat_Skin",
+      "TK_Mat_Sole",
+      "TK_Mat_Coral",
+      "TK_Mat_CreamDark",
+      "TK_Mat_Hair",
+      "TK_Mat_HairDark",
+      "TK_Mat_EyeWhite",
+      "TK_Mat_Iris",
+      "TK_Mat_Pupil",
+      "TK_Mat_EyeHighlight",
+      "TK_Mat_Brow",
+      "TK_Mat_SkinShade",
+      "TK_Mat_SkinLight",
+      "TK_Mat_Mouth",
+      "TK_Mat_Backpack",
+      "TK_Mat_BackpackDark",
+      "TK_Mat_LeatherDark",
+      "TK_Mat_Badge"
+    ],
+    "images": [
+      "TK_BadgeWave"
+    ],
+    "max_vertex_influences": 2,
+    "uv_layers": [
+      "UVMap"
+    ]
+  },
+  "armature": {
+    "name": "TK_Armature",
+    "bones": 22,
+    "deform_bones": 21,
+    "bone_names": [
+      "root",
+      "hips",
+      "spine",
+      "chest",
+      "neck",
+      "head",
+      "shoulder.L",
+      "upper_arm.L",
+      "forearm.L",
+      "hand.L",
+      "shoulder.R",
+      "upper_arm.R",
+      "forearm.R",
+      "hand.R",
+      "thigh.L",
+      "shin.L",
+      "foot.L",
+      "toe.L",
+      "thigh.R",
+      "shin.R",
+      "foot.R",
+      "toe.R"
+    ]
+  },
+  "clips": {
+    "Idle": {
+      "frames": 121,
+      "duration_seconds": 4.0,
+      "loop": true
+    },
+    "Run": {
+      "frames": 17,
+      "duration_seconds": 0.5333,
+      "loop": true
+    },
+    "Jump": {
+      "frames": 22,
+      "duration_seconds": 0.7,
+      "loop": false
+    },
+    "Airborne": {
+      "frames": 31,
+      "duration_seconds": 1.0,
+      "loop": true
+    },
+    "Fall": {
+      "frames": 21,
+      "duration_seconds": 0.6667,
+      "loop": true
+    },
+    "Land": {
+      "frames": 19,
+      "duration_seconds": 0.6,
+      "loop": false
+    },
+    "Win": {
+      "frames": 91,
+      "duration_seconds": 3.0,
+      "loop": true
+    },
+    "Lose": {
+      "frames": 76,
+      "duration_seconds": 2.5,
+      "loop": true
+    },
+    "Slide": {
+      "frames": 31,
+      "duration_seconds": 1.0,
+      "loop": false
+    },
+    "Turn": {
+      "frames": 21,
+      "duration_seconds": 0.6667,
+      "loop": true
+    },
+    "Turn_Right": {
+      "frames": 21,
+      "duration_seconds": 0.6667,
+      "loop": true
+    }
+  },
+  "root_motion": "in_place",
+  "run_reference_speed_mps": 2.8125,
+  "run_cycle_seconds": 0.5333,
+  "run_stance_ratio": 0.4,
+  "forward_axis_blender": "+Y",
+  "forward_axis_gltf": "-Z",
+  "export_path": "/Users/kursatsahin/Desktop/turkuaz/blender/turkuaz_runner.glb",
+  "game_copies": [
+    "/Users/kursatsahin/Desktop/turkuaz/turkuaz-adalar/src/assets/models/turkuaz_runner.glb",
+    "/Users/kursatsahin/Desktop/turkuaz/turkuaz-adalar/public/models/turkuaz_runner.glb"
+  ]
+}

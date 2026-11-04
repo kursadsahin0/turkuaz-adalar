@@ -1,0 +1,34 @@
+{
+  "name": "turkuaz-adalar",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "validate:character": "node scripts/validate-character-glb.mjs",
+    "validate:assets": "node scripts/validate-asset-pipeline.mjs",
+    "validate:camera": "node scripts/validate-camera-system.mjs",
+    "validate:movement": "node scripts/validate-movement-system.mjs",
+    "validate:advanced": "node scripts/validate-advanced-movement.mjs",
+    "validate:collectibles": "node scripts/validate-collectibles.mjs",
+    "validate:levels": "node scripts/validate-levels.mjs",
+    "validate:characters": "node scripts/validate-characters.mjs",
+    "validate:save": "node scripts/validate-save-system.mjs",
+    "test:performance": "node scripts/test-performance.mjs",
+    "validate:monetization": "node scripts/validate-monetization.mjs"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.5"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/cli": "^8.6.0",
+    "@capacitor/core": "^8.6.0",
+    "@dimforge/rapier3d-compat": "^0.21.0",
+    "three": "^0.187.0"
+  }
+}
