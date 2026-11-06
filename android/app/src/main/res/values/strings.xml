@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Turkuaz Adalar</string>
+    <string name="title_activity_main">Turkuaz Adalar</string>
+    <string name="package_name">com.turkuazadalar.game</string>
+    <string name="custom_url_scheme">com.turkuazadalar.game</string>
+</resources>

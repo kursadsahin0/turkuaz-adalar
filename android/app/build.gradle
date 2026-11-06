@@ -1,0 +1,137 @@
+apply plugin: 'com.android.application'
+
+import groovy.json.JsonSlurper
+
+// ---------------------------------------------------------------------------
+// Versioning: package.json is the single source of truth.
+// "1.2.3" -> versionName "1.2.3", versionCode 10203 (must only ever increase).
+// ---------------------------------------------------------------------------
+def packageJson = new JsonSlurper().parse(file("../../package.json"))
+def appVersionName = packageJson.version as String
+def versionParts = appVersionName.tokenize('.-')[0..2].collect { it as Integer }
+def appVersionCode = versionParts[0] * 10000 + versionParts[1] * 100 + versionParts[2]
+if (appVersionCode < 1) {
+    throw new GradleException("package.json version must be at least 0.0.1 (got ${appVersionName}).")
+}
+
+// ---------------------------------------------------------------------------
+// Release signing. Secrets never live in git: they come from
+// android/keystore.properties (git-ignored) or, on CI, environment variables.
+// See android/RELEASE.md.
+// ---------------------------------------------------------------------------
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
+}
+// Blank values (e.g. unset CI secrets, which arrive as "") count as missing.
+def signingValue = { String key, String envName ->
+    def value = keystoreProperties.getProperty(key) ?: System.getenv(envName)
+    value?.trim() ? value.trim() : null
+}
+def releaseStoreFile = signingValue('storeFile', 'TURKUAZ_KEYSTORE_FILE')
+def hasReleaseSigning = releaseStoreFile != null &&
+    signingValue('storePassword', 'TURKUAZ_KEYSTORE_PASSWORD') != null &&
+    signingValue('keyAlias', 'TURKUAZ_KEY_ALIAS') != null &&
+    signingValue('keyPassword', 'TURKUAZ_KEY_PASSWORD') != null
+
+// ---------------------------------------------------------------------------
+// AdMob app ID: -PadmobAppId=..., ADMOB_APP_ID_ANDROID, or the same key in
+// ../.env.production.local (shared with the web build and the iOS sync).
+// Unset means Google's test app ID, which only ever serves test ads.
+// ---------------------------------------------------------------------------
+def ADMOB_TEST_APP_ID = 'ca-app-pub-3940256099942544~3347511713'
+def dotEnvValue = { String key ->
+    def file = rootProject.file('../.env.production.local')
+    if (!file.exists()) return null
+    def line = file.readLines().find { it.trim().startsWith("${key}=") }
+    def value = line?.substring(line.indexOf('=') + 1)?.trim()?.replaceAll(/^["']|["']$/, '')
+    value ? value : null
+}
+def configuredAdmobAppId = [
+    project.findProperty('admobAppId') as String,
+    System.getenv('ADMOB_APP_ID_ANDROID'),
+    dotEnvValue('ADMOB_APP_ID_ANDROID'),
+].find { it?.trim() }?.trim()
+def admobAppId = configuredAdmobAppId ?: ADMOB_TEST_APP_ID
+
+android {
+    namespace = "com.turkuazadalar.game"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.turkuazadalar.game"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode appVersionCode
+        versionName appVersionName
+        manifestPlaceholders = [admobAppId: admobAppId]
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile rootProject.file(releaseStoreFile)
+                storePassword signingValue('storePassword', 'TURKUAZ_KEYSTORE_PASSWORD')
+                keyAlias signingValue('keyAlias', 'TURKUAZ_KEY_ALIAS')
+                keyPassword signingValue('keyPassword', 'TURKUAZ_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            // R8 shrinks and obfuscates the native shell; Capacitor ships its
+            // own keep rules, project-specific ones go in proguard-rules.pro.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
+
+// A signed (store-uploadable) release must carry your own AdMob app ID:
+// Google's test ID would ship an app that never earns.
+gradle.taskGraph.whenReady { graph ->
+    def releasing = graph.allTasks.any { it.project == project && it.name ==~ /(bundle|assemble)Release/ }
+    if (releasing && hasReleaseSigning && (admobAppId == ADMOB_TEST_APP_ID || admobAppId.contains('3940256099942544'))) {
+        throw new GradleException(
+            "Signed release blocked: the AdMob app ID is Google's test ID.\n" +
+            "Set ADMOB_APP_ID_ANDROID in .env.production.local (see .env.example and RELEASE.md).")
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
