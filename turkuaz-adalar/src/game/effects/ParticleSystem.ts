@@ -46,6 +46,7 @@ export class ParticleSystem {
     })
 
     this.points = new THREE.Points(this.geometry, this.material)
+    this.points.visible = false
     this.points.name = 'ParticleSystem'
     this.points.frustumCulled = false
   }
@@ -68,13 +69,7 @@ export class ParticleSystem {
   ): void {
     if (this.disposed) return
 
-    const {
-      speed = 2.5,
-      lifetime = 0.6,
-      size = 0.15,
-      spread = 1.0,
-      upward = 0.5,
-    } = options
+    const { speed = 2.5, lifetime = 0.6, size = 0.15, spread = 1.0, upward = 0.5 } = options
 
     this.scratch.setHex(color)
     const total = Math.min(count, this.maxParticles)
@@ -188,6 +183,8 @@ export class ParticleSystem {
     }
 
     this.geometry.setDrawRange(0, write)
+    // A 0-count draw call costs a frame slot and logs a WebGL warning on Android.
+    this.points.visible = write > 0
     this.geometry.attributes.position.needsUpdate = true
     this.geometry.attributes.color.needsUpdate = true
     this.geometry.attributes.size.needsUpdate = true
@@ -196,6 +193,7 @@ export class ParticleSystem {
   clear(): void {
     this.life.fill(0)
     this.geometry.setDrawRange(0, 0)
+    this.points.visible = false
   }
 
   dispose(): void {

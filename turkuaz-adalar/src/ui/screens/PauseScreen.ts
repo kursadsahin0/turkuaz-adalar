@@ -1,3 +1,4 @@
+import { t } from '../../i18n/i18n.ts'
 import { createEl } from '../../utils/dom.ts'
 import { Button } from '../components/Button.ts'
 import { Screen } from './Screen.ts'
@@ -18,27 +19,24 @@ export class PauseScreen extends Screen {
   constructor(options: PauseScreenOptions) {
     super('screen--pause')
     this.root.classList.add('screen--overlay')
+    this.root.classList.add('screen--dialog')
 
     const panel = createPanel('pause-panel')
-    const eyebrow = createEl('p', 'eyebrow', 'Run paused')
-    const title = createEl('h2', 'screen-title', 'Take a breath')
-    const copy = createEl(
-      'p',
-      'screen-copy',
-      'The islands will wait. Resume when you are ready for the next stretch of tide.',
-    )
+    const eyebrow = createEl('p', 'eyebrow', t('pause.eyebrow'))
+    const title = createEl('h2', 'screen-title', t('pause.title'))
+    const copy = createEl('p', 'screen-copy', t('pause.copy'))
 
     this.resumeButton = new Button({
-      label: 'Resume run',
+      label: t('pause.resume'),
       onClick: options.onResume,
     })
     this.quitButton = new Button({
-      label: 'End run',
+      label: t('pause.end'),
       variant: 'secondary',
       onClick: options.onQuit,
     })
     this.audioButton = new Button({
-      label: 'Sound: On',
+      label: t('pause.soundOn'),
       variant: 'text',
       onClick: options.onToggleMute,
     })
@@ -51,7 +49,7 @@ export class PauseScreen extends Screen {
   }
 
   setMuted(muted: boolean): void {
-    this.audioButton.setLabel(muted ? 'Sound: Off' : 'Sound: On')
+    this.audioButton.setLabel(muted ? t('pause.soundOff') : t('pause.soundOn'))
   }
 
   show(): void {

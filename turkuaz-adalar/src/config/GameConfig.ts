@@ -202,6 +202,18 @@ export const GAME_CONFIG = {
       /** Extra jumps allowed while airborne. */
       airJumps: 1,
     },
+    glide: {
+      label: 'Glide',
+      duration: 10,
+      /** Gravity multiplier: jumps float longer and land softer. */
+      gravityScale: 0.55,
+    },
+    slowMo: {
+      label: 'Slow Time',
+      duration: 5,
+      /** The whole run (speed, obstacles, the chasing wave) runs at this pace. */
+      timeScale: 0.68,
+    },
   },
 
   /**

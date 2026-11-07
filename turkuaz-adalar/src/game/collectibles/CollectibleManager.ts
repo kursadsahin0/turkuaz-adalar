@@ -1,17 +1,15 @@
-import * as THREE from 'three'
+import type * as THREE from 'three'
 import type { LoadedAsset } from '../../assets/ModelLoader.ts'
 import { GAME_CONFIG } from '../../config/GameConfig.ts'
 import { smoothstep } from '../../utils/math.ts'
 import type { Rng } from '../../utils/random.ts'
 import type { Collectible } from './Collectible.ts'
 import type { CollectibleKind, CollectiblePickup, PowerUpKind } from './CollectibleKind.ts'
-import {
-  COLLECTIBLE_KINDS,
-  POWER_UP_KINDS,
-} from './CollectibleKind.ts'
+import { COLLECTIBLE_KINDS, POWER_UP_KINDS } from './CollectibleKind.ts'
 import { CollectionBurstField } from './CollectionBurst.ts'
 import { CollectiblePool } from './CollectiblePool.ts'
 import { CollectiblePrefabs } from './CollectiblePrefabs.ts'
+import { DEFAULT_SPAWN_RULES, type SpawnRules } from '../levels/SpawnRules.ts'
 
 const TAU = Math.PI * 2
 
@@ -34,7 +32,11 @@ export class CollectibleManager {
   private nextId = 1
   private disposed = false
 
-  constructor(scene: THREE.Scene, qualityMultiplier = 1.0, crystalModel: LoadedAsset | null = null) {
+  constructor(
+    scene: THREE.Scene,
+    qualityMultiplier = 1.0,
+    crystalModel: LoadedAsset | null = null,
+  ) {
     this.scene = scene
     this.prefabs = new CollectiblePrefabs(crystalModel)
     this.bursts = new CollectionBurstField(192, qualityMultiplier)
@@ -43,7 +45,12 @@ export class CollectibleManager {
     for (const kind of COLLECTIBLE_KINDS) {
       this.pools.set(
         kind,
-        new CollectiblePool(kind, this.prefabs, poolConfig.prewarmPerKind, poolConfig.maxIdlePerKind),
+        new CollectiblePool(
+          kind,
+          this.prefabs,
+          poolConfig.prewarmPerKind,
+          poolConfig.maxIdlePerKind,
+        ),
       )
     }
 
@@ -75,9 +82,9 @@ export class CollectibleManager {
     difficulty: number,
     density: number,
     isBlocked: (x: number, z: number, radius: number) => boolean,
+    rules: SpawnRules = DEFAULT_SPAWN_RULES,
   ): void {
     this.clearSegment(segmentId)
-    console.log(`[CollectibleManager] Populating segment ${segmentId}, density: ${density}, difficulty: ${difficulty}`)
 
     const track = GAME_CONFIG.track
     const config = GAME_CONFIG.collectibles
@@ -103,19 +110,14 @@ export class CollectibleManager {
       3,
       Math.min(
         config.coins.trailsMax + 1,
-        rng.int(config.coins.trailsMin, config.coins.trailsMax) +
-          (difficulty > 0.5 ? 1 : 0),
+        rng.int(config.coins.trailsMin, config.coins.trailsMax) + (difficulty > 0.5 ? 1 : 0),
       ),
     )
-    const trailLength = Math.max(
-      5,
-      Math.round(
-        rng.int(config.coins.trailLengthMin, config.coins.trailLengthMax) *
-          (0.75 + Math.max(0.5, density) * 0.5),
-      ),
-    )
-
-    console.log(`[CollectibleManager] Placing ${trails} coin trails, each with ${trailLength} coins`)
+    const baseTrail =
+      rules.coinTrailLength === null
+        ? rng.int(config.coins.trailLengthMin, config.coins.trailLengthMax)
+        : rng.int(rules.coinTrailLength, rules.coinTrailLength + 4)
+    const trailLength = Math.max(4, Math.round(baseTrail * (0.75 + Math.max(0.5, density) * 0.5)))
 
     for (let trail = 0; trail < trails; trail += 1) {
       const lane = rng.pick(track.lanePositions)
@@ -127,7 +129,7 @@ export class CollectibleManager {
     }
 
     // ---------------------------------------------------------- relic tokens
-    if (rng.chance(config.tokens.chance * (0.8 + density * 0.4))) {
+    if (rng.chance(rules.tokenChance * (0.8 + density * 0.4))) {
       place(
         'token',
         rng.pick(track.lanePositions),
@@ -136,7 +138,7 @@ export class CollectibleManager {
     }
 
     // ------------------------------------------------------------- power-ups
-    if (rng.chance(config.powerUps.chance)) {
+    if (rng.chance(rules.powerUpChance)) {
       place(
         rng.pick(POWER_UP_KINDS),
         rng.pick(track.lanePositions),
@@ -148,7 +150,7 @@ export class CollectibleManager {
     const rewardConfig = config.rewards
     if (
       segmentIndex >= rewardConfig.minSegmentIndex &&
-      segmentIndex % rewardConfig.everySegments === 0
+      segmentIndex % rules.rewardEverySegments === 0
     ) {
       const grantedPowerUp = rng.chance(0.5) ? null : rng.pick(POWER_UP_KINDS)
       place('reward', 0, centerZ, grantedPowerUp)
@@ -221,6 +223,18 @@ export class CollectibleManager {
    * Tests every live pickup against the runner. Each instance can only be
    * awarded once: the first hit flips `collected` and starts the pop animation.
    */
+  /**
+   * Hides or shows every placed pickup without changing its state. Used by
+   * the character showcase so floating coins do not crowd the close-up.
+   */
+  setVisible(visible: boolean): void {
+    for (const collectibles of this.bySegment.values()) {
+      for (const collectible of collectibles) {
+        collectible.root.visible = visible && collectible.state !== 'idle'
+      }
+    }
+  }
+
   collectAt(position: THREE.Vector3, playerRadius: number): CollectiblePickup[] {
     const pickups: CollectiblePickup[] = []
     const config = GAME_CONFIG.collectibles
@@ -275,19 +289,14 @@ export class CollectibleManager {
    * Pulls coins and relic tokens toward the runner while a magnet is active.
    * Power-ups and reward caches deliberately ignore the magnet.
    */
-  attract(
-    position: THREE.Vector3,
-    radius: number,
-    pullSpeed: number,
-    delta: number,
-  ): void {
+  attract(position: THREE.Vector3, radius: number, pullSpeed: number, delta: number): void {
     if (radius <= 0) {
       this.settleAttracted()
       return
     }
 
     const radiusSquared = radius * radius
-    const releaseSquared = (radius * 1.6) * (radius * 1.6)
+    const releaseSquared = radius * 1.6 * (radius * 1.6)
     const stepMax = pullSpeed * delta
 
     for (const collectibles of this.bySegment.values()) {
@@ -350,8 +359,7 @@ export class CollectibleManager {
         if (collectible.state === 'active') {
           if (!collectible.attracted) {
             root.position.y =
-              collectible.baseY +
-              Math.sin(elapsed * 2.1 + collectible.phase) * config.bobHeight
+              collectible.baseY + Math.sin(elapsed * 2.1 + collectible.phase) * config.bobHeight
             root.position.x = collectible.baseX
             root.position.z = collectible.baseZ
           }
@@ -369,8 +377,7 @@ export class CollectibleManager {
         const pop = 1 + Math.sin(Math.min(1, progress * 2.4) * Math.PI) * 0.5
         const fade = 1 - smoothstep(0.35, 1, progress)
         root.scale.setScalar(Math.max(0.001, pop * fade))
-        root.position.y =
-          collectible.collectStartY + animation.rise * smoothstep(0, 1, progress)
+        root.position.y = collectible.collectStartY + animation.rise * smoothstep(0, 1, progress)
         root.rotation.y += animation.spin * delta
 
         if (progress >= 1) {
@@ -381,14 +388,7 @@ export class CollectibleManager {
   }
 
   /** Emits the collection spark burst for a pickup. */
-  burstAt(
-    x: number,
-    y: number,
-    z: number,
-    color: number,
-    count = 12,
-    speed = 3.2,
-  ): void {
+  burstAt(x: number, y: number, z: number, color: number, count = 12, speed = 3.2): void {
     this.bursts.emit(x, y, z, color, count, speed)
   }
 

@@ -1,34 +1,22 @@
 {
-  "asset": "TurkuazRunner",
-  "validated_file": "/Users/kursatsahin/Desktop/turkuaz/turkuaz-adalar/public/models/turkuaz_runner.glb",
-  "validator": "scripts/validate-character-glb.mjs",
+  "asset": "turkuaz_runner.glb",
   "three_revision": "187",
   "summary": {
-    "passed": 127,
+    "passed": 78,
     "warnings": 0,
     "failed": 0,
-    "total": 127
+    "total": 78
   },
   "checks": [
     {
       "name": "file.exists",
       "status": "pass",
-      "detail": "/Users/kursatsahin/Desktop/turkuaz/turkuaz-adalar/public/models/turkuaz_runner.glb"
+      "detail": "/Users/kursatsahin/Desktop/turkuaz/turkuaz-adalar/src/assets/models/turkuaz_runner.glb"
     },
     {
       "name": "file.size",
       "status": "pass",
-      "detail": "1454 KiB"
-    },
-    {
-      "name": "file.container_alignment",
-      "status": "pass",
-      "detail": "1489220 bytes (GLB chunks are 4-byte aligned)"
-    },
-    {
-      "name": "file.copy.public",
-      "status": "pass",
-      "detail": "byte-identical"
+      "detail": "2017 KiB"
     },
     {
       "name": "file.copy.src",
@@ -41,891 +29,463 @@
       "detail": "byte-identical"
     },
     {
-      "name": "glb.version",
+      "name": "gltf.version",
       "status": "pass",
-      "detail": "container version 2"
+      "detail": "glTF 2.0"
     },
     {
-      "name": "glb.asset_version",
+      "name": "gltf.bin_chunk",
       "status": "pass",
-      "detail": "2.0"
+      "detail": "1717304 bytes"
     },
     {
-      "name": "glb.generator",
+      "name": "skin.single",
       "status": "pass",
-      "detail": "Khronos glTF Blender I/O v5.2.41"
-    },
-    {
-      "name": "glb.bin_chunk",
-      "status": "pass",
-      "detail": "1314648 bytes"
-    },
-    {
-      "name": "glb.scene",
-      "status": "pass",
-      "detail": "1 scene(s)"
-    },
-    {
-      "name": "materials.count",
-      "status": "pass",
-      "detail": "24 materials"
-    },
-    {
-      "name": "materials.names",
-      "status": "pass",
-      "detail": "palette matches the Blender build"
-    },
-    {
-      "name": "materials.textured",
-      "status": "pass",
-      "detail": "1 material(s) with baseColorTexture"
-    },
-    {
-      "name": "textures.image_count",
-      "status": "pass",
-      "detail": "1 embedded image(s)"
-    },
-    {
-      "name": "textures.image_named",
-      "status": "pass",
-      "detail": "TK_BadgeWave"
-    },
-    {
-      "name": "textures.mime_type",
-      "status": "pass",
-      "detail": "image/png"
-    },
-    {
-      "name": "textures.embedded",
-      "status": "pass",
-      "detail": "bufferView 142"
-    },
-    {
-      "name": "textures.png_signature",
-      "status": "pass",
-      "detail": "valid PNG signature"
-    },
-    {
-      "name": "textures.png_ihdr",
-      "status": "pass",
-      "detail": "IHDR"
-    },
-    {
-      "name": "textures.dimensions",
-      "status": "pass",
-      "detail": "128x128"
-    },
-    {
-      "name": "textures.rgba",
-      "status": "pass",
-      "detail": "bitDepth=8 colorType=6"
-    },
-    {
-      "name": "textures.source",
-      "status": "pass",
-      "detail": "source=0"
-    },
-    {
-      "name": "textures.badge_binding",
-      "status": "pass",
-      "detail": "TK_Mat_Badge baseColorTexture=0"
-    },
-    {
-      "name": "mesh.present",
-      "status": "pass",
-      "detail": "TK_CharacterMesh"
-    },
-    {
-      "name": "skin.present",
-      "status": "pass",
-      "detail": "TK_Armature"
+      "detail": "1 skin(s)"
     },
     {
       "name": "skin.joints",
       "status": "pass",
-      "detail": "22 joints"
+      "detail": "41 joints"
     },
     {
-      "name": "skin.required_bones",
+      "name": "body.runner",
       "status": "pass",
-      "detail": "root, hips, spine, chest, neck, head, shoulder.L, upper_arm.L, forearm.L, hand.L, shoulder.R, upper_arm.R, forearm.R, hand.R, thigh.L, shin.L, foot.L, toe.L, thigh.R, shin.R, foot.R, toe.R"
+      "detail": "skinned to the shared rig"
     },
     {
-      "name": "skin.inverse_bind_matrices",
+      "name": "material.runner",
       "status": "pass",
-      "detail": "22 matrices for 22 joints"
+      "detail": "textured atlas"
     },
     {
-      "name": "mesh.primitives",
+      "name": "body.swift",
       "status": "pass",
-      "detail": "24 primitives"
+      "detail": "skinned to the shared rig"
     },
     {
-      "name": "mesh.vertices",
+      "name": "material.swift",
       "status": "pass",
-      "detail": "18640 vertices"
+      "detail": "textured atlas"
     },
     {
-      "name": "mesh.triangles",
+      "name": "body.ocean",
       "status": "pass",
-      "detail": "37010 triangles"
+      "detail": "skinned to the shared rig"
     },
     {
-      "name": "mesh.position_data",
+      "name": "material.ocean",
       "status": "pass",
-      "detail": "24/24 primitives"
+      "detail": "textured atlas"
     },
     {
-      "name": "mesh.max_influences",
+      "name": "body.mage",
       "status": "pass",
-      "detail": "2 influences per vertex"
+      "detail": "skinned to the shared rig"
     },
     {
-      "name": "mesh.normalized_weights",
+      "name": "material.mage",
       "status": "pass",
-      "detail": "0 vertices with weight sum != 1"
+      "detail": "textured atlas"
     },
     {
-      "name": "mesh.joint_indices",
+      "name": "body.sage",
       "status": "pass",
-      "detail": "0 out-of-range joint indices"
+      "detail": "skinned to the shared rig"
     },
     {
-      "name": "mesh.height",
+      "name": "material.sage",
       "status": "pass",
-      "detail": "1.783 m (y -0.001..1.782)"
+      "detail": "textured atlas"
     },
     {
-      "name": "mesh.feet_on_ground",
+      "name": "body.knight",
       "status": "pass",
-      "detail": "lowest vertex y=-0.0010 m"
+      "detail": "skinned to the shared rig"
     },
     {
-      "name": "animations.count",
+      "name": "material.knight",
       "status": "pass",
-      "detail": "11 clips"
+      "detail": "textured atlas"
     },
     {
-      "name": "animations.names",
+      "name": "body.guardian",
       "status": "pass",
-      "detail": "all 10 required clips + Turn_Right"
+      "detail": "skinned to the shared rig"
     },
     {
-      "name": "clip.Idle.duration",
+      "name": "material.guardian",
       "status": "pass",
-      "detail": "0.0000..4.0000 s (expected 4.0000 s)"
+      "detail": "textured atlas"
     },
     {
-      "name": "clip.Idle.time_order",
+      "name": "bone.head",
       "status": "pass",
-      "detail": "sampler inputs are strictly increasing"
+      "detail": "present"
     },
     {
-      "name": "clip.Idle.channels",
+      "name": "bone.chest",
       "status": "pass",
-      "detail": "66 channels (22 bones x TRS)"
+      "detail": "present"
     },
     {
-      "name": "clip.Idle.root_in_place",
+      "name": "bone.hips",
       "status": "pass",
-      "detail": "max root translation 0.00e+0 m, rotation 0.00e+0 rad"
+      "detail": "present"
     },
     {
-      "name": "clip.Idle.loop_seam",
+      "name": "bone.hand.l",
       "status": "pass",
-      "detail": "identical first/last samples"
+      "detail": "present"
     },
     {
-      "name": "clip.Run.duration",
+      "name": "bone.foot.l",
       "status": "pass",
-      "detail": "0.0000..0.5333 s (expected 0.5333 s)"
+      "detail": "present"
     },
     {
-      "name": "clip.Run.time_order",
+      "name": "images.embedded",
       "status": "pass",
-      "detail": "sampler inputs are strictly increasing"
+      "detail": "7 image(s)"
     },
     {
-      "name": "clip.Run.channels",
+      "name": "image.TK_Kit_guardian.png",
       "status": "pass",
-      "detail": "66 channels (22 bones x TRS)"
+      "detail": "valid PNG signature"
     },
     {
-      "name": "clip.Run.root_in_place",
+      "name": "image.TK_Kit_knight.png",
       "status": "pass",
-      "detail": "max root translation 0.00e+0 m, rotation 0.00e+0 rad"
+      "detail": "valid PNG signature"
     },
     {
-      "name": "clip.Run.loop_seam",
+      "name": "image.TK_Kit_mage.png",
       "status": "pass",
-      "detail": "identical first/last samples"
+      "detail": "valid PNG signature"
     },
     {
-      "name": "clip.Jump.duration",
+      "name": "image.TK_Kit_ocean.png",
       "status": "pass",
-      "detail": "0.0000..0.7000 s (expected 0.7000 s)"
+      "detail": "valid PNG signature"
     },
     {
-      "name": "clip.Jump.time_order",
+      "name": "image.TK_Kit_runner.png",
       "status": "pass",
-      "detail": "sampler inputs are strictly increasing"
+      "detail": "valid PNG signature"
     },
     {
-      "name": "clip.Jump.channels",
+      "name": "image.TK_Kit_sage.png",
       "status": "pass",
-      "detail": "66 channels (22 bones x TRS)"
+      "detail": "valid PNG signature"
     },
     {
-      "name": "clip.Jump.root_in_place",
+      "name": "image.TK_Kit_swift.png",
       "status": "pass",
-      "detail": "max root translation 0.00e+0 m, rotation 0.00e+0 rad"
+      "detail": "valid PNG signature"
+    },
+    {
+      "name": "clips.required",
+      "status": "pass",
+      "detail": "Airborne, Fall, Hit, Idle, Jump, Land, Lose, Run, Slide, Win, Win_knight, Win_mage, Win_ocean, Win_sage, Win_swift"
+    },
+    {
+      "name": "clips.no_extra",
+      "status": "pass",
+      "detail": "Win_knight, Win_mage, Win_ocean, Win_sage, Win_swift"
+    },
+    {
+      "name": "clips.celebrations",
+      "status": "pass",
+      "detail": "5 runner celebration(s)"
     },
     {
       "name": "clip.Airborne.duration",
       "status": "pass",
-      "detail": "0.0000..1.0000 s (expected 1.0000 s)"
-    },
-    {
-      "name": "clip.Airborne.time_order",
-      "status": "pass",
-      "detail": "sampler inputs are strictly increasing"
-    },
-    {
-      "name": "clip.Airborne.channels",
-      "status": "pass",
-      "detail": "66 channels (22 bones x TRS)"
-    },
-    {
-      "name": "clip.Airborne.root_in_place",
-      "status": "pass",
-      "detail": "max root translation 0.00e+0 m, rotation 0.00e+0 rad"
+      "detail": "1.07 s"
     },
     {
       "name": "clip.Airborne.loop_seam",
       "status": "pass",
-      "detail": "identical first/last samples"
+      "detail": "0.000 rad between first and last pose"
     },
     {
       "name": "clip.Fall.duration",
       "status": "pass",
-      "detail": "0.0000..0.6667 s (expected 0.6667 s)"
-    },
-    {
-      "name": "clip.Fall.time_order",
-      "status": "pass",
-      "detail": "sampler inputs are strictly increasing"
-    },
-    {
-      "name": "clip.Fall.channels",
-      "status": "pass",
-      "detail": "66 channels (22 bones x TRS)"
-    },
-    {
-      "name": "clip.Fall.root_in_place",
-      "status": "pass",
-      "detail": "max root translation 0.00e+0 m, rotation 0.00e+0 rad"
+      "detail": "1.07 s"
     },
     {
       "name": "clip.Fall.loop_seam",
       "status": "pass",
-      "detail": "identical first/last samples"
+      "detail": "0.000 rad between first and last pose"
+    },
+    {
+      "name": "clip.Hit.duration",
+      "status": "pass",
+      "detail": "0.67 s"
+    },
+    {
+      "name": "clip.Idle.duration",
+      "status": "pass",
+      "detail": "1.07 s"
+    },
+    {
+      "name": "clip.Idle.loop_seam",
+      "status": "pass",
+      "detail": "0.000 rad between first and last pose"
+    },
+    {
+      "name": "clip.Jump.duration",
+      "status": "pass",
+      "detail": "0.60 s"
     },
     {
       "name": "clip.Land.duration",
       "status": "pass",
-      "detail": "0.0000..0.6000 s (expected 0.6000 s)"
-    },
-    {
-      "name": "clip.Land.time_order",
-      "status": "pass",
-      "detail": "sampler inputs are strictly increasing"
-    },
-    {
-      "name": "clip.Land.channels",
-      "status": "pass",
-      "detail": "66 channels (22 bones x TRS)"
-    },
-    {
-      "name": "clip.Land.root_in_place",
-      "status": "pass",
-      "detail": "max root translation 0.00e+0 m, rotation 0.00e+0 rad"
-    },
-    {
-      "name": "clip.Win.duration",
-      "status": "pass",
-      "detail": "0.0000..3.0000 s (expected 3.0000 s)"
-    },
-    {
-      "name": "clip.Win.time_order",
-      "status": "pass",
-      "detail": "sampler inputs are strictly increasing"
-    },
-    {
-      "name": "clip.Win.channels",
-      "status": "pass",
-      "detail": "66 channels (22 bones x TRS)"
-    },
-    {
-      "name": "clip.Win.root_in_place",
-      "status": "pass",
-      "detail": "max root translation 0.00e+0 m, rotation 0.00e+0 rad"
-    },
-    {
-      "name": "clip.Win.loop_seam",
-      "status": "pass",
-      "detail": "identical first/last samples"
+      "detail": "0.67 s"
     },
     {
       "name": "clip.Lose.duration",
       "status": "pass",
-      "detail": "0.0000..2.5000 s (expected 2.5000 s)"
+      "detail": "0.80 s"
     },
     {
-      "name": "clip.Lose.time_order",
+      "name": "clip.Run.duration",
       "status": "pass",
-      "detail": "sampler inputs are strictly increasing"
+      "detail": "0.80 s"
     },
     {
-      "name": "clip.Lose.channels",
+      "name": "clip.Run.loop_seam",
       "status": "pass",
-      "detail": "66 channels (22 bones x TRS)"
+      "detail": "0.000 rad between first and last pose"
     },
     {
-      "name": "clip.Lose.root_in_place",
+      "name": "clip.Run.in_place",
       "status": "pass",
-      "detail": "max root translation 0.00e+0 m, rotation 0.00e+0 rad"
-    },
-    {
-      "name": "clip.Lose.loop_seam",
-      "status": "pass",
-      "detail": "identical first/last samples"
+      "detail": "hips drift 0.000 m"
     },
     {
       "name": "clip.Slide.duration",
       "status": "pass",
-      "detail": "0.0000..1.0000 s (expected 1.0000 s)"
+      "detail": "0.40 s"
     },
     {
-      "name": "clip.Slide.time_order",
+      "name": "clip.Win.duration",
       "status": "pass",
-      "detail": "sampler inputs are strictly increasing"
+      "detail": "1.67 s"
     },
     {
-      "name": "clip.Slide.channels",
+      "name": "clip.Win_knight.duration",
       "status": "pass",
-      "detail": "66 channels (22 bones x TRS)"
+      "detail": "0.93 s"
     },
     {
-      "name": "clip.Slide.root_in_place",
+      "name": "clip.Win_mage.duration",
       "status": "pass",
-      "detail": "max root translation 0.00e+0 m, rotation 0.00e+0 rad"
+      "detail": "2.07 s"
     },
     {
-      "name": "clip.Turn.duration",
+      "name": "clip.Win_ocean.duration",
       "status": "pass",
-      "detail": "0.0000..0.6667 s (expected 0.6667 s)"
+      "detail": "1.47 s"
     },
     {
-      "name": "clip.Turn.time_order",
+      "name": "clip.Win_sage.duration",
       "status": "pass",
-      "detail": "sampler inputs are strictly increasing"
+      "detail": "0.93 s"
     },
     {
-      "name": "clip.Turn.channels",
+      "name": "clip.Win_swift.duration",
       "status": "pass",
-      "detail": "66 channels (22 bones x TRS)"
+      "detail": "1.17 s"
     },
     {
-      "name": "clip.Turn.root_in_place",
+      "name": "runtime.skinned_meshes",
       "status": "pass",
-      "detail": "max root translation 0.00e+0 m, rotation 0.00e+0 rad"
+      "detail": "7 skinned"
     },
     {
-      "name": "clip.Turn.loop_seam",
+      "name": "runtime.shared_skeleton",
       "status": "pass",
-      "detail": "identical first/last samples"
+      "detail": "all bodies drive the same bones"
     },
     {
-      "name": "clip.Turn_Right.duration",
+      "name": "runtime.height",
       "status": "pass",
-      "detail": "0.0000..0.6667 s (expected 0.6667 s)"
+      "detail": "2.315 m tall"
     },
     {
-      "name": "clip.Turn_Right.time_order",
+      "name": "runtime.feet_on_origin",
       "status": "pass",
-      "detail": "sampler inputs are strictly increasing"
+      "detail": "min y -0.000"
     },
     {
-      "name": "clip.Turn_Right.channels",
+      "name": "runtime.play.Airborne",
       "status": "pass",
-      "detail": "66 channels (22 bones x TRS)"
+      "detail": "plays"
     },
     {
-      "name": "clip.Turn_Right.root_in_place",
+      "name": "runtime.play.Fall",
       "status": "pass",
-      "detail": "max root translation 0.00e+0 m, rotation 0.00e+0 rad"
+      "detail": "plays"
     },
     {
-      "name": "clip.Turn_Right.loop_seam",
+      "name": "runtime.play.Hit",
       "status": "pass",
-      "detail": "identical first/last samples"
+      "detail": "plays"
     },
     {
-      "name": "extras.run_reference_speed",
+      "name": "runtime.play.Idle",
       "status": "pass",
-      "detail": "2.8124999999999996 m/s"
+      "detail": "plays"
     },
     {
-      "name": "extras.loop_contract",
+      "name": "runtime.play.Jump",
       "status": "pass",
-      "detail": "root_motion=in_place forward=-Z fps=30"
+      "detail": "plays"
     },
     {
-      "name": "runtime.scene",
+      "name": "runtime.play.Land",
       "status": "pass",
-      "detail": "1 scene(s)"
+      "detail": "plays"
     },
     {
-      "name": "runtime.skinned_mesh",
+      "name": "runtime.play.Lose",
       "status": "pass",
-      "detail": "24 skinned primitive(s)"
+      "detail": "plays"
     },
     {
-      "name": "runtime.skeleton_bones",
+      "name": "runtime.play.Run",
       "status": "pass",
-      "detail": "22 skeleton bones"
+      "detail": "plays"
     },
     {
-      "name": "runtime.required_bones",
+      "name": "runtime.play.Slide",
       "status": "pass",
-      "detail": "all driver bones exposed to AnimationMixer (22 bones)"
+      "detail": "plays"
     },
     {
-      "name": "runtime.material_slots",
+      "name": "runtime.play.Win",
       "status": "pass",
-      "detail": "24 unique materials across 24 skinned primitives"
+      "detail": "plays"
     },
     {
-      "name": "runtime.skin_attributes",
+      "name": "runtime.play.Win_knight",
       "status": "pass",
-      "detail": "geometry carries skinIndex and skinWeight"
+      "detail": "plays"
     },
     {
-      "name": "runtime.texture_decode",
+      "name": "runtime.play.Win_mage",
       "status": "pass",
-      "detail": "PNG decode skipped in Node (1 image); validated structurally instead"
+      "detail": "plays"
     },
     {
-      "name": "runtime.clips",
+      "name": "runtime.play.Win_ocean",
       "status": "pass",
-      "detail": "11 AnimationClips"
+      "detail": "plays"
     },
     {
-      "name": "runtime.clip_names",
+      "name": "runtime.play.Win_sage",
       "status": "pass",
-      "detail": "all clips named correctly"
+      "detail": "plays"
     },
     {
-      "name": "runtime.track_bindings",
+      "name": "runtime.play.Win_swift",
       "status": "pass",
-      "detail": "all tracks bind to scene nodes"
+      "detail": "plays"
     },
     {
-      "name": "runtime.Airborne.motion",
+      "name": "runtime.cross_fade",
       "status": "pass",
-      "detail": "max probe-bone travel 0.072 m across the clip"
-    },
-    {
-      "name": "runtime.Fall.motion",
-      "status": "pass",
-      "detail": "max probe-bone travel 0.073 m across the clip"
-    },
-    {
-      "name": "runtime.Idle.motion",
-      "status": "pass",
-      "detail": "max probe-bone travel 0.023 m across the clip"
-    },
-    {
-      "name": "runtime.Jump.motion",
-      "status": "pass",
-      "detail": "max probe-bone travel 0.769 m across the clip"
-    },
-    {
-      "name": "runtime.Land.motion",
-      "status": "pass",
-      "detail": "max probe-bone travel 0.578 m across the clip"
-    },
-    {
-      "name": "runtime.Lose.motion",
-      "status": "pass",
-      "detail": "max probe-bone travel 0.290 m across the clip"
-    },
-    {
-      "name": "runtime.Run.motion",
-      "status": "pass",
-      "detail": "max probe-bone travel 0.589 m across the clip"
-    },
-    {
-      "name": "runtime.Slide.motion",
-      "status": "pass",
-      "detail": "max probe-bone travel 0.556 m across the clip"
-    },
-    {
-      "name": "runtime.Turn.motion",
-      "status": "pass",
-      "detail": "max probe-bone travel 0.095 m across the clip"
-    },
-    {
-      "name": "runtime.Turn_Right.motion",
-      "status": "pass",
-      "detail": "max probe-bone travel 0.095 m across the clip"
-    },
-    {
-      "name": "runtime.Win.motion",
-      "status": "pass",
-      "detail": "max probe-bone travel 0.536 m across the clip"
-    },
-    {
-      "name": "runtime.crossfade_idle_to_run",
-      "status": "pass",
-      "detail": "run weight 1.00, idle weight 0.00"
-    },
-    {
-      "name": "runtime.run.L0.speed",
-      "status": "pass",
-      "detail": "2.819 m/s vs 2.812 m/s (0.2 %)"
-    },
-    {
-      "name": "runtime.run.L0.direction",
-      "status": "pass",
-      "detail": "stance foot travels along +Z (game backward / in-place locomotion)"
-    },
-    {
-      "name": "runtime.run.L0.height",
-      "status": "pass",
-      "detail": "flat-foot height error 0.6 mm"
-    },
-    {
-      "name": "runtime.run.L0.heel_lift",
-      "status": "pass",
-      "detail": "toe-off heel lift 42 mm"
-    },
-    {
-      "name": "runtime.run.R0.speed",
-      "status": "pass",
-      "detail": "2.819 m/s vs 2.812 m/s (0.2 %)"
-    },
-    {
-      "name": "runtime.run.R0.direction",
-      "status": "pass",
-      "detail": "stance foot travels along +Z (game backward / in-place locomotion)"
-    },
-    {
-      "name": "runtime.run.R0.height",
-      "status": "pass",
-      "detail": "flat-foot height error 0.6 mm"
-    },
-    {
-      "name": "runtime.run.R0.heel_lift",
-      "status": "pass",
-      "detail": "toe-off heel lift 42 mm"
-    },
-    {
-      "name": "runtime.run.ground_penetration",
-      "status": "pass",
-      "detail": "lowest toe y=28.4 mm"
-    },
-    {
-      "name": "runtime.run.hip_bob",
-      "status": "pass",
-      "detail": "60 mm"
-    },
-    {
-      "name": "runtime.run.root_fixed",
-      "status": "pass",
-      "detail": "root drift 0.00e+0 m"
+      "detail": "run weight 1.00"
     }
   ],
   "metrics": {
     "file": {
-      "path": "/Users/kursatsahin/Desktop/turkuaz/turkuaz-adalar/public/models/turkuaz_runner.glb",
-      "bytes": 1489220,
-      "sha256": "01a91255e4d73b65d664267143748daeddd4584d10622b2a61a5570a1825594c"
+      "path": "/Users/kursatsahin/Desktop/turkuaz/turkuaz-adalar/src/assets/models/turkuaz_runner.glb",
+      "bytes": 2065824,
+      "sha256": "c6faa466b2000fc33c1994f1575a6e1d139819da220485d1acc86106cfc8c118"
     },
-    "materials": [
-      "TK_Mat_Jacket",
-      "TK_Mat_Cream",
-      "TK_Mat_JacketDark",
-      "TK_Mat_Gold",
-      "TK_Mat_Shorts",
-      "TK_Mat_Leather",
-      "TK_Mat_Skin",
-      "TK_Mat_Sole",
-      "TK_Mat_Coral",
-      "TK_Mat_CreamDark",
-      "TK_Mat_Hair",
-      "TK_Mat_HairDark",
-      "TK_Mat_EyeWhite",
-      "TK_Mat_Iris",
-      "TK_Mat_Pupil",
-      "TK_Mat_EyeHighlight",
-      "TK_Mat_Brow",
-      "TK_Mat_SkinShade",
-      "TK_Mat_SkinLight",
-      "TK_Mat_Mouth",
-      "TK_Mat_Backpack",
-      "TK_Mat_BackpackDark",
-      "TK_Mat_LeatherDark",
-      "TK_Mat_Badge"
-    ],
-    "images": [
-      {
-        "name": "TK_BadgeWave",
-        "mimeType": "image/png",
-        "bufferView": 142
-      }
-    ],
-    "textures": {
-      "name": "TK_BadgeWave",
-      "width": 128,
-      "height": 128,
-      "bitDepth": 8,
-      "colorType": 6,
-      "byteLength": 2327
-    },
-    "skin": {
-      "name": "TK_Armature",
-      "joints": 22,
-      "joint_names": [
-        "root",
-        "hips",
-        "spine",
-        "chest",
-        "neck",
-        "head",
-        "shoulder.L",
-        "upper_arm.L",
-        "forearm.L",
-        "hand.L",
-        "shoulder.R",
-        "upper_arm.R",
-        "forearm.R",
-        "hand.R",
-        "thigh.L",
-        "shin.L",
-        "foot.L",
-        "toe.L",
-        "thigh.R",
-        "shin.R",
-        "foot.R",
-        "toe.R"
-      ]
-    },
-    "mesh": {
-      "name": "TK_CharacterMesh",
-      "primitives": 24,
-      "vertices": 18640,
-      "triangles": 37010,
-      "max_influences": 2,
-      "height_meters": 1.7825581561774015
-    },
-    "extras": {
-      "turkuaz_generated": true,
-      "character": "TurkuazRunner",
-      "fps": 30,
-      "forward_axis_blender": "+Y",
-      "forward_axis_gltf": "-Z",
-      "root_motion": "in_place",
-      "run_reference_speed": 2.8124999999999996,
-      "run_cycle_seconds": 0.5333333333333333,
-      "run_stance_ratio": 0.4,
-      "run_foot_travel": 0.6,
-      "units": "meters",
-      "animation_clips": "Idle,Run,Jump,Airborne,Fall,Land,Win,Lose,Slide,Turn,Turn_Right"
-    },
-    "animations": {
-      "Idle": {
-        "duration_seconds": 4,
-        "channels": 66,
-        "samplers": 66,
-        "interpolation": [
-          "STEP",
-          "LINEAR"
-        ],
-        "loop_seam": 5.960464477539063e-8
-      },
-      "Run": {
-        "duration_seconds": 0.5333,
-        "channels": 66,
-        "samplers": 66,
-        "interpolation": [
-          "STEP",
-          "LINEAR"
-        ],
-        "loop_seam": 5.16191365590357e-8
-      },
-      "Jump": {
-        "duration_seconds": 0.7,
-        "channels": 66,
-        "samplers": 66,
-        "interpolation": [
-          "STEP",
-          "LINEAR"
-        ]
-      },
+    "clips": {
       "Airborne": {
-        "duration_seconds": 1,
-        "channels": 66,
-        "samplers": 66,
-        "interpolation": [
-          "STEP",
-          "LINEAR"
-        ],
-        "loop_seam": 7.300048299977715e-8
+        "duration": 1.0666667222976685,
+        "worstSeam": 5.960464477539063e-8,
+        "hipsDrift": 2.004982466808974e-15
       },
       "Fall": {
-        "duration_seconds": 0.6667,
-        "channels": 66,
-        "samplers": 66,
-        "interpolation": [
-          "STEP",
-          "LINEAR"
-        ],
-        "loop_seam": 5.960464477539063e-8
+        "duration": 1.0666667222976685,
+        "worstSeam": 5.960464477539063e-8,
+        "hipsDrift": 2.004982466808974e-15
       },
-      "Land": {
-        "duration_seconds": 0.6,
-        "channels": 66,
-        "samplers": 66,
-        "interpolation": [
-          "STEP",
-          "LINEAR"
-        ]
-      },
-      "Win": {
-        "duration_seconds": 3,
-        "channels": 66,
-        "samplers": 66,
-        "interpolation": [
-          "STEP",
-          "LINEAR"
-        ],
-        "loop_seam": 4.2146848510894035e-8
-      },
-      "Lose": {
-        "duration_seconds": 2.5,
-        "channels": 66,
-        "samplers": 66,
-        "interpolation": [
-          "STEP",
-          "LINEAR"
-        ],
-        "loop_seam": 5.960464477539063e-8
-      },
-      "Slide": {
-        "duration_seconds": 1,
-        "channels": 66,
-        "samplers": 66,
-        "interpolation": [
-          "STEP",
-          "LINEAR"
-        ]
-      },
-      "Turn": {
-        "duration_seconds": 0.6667,
-        "channels": 66,
-        "samplers": 66,
-        "interpolation": [
-          "STEP",
-          "LINEAR"
-        ],
-        "loop_seam": 4.2146848510894035e-8
-      },
-      "Turn_Right": {
-        "duration_seconds": 0.6667,
-        "channels": 66,
-        "samplers": 66,
-        "interpolation": [
-          "STEP",
-          "LINEAR"
-        ],
-        "loop_seam": 4.2146848510894035e-8
-      }
-    },
-    "run_reference_speed": 2.8124999999999996,
-    "runtime": {
-      "three_revision": "187",
-      "Airborne": {
-        "motion_meters": 0.0718
-      },
-      "Fall": {
-        "motion_meters": 0.0728
+      "Hit": {
+        "duration": 0.6666666865348816,
+        "worstSeam": 5.960464477539063e-8,
+        "hipsDrift": 0.14990139007568487
       },
       "Idle": {
-        "motion_meters": 0.023
+        "duration": 1.0666667222976685,
+        "worstSeam": 5.960464477539063e-8,
+        "hipsDrift": 8.297852388658346e-16
       },
       "Jump": {
-        "motion_meters": 0.7689
+        "duration": 0.6000000238418579,
+        "worstSeam": 1.4701548075757658,
+        "hipsDrift": 1.2917670668145787e-15
       },
       "Land": {
-        "motion_meters": 0.5782
+        "duration": 0.6666666865348816,
+        "worstSeam": 1.4701548075757658,
+        "hipsDrift": 2.0167699890612017e-15
       },
       "Lose": {
-        "motion_meters": 0.2902
+        "duration": 0.800000011920929,
+        "worstSeam": 2.97249457128152,
+        "hipsDrift": 0.4495672881603254
       },
       "Run": {
-        "motion_meters": 0.5892
+        "duration": 0.800000011920929,
+        "worstSeam": 5.960464477539063e-8,
+        "hipsDrift": 1.763010564766838e-15
       },
       "Slide": {
-        "motion_meters": 0.5564
-      },
-      "Turn": {
-        "motion_meters": 0.0952
-      },
-      "Turn_Right": {
-        "motion_meters": 0.0948
+        "duration": 0.4000000059604645,
+        "worstSeam": 1.5526744996102158,
+        "hipsDrift": 0.10027228295802942
       },
       "Win": {
-        "motion_meters": 0.5359
+        "duration": 1.6666666269302368,
+        "worstSeam": 5.960464477539063e-8,
+        "hipsDrift": 0.010418995283545335
       },
-      "run": {
-        "stance": {
-          "L0": {
-            "frames": [
-              0,
-              1,
-              2,
-              3,
-              4,
-              5,
-              6
-            ],
-            "speed_mps": 2.819,
-            "speed_error_percent": 0.23,
-            "direction_ok": true,
-            "flat_foot_height_error_mm": 0.55,
-            "toe_off_heel_lift_mm": 41.67
-          },
-          "R0": {
-            "frames": [
-              8,
-              9,
-              10,
-              11,
-              12,
-              13,
-              14
-            ],
-            "speed_mps": 2.819,
-            "speed_error_percent": 0.23,
-            "direction_ok": true,
-            "flat_foot_height_error_mm": 0.55,
-            "toe_off_heel_lift_mm": 41.68
-          }
-        },
-        "min_toe_y": 0.0284,
-        "hip_bob_meters": 0.06
+      "Win_knight": {
+        "duration": 0.9333333373069763,
+        "worstSeam": 5.960464477539063e-8,
+        "hipsDrift": 0.04011838580481708
+      },
+      "Win_mage": {
+        "duration": 2.066666603088379,
+        "worstSeam": 0.019189605349182834,
+        "hipsDrift": 0.016120744869111695
+      },
+      "Win_ocean": {
+        "duration": 1.4666666984558105,
+        "worstSeam": 5.960464477539063e-8,
+        "hipsDrift": 0.18036850914359093
+      },
+      "Win_sage": {
+        "duration": 0.9333333373069763,
+        "worstSeam": 5.960464477539063e-8,
+        "hipsDrift": 0.10087981820106379
+      },
+      "Win_swift": {
+        "duration": 1.1666666269302368,
+        "worstSeam": 5.960464477539063e-8,
+        "hipsDrift": 1.2917670668145787e-15
       }
-    }
+    },
+    "size": [
+      1.9425112155578397,
+      2.314534628053145,
+      1.3373246192753587
+    ]
   }
 }

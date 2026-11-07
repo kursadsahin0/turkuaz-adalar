@@ -99,6 +99,16 @@ export class PowerUpSystem {
     return powerUpConfig.magnet.pullSpeed
   }
 
+  /** Glide: lighter gravity, so jumps float. */
+  get gravityScale(): number {
+    return this.isActive('glide') ? powerUpConfig.glide.gravityScale : 1
+  }
+
+  /** Slow time: the pace of the whole run (speed and moving obstacles). */
+  get timeScale(): number {
+    return this.isActive('slowMo') ? powerUpConfig.slowMo.timeScale : 1
+  }
+
   get airJumps(): number {
     return this.isActive('doubleJump') ? powerUpConfig.doubleJump.airJumps : 0
   }

@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+# Env files hold AdMob IDs and the Sentry DSN; only the template is shared.
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

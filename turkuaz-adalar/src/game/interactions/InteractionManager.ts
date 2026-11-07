@@ -1,4 +1,4 @@
-import * as THREE from 'three'
+import type * as THREE from 'three'
 import { GAME_CONFIG } from '../../config/GameConfig.ts'
 import type { PhysicsWorld, Vector3Like } from '../../systems/physics/PhysicsWorld.ts'
 import type { Rng } from '../../utils/random.ts'
@@ -11,6 +11,7 @@ import type {
   SpeedPad,
 } from './Interaction.ts'
 import { InteractionAssets } from './InteractionAssets.ts'
+import { DEFAULT_SPAWN_RULES, type SpawnRules } from '../levels/SpawnRules.ts'
 
 export interface PadTrigger {
   bounce: BouncePad | null
@@ -50,6 +51,7 @@ export class InteractionManager {
     rng: Rng,
     difficulty: number,
     isBlocked: (x: number, z: number, radius: number) => boolean,
+    rules: SpawnRules = DEFAULT_SPAWN_RULES,
   ): void {
     this.clearSegment(segmentId)
 
@@ -60,12 +62,12 @@ export class InteractionManager {
 
     const track = GAME_CONFIG.track
     const distance = Math.max(0, -centerZ)
-    const checkpointConfig = GAME_CONFIG.interactions.checkpoint
     const segmentSlot = Math.round(distance / track.segmentLength)
 
     if (
-      distance >= checkpointConfig.minDistance &&
-      segmentSlot % checkpointConfig.everySegments === 0
+      rules.checkpointsEnabled &&
+      distance >= rules.checkpointMinDistance &&
+      segmentSlot % rules.checkpointEverySegments === 0
     ) {
       const spot = this.findSpot(centerZ, rng, isBlocked, 0.55)
       if (spot) {

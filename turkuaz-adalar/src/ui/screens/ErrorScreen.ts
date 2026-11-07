@@ -1,3 +1,4 @@
+import { t } from '../../i18n/i18n.ts'
 import { createEl } from '../../utils/dom.ts'
 import { Button } from '../components/Button.ts'
 import { Screen } from './Screen.ts'
@@ -16,16 +17,12 @@ export class ErrorScreen extends Screen {
     super('screen--error')
 
     const panel = createPanel('error-panel')
-    const eyebrow = createEl('p', 'eyebrow', 'Something broke the current')
-    const title = createEl('h2', 'screen-title', 'The tide pulled us under')
-    this.message = createEl(
-      'p',
-      'screen-copy',
-      'The game could not start. Reload the page to try again.',
-    )
+    const eyebrow = createEl('p', 'eyebrow', t('error.eyebrow'))
+    const title = createEl('h2', 'screen-title', t('error.title'))
+    this.message = createEl('p', 'screen-copy', t('error.copy'))
 
     this.reloadButton = new Button({
-      label: 'Reload the game',
+      label: t('error.reload'),
       onClick: options.onReload,
     })
 

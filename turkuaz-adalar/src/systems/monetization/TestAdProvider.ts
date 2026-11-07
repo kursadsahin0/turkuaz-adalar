@@ -29,7 +29,7 @@ export class TestAdProvider extends AdProvider {
     }
 
     // Simulate ad loading delay
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise((resolve) => setTimeout(resolve, 500))
     this.loadedAds.add(config.placementId)
   }
 
@@ -47,7 +47,7 @@ export class TestAdProvider extends AdProvider {
     }
 
     // Simulate ad duration
-    await new Promise(resolve => setTimeout(resolve, this.minDelay))
+    await new Promise((resolve) => setTimeout(resolve, this.minDelay))
 
     // Simulate user skip or completion
     const skipped = Math.random() < 0.1 // 10% skip rate
@@ -59,13 +59,6 @@ export class TestAdProvider extends AdProvider {
       return {
         success: true,
         rewardGranted: true,
-        skipped: false,
-      }
-    }
-
-    if (success && config.type === 'interstitial') {
-      return {
-        success: true,
         skipped: false,
       }
     }

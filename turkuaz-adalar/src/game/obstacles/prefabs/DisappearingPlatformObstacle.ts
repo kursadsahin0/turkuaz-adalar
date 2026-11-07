@@ -23,12 +23,7 @@ export class DisappearingPlatformObstacle extends ObstacleBase {
   private phase = 0
   private visible = true
 
-  constructor(
-    id: number,
-    scene: THREE.Scene,
-    physics: PhysicsWorld,
-    assets: ObstacleAssets,
-  ) {
+  constructor(id: number, scene: THREE.Scene, physics: PhysicsWorld, assets: ObstacleAssets) {
     const config = GAME_CONFIG.obstacles.disappearingPlatform
     const group = new THREE.Group()
     group.name = 'DisappearingPlatform'
@@ -89,7 +84,10 @@ export class DisappearingPlatformObstacle extends ObstacleBase {
   }
 
   contact(): ObstacleContact {
-    return this.visible ? { kind: 'safe' } : { kind: 'hazard' }
+    // Never a hazard: as it vanishes the runner just drops onto the deck below.
+    // (A contact can still be reported in the step it disappears, before the
+    // physics query sees the disabled collider; that used to end the run.)
+    return { kind: 'safe' }
   }
 
   fixedUpdate(delta: number): void {

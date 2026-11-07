@@ -1,0 +1,165 @@
+{
+  "variants": {
+    "runner": {
+      "source": "Rogue.glb",
+      "vertices": 3511,
+      "props": [
+        "TK_Char_runner_cape"
+      ]
+    },
+    "swift": {
+      "source": "Rogue_Hooded.glb",
+      "vertices": 3196,
+      "props": [
+        "TK_Char_swift_cape"
+      ]
+    },
+    "ocean": {
+      "source": "Barbarian.glb",
+      "vertices": 3342,
+      "props": [
+        "TK_Char_ocean_cape"
+      ]
+    },
+    "mage": {
+      "source": "Mage.glb",
+      "vertices": 3348,
+      "props": [
+        "TK_Char_mage_cape",
+        "TK_Char_mage_hat"
+      ]
+    },
+    "sage": {
+      "source": "Mage.glb",
+      "vertices": 3348,
+      "props": [
+        "TK_Char_sage_cape"
+      ]
+    },
+    "knight": {
+      "source": "Knight.glb",
+      "vertices": 3716,
+      "props": [
+        "TK_Char_knight_cape",
+        "TK_Char_knight_helmet"
+      ]
+    },
+    "guardian": {
+      "source": "Knight.glb",
+      "vertices": 3716,
+      "props": [
+        "TK_Char_guardian_cape"
+      ]
+    }
+  },
+  "clips": {
+    "Idle": {
+      "source": "Idle",
+      "frames": [
+        0,
+        32
+      ]
+    },
+    "Run": {
+      "source": "Running_A",
+      "frames": [
+        0,
+        24
+      ]
+    },
+    "Jump": {
+      "source": "Jump_Start",
+      "frames": [
+        0,
+        18
+      ]
+    },
+    "Airborne": {
+      "source": "Jump_Idle",
+      "frames": [
+        0,
+        32
+      ]
+    },
+    "Fall": {
+      "source": "Jump_Idle",
+      "frames": [
+        0,
+        32
+      ]
+    },
+    "Land": {
+      "source": "Jump_Land",
+      "frames": [
+        0,
+        20
+      ]
+    },
+    "Win": {
+      "source": "Cheer",
+      "frames": [
+        0,
+        50
+      ]
+    },
+    "Lose": {
+      "source": "Death_A",
+      "frames": [
+        0,
+        24
+      ]
+    },
+    "Slide": {
+      "source": "Dodge_Forward",
+      "frames": [
+        0,
+        12
+      ]
+    },
+    "Hit": {
+      "source": "Hit_A",
+      "frames": [
+        0,
+        20
+      ]
+    },
+    "Win_swift": {
+      "source": "Jump_Full_Short",
+      "frames": [
+        0,
+        35
+      ]
+    },
+    "Win_ocean": {
+      "source": "Unarmed_Melee_Attack_Punch_A",
+      "frames": [
+        0,
+        44
+      ]
+    },
+    "Win_mage": {
+      "source": "Spellcast_Raise",
+      "frames": [
+        0,
+        63
+      ]
+    },
+    "Win_sage": {
+      "source": "Spellcast_Shoot",
+      "frames": [
+        0,
+        28
+      ]
+    },
+    "Win_knight": {
+      "source": "Unarmed_Melee_Attack_Kick",
+      "frames": [
+        0,
+        28
+      ]
+    }
+  },
+  "runReferenceSpeed": 3.7195357494056225,
+  "height": 2.7895355224609375,
+  "glbBytes": 2065824
+}

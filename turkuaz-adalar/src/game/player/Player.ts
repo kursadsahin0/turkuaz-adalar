@@ -184,10 +184,7 @@ export class Player {
     this.feedback.add(this.bodyVisual)
     this.visual.add(this.feedback)
 
-    this.glowRing = new THREE.Mesh(
-      new THREE.TorusGeometry(0.46, 0.022, 6, 30),
-      this.glowMaterial,
-    )
+    this.glowRing = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.022, 6, 30), this.glowMaterial)
     this.glowRing.rotation.x = Math.PI / 2
     this.glowRing.position.y = -halfHeight - radius + 0.16
     this.visual.add(this.glowRing)
@@ -304,10 +301,19 @@ export class Player {
     this.characterModel?.playOutcome(outcome)
   }
 
+  /** Stagger when a shield absorbs a hit. */
+  playHit(): void {
+    this.characterModel?.playHit()
+  }
+
   reset(position: THREE.Vector3): void {
     this.restoreCapsule()
     this.character.body.setTranslation(position, true)
     this.character.body.setNextKinematicTranslation(position)
+    // Move the collider now, not at the next physics step: otherwise the first
+    // movement query still starts where the last run ended and can "hit" an
+    // obstacle there (a crash at 0 m on restart).
+    this.physics.world.propagateModifiedBodyPositionsToColliders()
     this.verticalVelocity = 0
     this.forwardSpeed = 0
     this.grounded = false
@@ -382,9 +388,7 @@ export class Player {
     this.jumpBufferTimer = input.jump
       ? config.jumpBufferTime
       : Math.max(0, this.jumpBufferTimer - delta)
-    this.coyoteTimer = this.grounded
-      ? config.coyoteTime
-      : Math.max(0, this.coyoteTimer - delta)
+    this.coyoteTimer = this.grounded ? config.coyoteTime : Math.max(0, this.coyoteTimer - delta)
 
     if (this.jumpBufferTimer > 0 && (this.grounded || this.coyoteTimer > 0)) {
       // Jumping out of a slide is allowed only when the runner can stand up.
@@ -427,16 +431,9 @@ export class Player {
         this.jumpRising = false
       } else {
         this.jumpHeldTime += delta
-        if (
-          config.jumpCut.enabled &&
-          !jumpHeld &&
-          this.jumpHeldTime >= config.jumpCut.graceTime
-        ) {
+        if (config.jumpCut.enabled && !jumpHeld && this.jumpHeldTime >= config.jumpCut.graceTime) {
           const minimumSpeed = Math.sqrt(
-            2 *
-              Math.abs(config.gravity) *
-              config.jumpCut.minimumHeight *
-              jumpScale,
+            2 * Math.abs(config.gravity) * config.jumpCut.minimumHeight * jumpScale,
           )
           if (this.verticalVelocity > minimumSpeed) {
             this.verticalVelocity = Math.max(
@@ -462,8 +459,7 @@ export class Player {
     if (input.laneChange !== 0) {
       this.lane.requestLane(input.laneChange)
     }
-    const forwardSpeed =
-      input.forwardSpeed * (this.sliding ? slideConfig.speedMultiplier : 1)
+    const forwardSpeed = input.forwardSpeed * (this.sliding ? slideConfig.speedMultiplier : 1)
     this.forwardSpeed = forwardSpeed
 
     // Footstep sounds while running
@@ -475,12 +471,7 @@ export class Player {
       }
     }
     const control = laneControl * (this.sliding ? slideConfig.laneControl : 1)
-    const lateralMovement = this.lane.step(
-      current.x,
-      this.grounded,
-      delta,
-      control,
-    )
+    const lateralMovement = this.lane.step(current.x, this.grounded, delta, control)
     this.currentSteer = this.lane.steer
 
     const platformMotion =
@@ -579,13 +570,9 @@ export class Player {
     const slide = GAME_CONFIG.player.slide
     if (!force) {
       const translation = this.character.body.translation()
-      const currentTop =
-        translation.y + this.capsuleHeightHalf + this.capsuleRadius
+      const currentTop = translation.y + this.capsuleHeightHalf + this.capsuleRadius
       const desiredTop =
-        translation.y +
-        this.standingHalfHeight +
-        this.capsuleRadius +
-        slide.headroomMargin
+        translation.y + this.standingHalfHeight + this.capsuleRadius + slide.headroomMargin
       const clear = this.physics.hasHeadroom(
         { x: translation.x, y: translation.y, z: translation.z },
         currentTop,
@@ -679,6 +666,8 @@ export class Player {
         speed: this.forwardSpeed,
         dashing: boost,
         idle: idleOnly,
+        sliding: this.sliding,
+        slideDuration: GAME_CONFIG.player.slide.duration,
       })
     }
 
@@ -690,7 +679,7 @@ export class Player {
     const visual = GAME_CONFIG.player.visual
     let targetY = 1
     let targetXZ = 1
-    if (this.sliding) {
+    if (this.sliding && !this.characterModel?.animatesSlide) {
       targetY = GAME_CONFIG.player.slide.visualScaleY
       targetXZ = GAME_CONFIG.player.slide.visualScaleXZ
     } else if (!this.grounded) {
@@ -704,47 +693,21 @@ export class Player {
       targetY = 0.98
       targetXZ = 1.02
     }
-    this.feedback.scale.x = damp(
-      this.feedback.scale.x,
-      targetXZ,
-      visual.damping,
-      delta,
-    )
-    this.feedback.scale.y = damp(
-      this.feedback.scale.y,
-      targetY,
-      visual.damping,
-      delta,
-    )
-    this.feedback.scale.z = damp(
-      this.feedback.scale.z,
-      targetXZ,
-      visual.damping,
-      delta,
-    )
+    this.feedback.scale.x = damp(this.feedback.scale.x, targetXZ, visual.damping, delta)
+    this.feedback.scale.y = damp(this.feedback.scale.y, targetY, visual.damping, delta)
+    this.feedback.scale.z = damp(this.feedback.scale.z, targetXZ, visual.damping, delta)
 
     // The GLB animations already carry hip bob. Adding the placeholder bob on
     // top would lift the authored foot contacts off the track.
-    const bob = this.characterModel
-      ? 0
-      : this.grounded
-        ? Math.sin(elapsed * 11.5) * 0.022
-        : 0.012
+    const bob = this.characterModel ? 0 : this.grounded ? Math.sin(elapsed * 11.5) * 0.022 : 0.012
     this.visual.position.y = damp(this.visual.position.y, bob, 18, delta)
 
     this.glowRing.rotation.z = elapsed * (boost ? 6 : 2.2)
     const pulse = 1 + Math.sin(elapsed * (boost ? 9 : 4)) * 0.06
     this.glowRing.scale.setScalar(pulse)
 
-    const auraTarget = this.shieldActive
-      ? 0.22 + Math.sin(elapsed * 5.5) * 0.05
-      : 0
-    this.shieldMaterial.opacity = damp(
-      this.shieldMaterial.opacity,
-      auraTarget,
-      12,
-      delta,
-    )
+    const auraTarget = this.shieldActive ? 0.22 + Math.sin(elapsed * 5.5) * 0.05 : 0
+    this.shieldMaterial.opacity = damp(this.shieldMaterial.opacity, auraTarget, 12, delta)
     this.shieldAura.visible = this.shieldMaterial.opacity > 0.01
     this.shieldAura.rotation.y = elapsed * 1.6
     this.shieldAura.rotation.x = elapsed * 0.7

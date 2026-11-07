@@ -14,15 +14,28 @@ function cssColor(hex: number): string {
  * Paints a crisp, softly lit checker pattern. A two-by-two tile is repeated
  * across the platform, so the whole surface needs a single tiny texture.
  */
-export function createCheckerTexture(
-  repeatX: number,
-  repeatY: number,
-): THREE.CanvasTexture {
+export function createCheckerTexture(repeatX: number, repeatY: number): THREE.CanvasTexture {
   const tile = 128
   const canvas = document.createElement('canvas')
   canvas.width = tile * 2
   canvas.height = tile * 2
+  paintChecker(canvas, PALETTE.platformTurquoise)
 
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.wrapS = THREE.RepeatWrapping
+  texture.wrapT = THREE.RepeatWrapping
+  texture.repeat.set(repeatX, repeatY)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.anisotropy = 4
+  texture.minFilter = THREE.LinearMipmapLinearFilter
+  texture.magFilter = THREE.LinearFilter
+  texture.needsUpdate = true
+  return texture
+}
+
+/** Paints (or repaints) the 2×2 checker tile with the given accent colour. */
+export function paintChecker(canvas: HTMLCanvasElement, accent: number): void {
+  const tile = canvas.width / 2
   const context = canvas.getContext('2d')
   if (!context) {
     throw new Error('A 2D context is required to paint the checker texture.')
@@ -31,7 +44,7 @@ export function createCheckerTexture(
   context.fillStyle = cssColor(PALETTE.platformWhite)
   context.fillRect(0, 0, tile * 2, tile * 2)
 
-  context.fillStyle = cssColor(PALETTE.platformTurquoise)
+  context.fillStyle = cssColor(accent)
   context.fillRect(tile, 0, tile, tile)
   context.fillRect(0, tile, tile, tile)
 
@@ -43,12 +56,7 @@ export function createCheckerTexture(
   ]
 
   for (const entry of tiles) {
-    const gradient = context.createLinearGradient(
-      entry.x,
-      entry.y,
-      entry.x + tile,
-      entry.y + tile,
-    )
+    const gradient = context.createLinearGradient(entry.x, entry.y, entry.x + tile, entry.y + tile)
     gradient.addColorStop(0, `rgba(255, 255, 255, ${entry.light})`)
     gradient.addColorStop(1, `rgba(0, 0, 0, ${entry.shade})`)
     context.fillStyle = gradient
@@ -64,17 +72,6 @@ export function createCheckerTexture(
   context.moveTo(0, tile)
   context.lineTo(tile * 2, tile)
   context.stroke()
-
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.wrapS = THREE.RepeatWrapping
-  texture.wrapT = THREE.RepeatWrapping
-  texture.repeat.set(repeatX, repeatY)
-  texture.colorSpace = THREE.SRGBColorSpace
-  texture.anisotropy = 4
-  texture.minFilter = THREE.LinearMipmapLinearFilter
-  texture.magFilter = THREE.LinearFilter
-  texture.needsUpdate = true
-  return texture
 }
 
 /**
@@ -99,10 +96,7 @@ export class PlatformAssets {
     const platform = WORLD_CONFIG.platform
     const topY = GAME_CONFIG.track.topY
 
-    this.checkerTexture = createCheckerTexture(
-      platform.checkerRepeatX,
-      platform.checkerRepeatY,
-    )
+    this.checkerTexture = createCheckerTexture(platform.checkerRepeatX, platform.checkerRepeatY)
 
     this.checkerMaterial = new THREE.MeshStandardMaterial({
       map: this.checkerTexture,
@@ -121,11 +115,7 @@ export class PlatformAssets {
       emissive: PALETTE.mechanismGold,
       emissiveIntensity: 0.08,
     })
-    this.preparedMaterials.push(
-      this.checkerMaterial,
-      this.detailMaterial,
-      this.mechanismMaterial,
-    )
+    this.preparedMaterials.push(this.checkerMaterial, this.detailMaterial, this.mechanismMaterial)
 
     this.checkerGeometry = this.trackGeometry(
       new RoundedBoxGeometry(
@@ -142,10 +132,7 @@ export class PlatformAssets {
     const rimTop = topY - platform.rimTopDrop
     const trimTop = topY - platform.trimTopDrop
     const halfLength = GAME_CONFIG.track.segmentLength / 2
-    const studsPerSide = Math.max(
-      2,
-      Math.floor(platform.rimLength / platform.studSpacing),
-    )
+    const studsPerSide = Math.max(2, Math.floor(platform.rimLength / platform.studSpacing))
 
     const parts: GeometryPart[] = [
       {
@@ -189,9 +176,7 @@ export class PlatformAssets {
     }
 
     for (let index = 0; index < studsPerSide; index += 1) {
-      const z =
-        -halfLength +
-        (index + 0.5) * (GAME_CONFIG.track.segmentLength / studsPerSide)
+      const z = -halfLength + (index + 0.5) * (GAME_CONFIG.track.segmentLength / studsPerSide)
 
       for (const side of [-1, 1] as const) {
         parts.push({
@@ -236,6 +221,13 @@ export class PlatformAssets {
     mesh.castShadow = true
     mesh.receiveShadow = true
     return mesh
+  }
+
+  /** Recolours the accent checker tiles in place; `null` restores turquoise. */
+  setTrackAccent(accent: number | null): void {
+    const canvas = this.checkerTexture.image as HTMLCanvasElement
+    paintChecker(canvas, accent ?? PALETTE.platformTurquoise)
+    this.checkerTexture.needsUpdate = true
   }
 
   dispose(): void {

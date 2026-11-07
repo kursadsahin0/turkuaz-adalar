@@ -8,6 +8,12 @@ export interface LevelDefinition {
   tagline: string
   /** Visual theme for the level (environment colors, lighting, etc.) */
   theme: LevelTheme
+  /** A rule that only this island plays by (ice, wind, ember rain). */
+  mechanic?: IslandMechanic
+  /** A tidal wave chases the runner (the last island of each chapter). */
+  chase?: boolean
+  /** Set on the weekly event island: the regular island it is based on. */
+  eventOf?: string
   baseSpeed: number
   maxSpeed: number
   /** Distance in metres over which difficulty reaches its maximum. */
@@ -20,14 +26,6 @@ export interface LevelDefinition {
   completionCoins: number
   /** Minimum crystals to complete the level. */
   completionCrystals: number
-  minRowsPerSegment: number
-  maxRowsPerSegment: number
-  /** 0..1 density used by obstacle spawning. */
-  obstacleDensity: number
-  /** 0..1 density used by collectible spawning. */
-  crystalDensity: number
-  /** Platform configuration for this level. */
-  platforms: LevelPlatformConfig
   /** Obstacle placement rules for this level. */
   obstacles: LevelObstacleConfig
   /** Collectible placement rules for this level. */
@@ -35,6 +33,13 @@ export interface LevelDefinition {
   /** Checkpoint configuration for this level. */
   checkpoints: LevelCheckpointConfig
 }
+
+/**
+ * - ice: lane changes are slow and slippery.
+ * - wind: telegraphed gusts push the runner one lane (only into a clear lane).
+ * - embers: falling hazards are far more common.
+ */
+export type IslandMechanic = 'ice' | 'wind' | 'embers'
 
 export interface LevelTheme {
   id: string
@@ -49,19 +54,6 @@ export interface LevelTheme {
   timeOfDay: number
 }
 
-export interface LevelPlatformConfig {
-  /** Width of platforms in metres. */
-  width: number
-  /** Gap between platforms in metres. */
-  gapRange: [number, number]
-  /** Height variation in metres. */
-  heightVariation: number
-  /** Platform segment length in metres. */
-  segmentLength: number
-  /** Whether platforms are floating (islands) or connected. */
-  floating: boolean
-}
-
 export interface LevelObstacleConfig {
   /** Which obstacles are enabled in this level. */
   enabledObstacles: string[]
@@ -69,8 +61,6 @@ export interface LevelObstacleConfig {
   maxDensity: number
   /** Minimum distance between obstacles in metres. */
   minObstacleSpacing: number
-  /** Whether to use three-lane gameplay. */
-  threeLane: boolean
   /** Safe zone at the start in metres. */
   safeZoneLength: number
 }

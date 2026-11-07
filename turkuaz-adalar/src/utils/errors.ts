@@ -1,9 +1,5 @@
 export type GameErrorCode =
-  | 'WEBGL_UNAVAILABLE'
-  | 'PHYSICS_INIT_FAILED'
-  | 'NOT_INITIALIZED'
-  | 'RUNTIME_ERROR'
-  | 'UNKNOWN'
+  'WEBGL_UNAVAILABLE' | 'PHYSICS_INIT_FAILED' | 'NOT_INITIALIZED' | 'RUNTIME_ERROR' | 'UNKNOWN'
 
 export class GameError extends Error {
   readonly code: GameErrorCode

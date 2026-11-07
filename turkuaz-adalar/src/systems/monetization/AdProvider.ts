@@ -4,7 +4,8 @@
  * All providers must strictly follow platform policies and never simulate ad completion.
  */
 
-export type AdType = 'rewarded' | 'interstitial'
+/** The game only uses opt-in rewarded ads (never interstitials). */
+export type AdType = 'rewarded'
 
 export interface AdConfig {
   /** Unique identifier for the ad placement */
@@ -84,6 +85,9 @@ export abstract class AdProvider {
    * Prevents ad spamming and respects platform policies.
    */
   abstract getMinTimeBetweenAds(): number
+
+  /** Optional: switch between personalised and non-personalised requests. */
+  setPersonalizedAds?(personalized: boolean): void
 
   /**
    * Get the last time an ad was shown.

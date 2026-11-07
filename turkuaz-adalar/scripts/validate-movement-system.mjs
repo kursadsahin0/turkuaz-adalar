@@ -119,15 +119,9 @@ const server = await createServer({
 })
 
 try {
-  const { LaneController } = await server.ssrLoadModule(
-    '/src/game/player/LaneController.ts',
-  )
-  const { InputManager } = await server.ssrLoadModule(
-    '/src/systems/input/InputManager.ts',
-  )
-  const { PhysicsWorld } = await server.ssrLoadModule(
-    '/src/systems/physics/PhysicsWorld.ts',
-  )
+  const { LaneController } = await server.ssrLoadModule('/src/game/player/LaneController.ts')
+  const { InputManager } = await server.ssrLoadModule('/src/systems/input/InputManager.ts')
+  const { PhysicsWorld } = await server.ssrLoadModule('/src/systems/physics/PhysicsWorld.ts')
   const { Player } = await server.ssrLoadModule('/src/game/player/Player.ts')
   const { GAME_CONFIG } = await server.ssrLoadModule('/src/config/GameConfig.ts')
 
@@ -163,20 +157,14 @@ try {
     },
     `lane ${lanes.laneIndex} → x ${lanes.laneX}`,
   )
-  check(
-    'lane.request_right_from_left',
-    () => {
-      lanes.requestLane(1)
-      return lanes.laneIndex === 1 && approx(lanes.laneX, positions[1], 1e-9)
-    },
-  )
-  check(
-    'lane.request_right',
-    () => {
-      lanes.requestLane(1)
-      return lanes.laneIndex === 2 && approx(lanes.laneX, positions[2], 1e-9)
-    },
-  )
+  check('lane.request_right_from_left', () => {
+    lanes.requestLane(1)
+    return lanes.laneIndex === 1 && approx(lanes.laneX, positions[1], 1e-9)
+  })
+  check('lane.request_right', () => {
+    lanes.requestLane(1)
+    return lanes.laneIndex === 2 && approx(lanes.laneX, positions[2], 1e-9)
+  })
   check(
     'lane.clamps_right_boundary',
     () => {
@@ -222,7 +210,8 @@ try {
   x += smooth.step(x, true, DT)
   check(
     'lane.smooth_transition',
-    () => elapsed > 0.08 && elapsed < 0.6 && Math.abs(x - targetX) <= laneConfig.snapDistance + 0.001,
+    () =>
+      elapsed > 0.08 && elapsed < 0.6 && Math.abs(x - targetX) <= laneConfig.snapDistance + 0.001,
     `arrived in ${elapsed.toFixed(3)} s`,
   )
   check(
@@ -235,18 +224,15 @@ try {
     'lane.aligned_after_transition',
     () => !smooth.isTransitioning && approx(smooth.lateralVelocity, 0, 1e-9),
   )
-  check(
-    'lane.steer_is_normalized',
-    () => {
-      const probe = new LaneController()
-      probe.requestLane(1)
-      let position = 0
-      for (let index = 0; index < 10; index += 1) {
-        position += probe.step(position, true, DT)
-      }
-      return probe.steer > 0 && probe.steer <= 1
-    },
-  )
+  check('lane.steer_is_normalized', () => {
+    const probe = new LaneController()
+    probe.requestLane(1)
+    let position = 0
+    for (let index = 0; index < 10; index += 1) {
+      position += probe.step(position, true, DT)
+    }
+    return probe.steer > 0 && probe.steer <= 1
+  })
 
   const air = new LaneController()
   const ground = new LaneController()
@@ -305,16 +291,10 @@ try {
 
   const many = new LaneController()
   many.reset(0)
-  check(
-    'lane.reset_lane',
-    () => many.laneIndex === 0 && approx(many.laneX, positions[0], 1e-9),
-  )
+  check('lane.reset_lane', () => many.laneIndex === 0 && approx(many.laneX, positions[0], 1e-9))
   many.reset()
   check('lane.reset_center', () => many.laneIndex === centerLane)
-  check(
-    'lane.invalid_change_ignored',
-    () => many.requestLane(Number.NaN) === centerLane,
-  )
+  check('lane.invalid_change_ignored', () => many.requestLane(Number.NaN) === centerLane)
 
   // ------------------------------------------------------------------ input
   console.log('\nInput layer')
@@ -327,80 +307,52 @@ try {
     onPause: () => {},
     onToggleMute: () => {},
   })
-  const key = (code, repeat = false) =>
-    fakeWindow.emit('keydown', keyboardEvent(code, repeat))
-  const down = (id, x, y) => canvas.emit('pointerdown', pointerEvent(id, x, y))
-  const move = (id, x, y) => canvas.emit('pointermove', pointerEvent(id, x, y))
-  const up = (id, x, y) => canvas.emit('pointerup', pointerEvent(id, x, y))
+  const key = (code, repeat = false) => fakeWindow.emit('keydown', keyboardEvent(code, repeat))
+  const down = (id, px, py) => canvas.emit('pointerdown', pointerEvent(id, px, py))
+  const move = (id, px, py) => canvas.emit('pointermove', pointerEvent(id, px, py))
+  const up = (id, px, py) => canvas.emit('pointerup', pointerEvent(id, px, py))
 
-  check(
-    'input.key_left',
-    () => {
-      key('KeyA')
-      return input.consumeLaneChange() === -1 && input.consumeLaneChange() === 0
-    },
-  )
-  check(
-    'input.key_right',
-    () => {
-      key('KeyD')
-      return input.consumeLaneChange() === 1
-    },
-  )
-  check(
-    'input.arrow_left',
-    () => {
-      key('ArrowLeft')
-      return input.consumeLaneChange() === -1
-    },
-  )
-  check(
-    'input.arrow_right',
-    () => {
-      key('ArrowRight')
-      return input.consumeLaneChange() === 1
-    },
-  )
-  check(
-    'input.key_repeat_ignored',
-    () => {
-      key('KeyA', false)
-      key('KeyA', true)
-      return input.consumeLaneChange() === -1 && input.consumeLaneChange() === 0
-    },
-  )
-  check(
-    'input.space_jumps',
-    () => {
-      key('Space')
-      return input.consumeJump() === true && input.consumeJump() === false
-    },
-  )
-  check(
-    'input.jump_repeat_ignored',
-    () => {
-      key('Space', false)
-      key('Space', true)
-      input.consumeJump()
-      return input.consumeJump() === false
-    },
-  )
-  check(
-    'input.slide_key',
-    () => {
-      key('KeyS')
-      return input.consumeSlide() === true && input.consumeSlide() === false
-    },
-  )
-  check(
-    'input.slide_repeat_ignored',
-    () => {
-      key('ArrowDown', false)
-      key('ArrowDown', true)
-      input.consumeSlide()
-      return input.consumeSlide() === false
-    },
-  )
+  check('input.key_left', () => {
+    key('KeyA')
+    return input.consumeLaneChange() === -1 && input.consumeLaneChange() === 0
+  })
+  check('input.key_right', () => {
+    key('KeyD')
+    return input.consumeLaneChange() === 1
+  })
+  check('input.arrow_left', () => {
+    key('ArrowLeft')
+    return input.consumeLaneChange() === -1
+  })
+  check('input.arrow_right', () => {
+    key('ArrowRight')
+    return input.consumeLaneChange() === 1
+  })
+  check('input.key_repeat_ignored', () => {
+    key('KeyA', false)
+    key('KeyA', true)
+    return input.consumeLaneChange() === -1 && input.consumeLaneChange() === 0
+  })
+  check('input.space_jumps', () => {
+    key('Space')
+    return input.consumeJump() === true && input.consumeJump() === false
+  })
+  check('input.jump_repeat_ignored', () => {
+    key('Space', false)
+    key('Space', true)
+    input.consumeJump()
+    return input.consumeJump() === false
+  })
+  check('input.slide_key', () => {
+    key('KeyS')
+    return input.consumeSlide() === true && input.consumeSlide() === false
+  })
+  check('input.slide_repeat_ignored', () => {
+    key('ArrowDown', false)
+    key('ArrowDown', true)
+    input.consumeSlide()
+    return input.consumeSlide() === false
+  })
   check(
     'input.jump_hold_key',
     () => {
@@ -427,80 +379,59 @@ try {
     'at most four buffered steps',
   )
 
-  check(
-    'input.swipe_left_one_lane',
-    () => {
-      down(1, 220, 500)
-      move(1, 170, 500)
-      // Continuing the same gesture must not queue a second lane.
-      move(1, 80, 500)
-      move(1, 30, 500)
-      up(1, 30, 500)
-      const lane = input.consumeLaneChange()
-      return lane === -1 && input.consumeLaneChange() === 0 && input.consumeJump() === false
-    },
-  )
-  check(
-    'input.swipe_right_one_lane',
-    () => {
-      down(2, 80, 500)
-      move(2, 140, 500)
-      move(2, 240, 500)
-      up(2, 240, 500)
-      return input.consumeLaneChange() === 1 && input.consumeLaneChange() === 0
-    },
-  )
-  check(
-    'input.new_gesture_can_change_again',
-    () => {
-      down(3, 100, 500)
-      move(3, 150, 500)
-      up(3, 150, 500)
-      down(4, 200, 500)
-      move(4, 150, 500)
-      up(4, 150, 500)
-      return input.consumeLaneChange() === 1 && input.consumeLaneChange() === -1
-    },
-  )
-  check(
-    'input.diagonal_swipe_changes_lane',
-    () => {
-      down(5, 200, 500)
-      move(5, 120, 470)
-      up(5, 120, 470)
-      return input.consumeLaneChange() === -1 && input.consumeJump() === false
-    },
-  )
-  check(
-    'input.tap_jumps',
-    () => {
-      down(6, 200, 500)
-      up(6, 204, 503)
-      return input.consumeJump() === true && input.consumeLaneChange() === 0
-    },
-  )
-  check(
-    'input.swipe_up_jumps',
-    () => {
-      down(7, 200, 500)
-      move(7, 202, 410)
-      up(7, 202, 410)
-      return input.consumeJump() === true && input.consumeLaneChange() === 0
-    },
-  )
-  check(
-    'input.swipe_down_slides',
-    () => {
-      down(8, 200, 400)
-      move(8, 203, 500)
-      up(8, 203, 500)
-      return (
-        input.consumeSlide() === true &&
-        input.consumeDash() === false &&
-        input.consumeLaneChange() === 0
-      )
-    },
-  )
+  check('input.swipe_left_one_lane', () => {
+    down(1, 220, 500)
+    move(1, 170, 500)
+    // Continuing the same gesture must not queue a second lane.
+    move(1, 80, 500)
+    move(1, 30, 500)
+    up(1, 30, 500)
+    const lane = input.consumeLaneChange()
+    return lane === -1 && input.consumeLaneChange() === 0 && input.consumeJump() === false
+  })
+  check('input.swipe_right_one_lane', () => {
+    down(2, 80, 500)
+    move(2, 140, 500)
+    move(2, 240, 500)
+    up(2, 240, 500)
+    return input.consumeLaneChange() === 1 && input.consumeLaneChange() === 0
+  })
+  check('input.new_gesture_can_change_again', () => {
+    down(3, 100, 500)
+    move(3, 150, 500)
+    up(3, 150, 500)
+    down(4, 200, 500)
+    move(4, 150, 500)
+    up(4, 150, 500)
+    return input.consumeLaneChange() === 1 && input.consumeLaneChange() === -1
+  })
+  check('input.diagonal_swipe_changes_lane', () => {
+    down(5, 200, 500)
+    move(5, 120, 470)
+    up(5, 120, 470)
+    return input.consumeLaneChange() === -1 && input.consumeJump() === false
+  })
+  check('input.tap_jumps', () => {
+    down(6, 200, 500)
+    up(6, 204, 503)
+    return input.consumeJump() === true && input.consumeLaneChange() === 0
+  })
+  check('input.swipe_up_jumps', () => {
+    down(7, 200, 500)
+    move(7, 202, 410)
+    up(7, 202, 410)
+    return input.consumeJump() === true && input.consumeLaneChange() === 0
+  })
+  check('input.swipe_down_slides', () => {
+    down(8, 200, 400)
+    move(8, 203, 500)
+    up(8, 203, 500)
+    return (
+      input.consumeSlide() === true &&
+      input.consumeDash() === false &&
+      input.consumeLaneChange() === 0
+    )
+  })
   check(
     'input.swipe_down_no_jump',
     () => {
@@ -523,57 +454,45 @@ try {
     },
     'vertical swipe jumps without changing lane',
   )
-  check(
-    'input.pointer_cancel_no_action',
-    () => {
-      down(10, 200, 500)
-      // Stay below the swipe threshold; cancelling must not queue anything.
-      move(10, 190, 504)
-      canvas.emit('pointercancel', pointerEvent(10, 190, 504))
-      return input.consumeLaneChange() === 0 && input.consumeJump() === false
-    },
-  )
-  check(
-    'input.blur_resets_queues',
-    () => {
-      key('KeyA')
-      key('Space')
-      input.queueSlide()
-      fakeWindow.emit('blur', {})
-      return (
-        input.consumeLaneChange() === 0 &&
-        input.consumeJump() === false &&
-        input.consumeDash() === false &&
-        input.consumeSlide() === false &&
-        input.isJumpHeld() === false
-      )
-    },
-  )
-  check(
-    'input.reset_clears_queues',
-    () => {
-      key('KeyD')
-      key('Space')
-      input.queueDash()
-      input.queueSlide()
-      input.reset()
-      return (
-        input.consumeLaneChange() === 0 &&
-        input.consumeJump() === false &&
-        input.consumeDash() === false &&
-        input.consumeSlide() === false &&
-        input.isJumpHeld() === false
-      )
-    },
-  )
+  check('input.pointer_cancel_no_action', () => {
+    down(10, 200, 500)
+    // Stay below the swipe threshold; cancelling must not queue anything.
+    move(10, 190, 504)
+    canvas.emit('pointercancel', pointerEvent(10, 190, 504))
+    return input.consumeLaneChange() === 0 && input.consumeJump() === false
+  })
+  check('input.blur_resets_queues', () => {
+    key('KeyA')
+    key('Space')
+    input.queueSlide()
+    fakeWindow.emit('blur', {})
+    return (
+      input.consumeLaneChange() === 0 &&
+      input.consumeJump() === false &&
+      input.consumeDash() === false &&
+      input.consumeSlide() === false &&
+      input.isJumpHeld() === false
+    )
+  })
+  check('input.reset_clears_queues', () => {
+    key('KeyD')
+    key('Space')
+    input.queueDash()
+    input.queueSlide()
+    input.reset()
+    return (
+      input.consumeLaneChange() === 0 &&
+      input.consumeJump() === false &&
+      input.consumeDash() === false &&
+      input.consumeSlide() === false &&
+      input.isJumpHeld() === false
+    )
+  })
   input.dispose()
-  check(
-    'input.dispose_removes_listeners',
-    () => {
-      const before = fakeWindow.listeners.get('keydown')?.length ?? 0
-      return before === 0 && (canvas.listeners.get('pointerdown')?.length ?? 0) === 0
-    },
-  )
+  check('input.dispose_removes_listeners', () => {
+    const before = fakeWindow.listeners.get('keydown')?.length ?? 0
+    return before === 0 && (canvas.listeners.get('pointerdown')?.length ?? 0) === 0
+  })
 
   // --------------------------------------------------------------- physics
   console.log('\nPlayer + Rapier')
@@ -587,10 +506,7 @@ try {
 
   const createRig = async (withBlocker = false) => {
     const physics = await PhysicsWorld.create()
-    physics.addStaticBox(
-      { x: 0, y: track.topY - 1, z: -150 },
-      { x: 10, y: 1, z: 160 },
-    )
+    physics.addStaticBox({ x: 0, y: track.topY - 1, z: -150 }, { x: 10, y: 1, z: 160 })
     let blockerColliderHandle = null
     if (withBlocker) {
       const blocker = physics.addStaticBox(
@@ -631,8 +547,7 @@ try {
   check(
     'physics.capsule_stays_on_deck',
     () => {
-      const capsuleBottom =
-        main.player.position.y - playerConfig.halfHeight - playerConfig.radius
+      const capsuleBottom = main.player.position.y - playerConfig.halfHeight - playerConfig.radius
       return capsuleBottom >= track.topY - 0.06
     },
     `capsule bottom ${(
@@ -699,10 +614,7 @@ try {
   advance(main, 12)
   check(
     'jump.no_double_jump',
-    () =>
-      airborneForDouble &&
-      !main.player.isGrounded &&
-      jumpCount === jumpsBeforeDouble + 1,
+    () => airborneForDouble && !main.player.isGrounded && jumpCount === jumpsBeforeDouble + 1,
     `${jumpCount - jumpsBeforeDouble} launch(es) after an airborne press`,
   )
 
@@ -728,13 +640,10 @@ try {
       !main.player.isChangingLane,
     `x ${main.player.position.x.toFixed(2)}`,
   )
-  check(
-    'player.lane_capsule_aligned',
-    () => {
-      const bodyX = main.player.position.x
-      return approx(bodyX, main.player.laneX, 0.03)
-    },
-  )
+  check('player.lane_capsule_aligned', () => {
+    const bodyX = main.player.position.x
+    return approx(bodyX, main.player.laneX, 0.03)
+  })
   check(
     'player.lane_smooth_integration',
     () => laneMaxStep > 0.02 && laneMaxStep < laneConfig.changeSpeed * DT + 0.01,
@@ -773,9 +682,7 @@ try {
   advance(main, 90)
   check(
     'player.two_steps_smoothly',
-    () =>
-      main.player.laneIndex === 2 &&
-      approx(main.player.position.x, positions[2], 0.03),
+    () => main.player.laneIndex === 2 && approx(main.player.position.x, positions[2], 0.03),
     `lane ${main.player.laneIndex} at x ${main.player.position.x.toFixed(2)}`,
   )
 
@@ -861,22 +768,13 @@ try {
   )
   check(
     'physics.never_falls_through',
-    () =>
-      minY - playerConfig.halfHeight - playerConfig.radius >=
-        track.topY - 0.08,
-    `lowest capsule bottom ${(
-      minY -
-      playerConfig.halfHeight -
-      playerConfig.radius
-    ).toFixed(2)}`,
+    () => minY - playerConfig.halfHeight - playerConfig.radius >= track.topY - 0.08,
+    `lowest capsule bottom ${(minY - playerConfig.halfHeight - playerConfig.radius).toFixed(2)}`,
   )
-  check(
-    'physics.stays_on_track_lanes',
-    () => {
-      const maxLane = track.width / 2 - playerConfig.radius - 0.55
-      return Math.abs(blocked.player.position.x) <= maxLane + 0.001
-    },
-  )
+  check('physics.stays_on_track_lanes', () => {
+    const maxLane = track.width / 2 - playerConfig.radius - 0.55
+    return Math.abs(blocked.player.position.x) <= maxLane + 0.001
+  })
 
   for (const rig of [main, blocked]) {
     rig.player.dispose()

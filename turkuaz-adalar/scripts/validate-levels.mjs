@@ -42,29 +42,12 @@ async function main() {
     server: { hmr: false },
   })
 
-  await server.moduleGraph.ensureEntryFromUrl('/src/game/levels/levels/Level1.ts')
-  await server.moduleGraph.ensureEntryFromUrl('/src/game/levels/levels/Level2.ts')
-  await server.moduleGraph.ensureEntryFromUrl('/src/game/levels/levels/Level3.ts')
-  await server.moduleGraph.ensureEntryFromUrl('/src/game/levels/levels/Level4.ts')
-  await server.moduleGraph.ensureEntryFromUrl('/src/game/levels/levels/Level5.ts')
-  await server.moduleGraph.ensureEntryFromUrl('/src/game/levels/levels/Level6.ts')
-  await server.moduleGraph.ensureEntryFromUrl('/src/game/levels/levels/Level7.ts')
-  await server.moduleGraph.ensureEntryFromUrl('/src/game/levels/levels/Level8.ts')
-  await server.moduleGraph.ensureEntryFromUrl('/src/game/levels/levels/Level9.ts')
-  await server.moduleGraph.ensureEntryFromUrl('/src/game/levels/levels/Level10.ts')
-
-  const level1 = (await server.ssrLoadModule('/src/game/levels/levels/Level1.ts')).LEVEL_1
-  const level2 = (await server.ssrLoadModule('/src/game/levels/levels/Level2.ts')).LEVEL_2
-  const level3 = (await server.ssrLoadModule('/src/game/levels/levels/Level3.ts')).LEVEL_3
-  const level4 = (await server.ssrLoadModule('/src/game/levels/levels/Level4.ts')).LEVEL_4
-  const level5 = (await server.ssrLoadModule('/src/game/levels/levels/Level5.ts')).LEVEL_5
-  const level6 = (await server.ssrLoadModule('/src/game/levels/levels/Level6.ts')).LEVEL_6
-  const level7 = (await server.ssrLoadModule('/src/game/levels/levels/Level7.ts')).LEVEL_7
-  const level8 = (await server.ssrLoadModule('/src/game/levels/levels/Level8.ts')).LEVEL_8
-  const level9 = (await server.ssrLoadModule('/src/game/levels/levels/Level9.ts')).LEVEL_9
-  const level10 = (await server.ssrLoadModule('/src/game/levels/levels/Level10.ts')).LEVEL_10
-
-  const levels = [level1, level2, level3, level4, level5, level6, level7, level8, level9, level10]
+  const { LEVEL_CATALOG } = await server.ssrLoadModule('/src/game/levels/LevelCatalog.ts')
+  const { ISLAND_LOOKS } = await server.ssrLoadModule('/src/game/levels/IslandLooks.ts')
+  const { ISLAND_STYLES } = await server.ssrLoadModule('/src/systems/audio/MusicSequencer.ts')
+  const { spawnRulesFor } = await server.ssrLoadModule('/src/game/levels/SpawnRules.ts')
+  const levels = [...LEVEL_CATALOG]
+  assert(levels.length >= 30, `expected at least 30 islands, got ${levels.length}`)
 
   console.log('Validating level definitions...\n')
 
@@ -90,7 +73,10 @@ async function main() {
     // Distance values
     assertPositive(level.rampDistance, 'rampDistance')
     assertPositive(level.targetDistance, 'targetDistance')
-    assert(level.targetDistance > level.rampDistance, 'targetDistance must be greater than rampDistance')
+    assert(
+      level.targetDistance > level.rampDistance,
+      'targetDistance must be greater than rampDistance',
+    )
 
     // Unlock cost (first level should be free)
     if (levelNum === 1) {
@@ -103,15 +89,6 @@ async function main() {
     assertPositive(level.completionCoins, 'completionCoins')
     assertPositive(level.completionCrystals, 'completionCrystals')
 
-    // Segment configuration
-    assertPositive(level.minRowsPerSegment, 'minRowsPerSegment')
-    assertPositive(level.maxRowsPerSegment, 'maxRowsPerSegment')
-    assert(level.maxRowsPerSegment >= level.minRowsPerSegment, 'maxRowsPerSegment must be >= minRowsPerSegment')
-
-    // Density values
-    assertRange(level.obstacleDensity, 0, 1, 'obstacleDensity')
-    assertRange(level.crystalDensity, 0, 1, 'crystalDensity')
-
     // Theme
     assertType(level.theme, 'object', 'theme')
     assertType(level.theme.id, 'string', 'theme.id')
@@ -121,24 +98,15 @@ async function main() {
     assertRange(level.theme.sunPosition, 0, 1, 'theme.sunPosition')
     assertRange(level.theme.timeOfDay, 0, 1, 'theme.timeOfDay')
 
-    // Platforms
-    assertType(level.platforms, 'object', 'platforms')
-    assertPositive(level.platforms.width, 'platforms.width')
-    assertArray(level.platforms.gapRange, 'platforms.gapRange')
-    assert(level.platforms.gapRange.length === 2, 'platforms.gapRange must have 2 elements')
-    assert(level.platforms.gapRange[0] >= 0, 'platforms.gapRange[0] must be non-negative')
-    assert(level.platforms.gapRange[1] >= level.platforms.gapRange[0], 'platforms.gapRange[1] must be >= gapRange[0]')
-    assertPositive(level.platforms.heightVariation, 'platforms.heightVariation')
-    assertPositive(level.platforms.segmentLength, 'platforms.segmentLength')
-    assertType(level.platforms.floating, 'boolean', 'platforms.floating')
-
     // Obstacles
     assertType(level.obstacles, 'object', 'obstacles')
     assertArray(level.obstacles.enabledObstacles, 'obstacles.enabledObstacles')
-    assert(level.obstacles.enabledObstacles.length > 0, 'obstacles.enabledObstacles must not be empty')
+    assert(
+      level.obstacles.enabledObstacles.length > 0,
+      'obstacles.enabledObstacles must not be empty',
+    )
     assertRange(level.obstacles.maxDensity, 0, 1, 'obstacles.maxDensity')
     assertPositive(level.obstacles.minObstacleSpacing, 'obstacles.minObstacleSpacing')
-    assertType(level.obstacles.threeLane, 'boolean', 'obstacles.threeLane')
     assertPositive(level.obstacles.safeZoneLength, 'obstacles.safeZoneLength')
 
     // Collectibles
@@ -155,8 +123,25 @@ async function main() {
     if (level.checkpoints.enabled) {
       assertPositive(level.checkpoints.interval, 'checkpoints.interval')
       assertPositive(level.checkpoints.minDistance, 'checkpoints.minDistance')
-      assert(level.checkpoints.interval <= level.targetDistance, 'checkpoints.interval must be <= targetDistance')
+      assert(
+        level.checkpoints.interval <= level.targetDistance,
+        'checkpoints.interval must be <= targetDistance',
+      )
     }
+
+    // Every island has its own look and music.
+    assert(
+      ISLAND_LOOKS[level.theme.id] !== undefined || levelNum === 1,
+      `${level.id}: no island look`,
+    )
+    assert(ISLAND_STYLES[level.theme.id] !== undefined, `${level.id}: no music style`)
+
+    // Spawn rules derived from the definition stay in sensible bounds.
+    const rules = spawnRulesFor(level)
+    assert(rules.safeStartDistance < level.targetDistance / 4, `${level.id}: safe zone too long`)
+    assertRange(rules.tokenChance, 0.05, 0.4, `${level.id}: tokenChance`)
+    assertRange(rules.powerUpChance, 0.1, 0.6, `${level.id}: powerUpChance`)
+    assert(rules.checkpointEverySegments >= 1, `${level.id}: checkpoint spacing`)
 
     console.log(`  ✓ Basic structure validated`)
   }
@@ -168,14 +153,28 @@ async function main() {
     const prevLevel = levels[i - 1]
     const currLevel = levels[i]
 
-    // Difficulty should increase
-    assert(currLevel.baseSpeed >= prevLevel.baseSpeed, `Level ${i + 1} baseSpeed should >= Level ${i}`)
-    assert(currLevel.maxSpeed >= prevLevel.maxSpeed, `Level ${i + 1} maxSpeed should >= Level ${i}`)
-    assert(currLevel.targetDistance >= prevLevel.targetDistance, `Level ${i + 1} targetDistance should >= Level ${i}`)
-    assert(currLevel.obstacleDensity >= prevLevel.obstacleDensity, `Level ${i + 1} obstacleDensity should >= Level ${i}`)
-    assert(currLevel.unlockCost >= prevLevel.unlockCost, `Level ${i + 1} unlockCost should >= Level ${i}`)
-    assert(currLevel.completionCoins >= prevLevel.completionCoins, `Level ${i + 1} completionCoins should >= Level ${i}`)
-    assert(currLevel.completionCrystals >= prevLevel.completionCrystals, `Level ${i + 1} completionCrystals should >= Level ${i}`)
+    // Difficulty trends upward; a calmer "breather" island may dip, but only a little.
+    assert(
+      currLevel.maxSpeed >= prevLevel.maxSpeed - 6,
+      `Level ${i + 1} maxSpeed drops too far below Level ${i}`,
+    )
+    assert(
+      currLevel.obstacles.maxDensity >= prevLevel.obstacles.maxDensity - 0.2,
+      `Level ${i + 1} obstacle density drops too far below Level ${i}`,
+    )
+    assert(currLevel.maxSpeed <= 36, `Level ${i + 1} maxSpeed is beyond what a runner can react to`)
+    assert(
+      currLevel.unlockCost >= prevLevel.unlockCost,
+      `Level ${i + 1} unlockCost should >= Level ${i}`,
+    )
+    assert(
+      currLevel.completionCoins >= prevLevel.completionCoins,
+      `Level ${i + 1} completionCoins should >= Level ${i}`,
+    )
+    assert(
+      currLevel.completionCrystals >= prevLevel.completionCrystals,
+      `Level ${i + 1} completionCrystals should >= Level ${i}`,
+    )
 
     console.log(`  ✓ Level ${i + 1} progression validated against Level ${i}`)
   }
@@ -183,13 +182,13 @@ async function main() {
   console.log('\nValidating level uniqueness...\n')
 
   // Check for duplicate IDs
-  const ids = levels.map(l => l.id)
+  const ids = levels.map((l) => l.id)
   const uniqueIds = new Set(ids)
   assert(ids.length === uniqueIds.size, 'All level IDs must be unique')
   console.log(`  ✓ All level IDs are unique`)
 
   // Check for duplicate names
-  const names = levels.map(l => l.name)
+  const names = levels.map((l) => l.name)
   const uniqueNames = new Set(names)
   assert(names.length === uniqueNames.size, 'All level names must be unique')
   console.log(`  ✓ All level names are unique`)
@@ -197,6 +196,7 @@ async function main() {
   console.log('\nValidating obstacle availability...\n')
 
   const allObstacles = [
+    'moving-platform',
     'static-barrier',
     'lane-blocker',
     'rotating-bar',

@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { RENDER_CONFIG } from '../config/RenderConfig.ts'
-import type { QualitySettings } from '../config/QualitySettings.ts'
-import { detectQualityLevel } from '../config/QualitySettings.ts'
+import type { QualityLevel, QualitySettings } from '../config/QualitySettings.ts'
+import { detectQualityLevel, getQualitySettings } from '../config/QualitySettings.ts'
 import { EventEmitter } from '../utils/EventEmitter.ts'
 import { GameError, toError } from '../utils/errors.ts'
 
@@ -41,25 +41,11 @@ export class Renderer {
     event.preventDefault()
   }
 
-  constructor(container: HTMLElement, qualityLevel?: string) {
+  constructor(container: HTMLElement, qualityLevel?: QualityLevel) {
     this.container = container
 
-    // Detect or use provided quality level
-    const level = (qualityLevel || detectQualityLevel()) as any
-    this.qualitySettings = {
-      antialias: level === 'low' ? false : true,
-      maxPixelRatio: level === 'low' ? 1 : level === 'medium' ? 1.5 : 2,
-      shadowMapSize: level === 'low' ? 512 : level === 'medium' ? 1024 : 2048,
-      shadowMapType: level === 'low' ? THREE.BasicShadowMap : level === 'medium' ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap,
-      shadowsEnabled: true,
-      fogEnabled: true,
-      particleMultiplier: level === 'low' ? 0.4 : level === 'medium' ? 0.7 : 1.0,
-      objectPooling: true,
-      instancing: true,
-      geometryDetail: level === 'low' ? 0.5 : level === 'medium' ? 0.75 : 1.0,
-      textureCompression: level !== 'high',
-      level,
-    }
+    // Detect or use the provided quality level; presets live in QualitySettings.ts.
+    this.qualitySettings = { ...getQualitySettings(qualityLevel ?? detectQualityLevel()) }
 
     try {
       this.renderer = new THREE.WebGLRenderer({
@@ -87,7 +73,7 @@ export class Renderer {
 
     this.canvas = this.renderer.domElement
     this.canvas.className = 'game-canvas'
-    this.canvas.setAttribute('aria-label', 'Turkuaz Adalar game world')
+    this.canvas.setAttribute('aria-label', 'Tidelark game world')
     this.canvas.addEventListener('contextmenu', this.handleContextMenu)
     this.container.appendChild(this.canvas)
 
@@ -137,22 +123,8 @@ export class Renderer {
     return this.qualitySettings
   }
 
-  setQualityLevel(level: string): void {
-    const qualityLevel = level as any
-    this.qualitySettings = {
-      antialias: qualityLevel === 'low' ? false : true,
-      maxPixelRatio: qualityLevel === 'low' ? 1 : qualityLevel === 'medium' ? 1.5 : 2,
-      shadowMapSize: qualityLevel === 'low' ? 512 : qualityLevel === 'medium' ? 1024 : 2048,
-      shadowMapType: qualityLevel === 'low' ? THREE.BasicShadowMap : qualityLevel === 'medium' ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap,
-      shadowsEnabled: true,
-      fogEnabled: true,
-      particleMultiplier: qualityLevel === 'low' ? 0.4 : qualityLevel === 'medium' ? 0.7 : 1.0,
-      objectPooling: true,
-      instancing: true,
-      geometryDetail: qualityLevel === 'low' ? 0.5 : qualityLevel === 'medium' ? 0.75 : 1.0,
-      textureCompression: qualityLevel !== 'high',
-      level: qualityLevel,
-    }
+  setQualityLevel(level: QualityLevel): void {
+    this.qualitySettings = { ...getQualitySettings(level) }
 
     this.renderer.shadowMap.enabled = this.qualitySettings.shadowsEnabled
     this.renderer.shadowMap.type = this.qualitySettings.shadowMapType

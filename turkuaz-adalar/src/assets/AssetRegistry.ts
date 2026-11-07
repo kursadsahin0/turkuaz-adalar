@@ -26,16 +26,10 @@ export interface AssetDefinition {
 }
 
 const CHARACTER_URL = new URL('./models/turkuaz_runner.glb', import.meta.url).href
-const ENVIRONMENT_BEACON_URL = new URL(
-  './models/environment/tide_beacon.glb',
-  import.meta.url,
-).href
+const ENVIRONMENT_BEACON_URL = new URL('./models/environment/tide_beacon.glb', import.meta.url).href
 const OBSTACLE_CRATE_URL = new URL('./models/obstacles/crate.glb', import.meta.url).href
 const OBSTACLE_SPIRE_URL = new URL('./models/obstacles/spire.glb', import.meta.url).href
-const COLLECTIBLE_CRYSTAL_URL = new URL(
-  './models/collectibles/crystal.glb',
-  import.meta.url,
-).href
+const COLLECTIBLE_CRYSTAL_URL = new URL('./models/collectibles/crystal.glb', import.meta.url).href
 
 /**
  * Central asset manifest. Every URL is built from a real file with
@@ -55,7 +49,8 @@ const BASE_ASSET_DEFINITIONS: readonly AssetDefinition[] = [
       scale: 1,
       animationStates: ['idle', 'run', 'jump', 'fall', 'land', 'win', 'lose'],
       forwardAxis: '-Z',
-      runReferenceSpeed: 2.8125,
+      // Measured by blender/build_kaykit_characters.py (planted-foot speed of Run).
+      runReferenceSpeed: 3.72,
     },
   },
   {

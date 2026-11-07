@@ -1,6 +1,7 @@
 import type { AdConfig, AdResult, RewardConfig } from './AdProvider.ts'
-import { AdProvider } from './AdProvider.ts'
+import type { AdProvider } from './AdProvider.ts'
 import { TestAdProvider } from './TestAdProvider.ts'
+import { AdMobProvider, resolveAdMobConfig, type AdConsentOutcome } from './AdMobProvider.ts'
 
 export type AdProviderType = 'test' | 'admob'
 
@@ -13,7 +14,6 @@ export interface MonetizationConfig {
   adMobConfig?: {
     appId: string
     rewardedAdUnitId: string
-    interstitialAdUnitId: string
   }
   /** Test provider configuration */
   testConfig?: {
@@ -23,7 +23,14 @@ export interface MonetizationConfig {
 }
 
 export interface MonetizationEvent {
-  type: 'ad_loaded' | 'ad_shown' | 'ad_completed' | 'ad_failed' | 'ad_skipped' | 'purchase_completed' | 'purchase_failed'
+  type:
+    | 'ad_loaded'
+    | 'ad_shown'
+    | 'ad_completed'
+    | 'ad_failed'
+    | 'ad_skipped'
+    | 'purchase_completed'
+    | 'purchase_failed'
   timestamp: number
   data?: unknown
 }
@@ -36,13 +43,13 @@ export class MonetizationManager {
   private readonly provider: AdProvider
   private readonly events: MonetizationEvent[] = []
   private disposed = false
+  private personalizedAds = false
 
   constructor(config: MonetizationConfig) {
     if (config.provider === 'test') {
       this.provider = new TestAdProvider(config.testMode, config.testConfig)
     } else if (config.provider === 'admob') {
-      // TODO: Initialize AdMobProvider when Android SDK is integrated
-      throw new Error('AdMobProvider not yet implemented - requires Android SDK integration')
+      this.provider = new AdMobProvider(config.testMode, resolveAdMobConfig())
     } else {
       throw new Error(`Unknown ad provider: ${config.provider}`)
     }
@@ -65,10 +72,7 @@ export class MonetizationManager {
    * Reward is ONLY granted if ad provider confirms completion.
    * Do not interrupt active gameplay - show at break points only.
    */
-  async showRewardedAd(
-    config: AdConfig,
-    rewardConfig: RewardConfig,
-  ): Promise<AdResult> {
+  async showRewardedAd(config: AdConfig, rewardConfig: RewardConfig): Promise<AdResult> {
     if (this.disposed) {
       return { success: false, error: 'MonetizationManager disposed' }
     }
@@ -78,7 +82,11 @@ export class MonetizationManager {
     }
 
     const result = await this.provider.showAd(config, rewardConfig)
-    this.recordEvent({ type: result.success ? 'ad_completed' : 'ad_failed', timestamp: Date.now(), data: result })
+    this.recordEvent({
+      type: result.success ? 'ad_completed' : 'ad_failed',
+      timestamp: Date.now(),
+      data: result,
+    })
 
     // Reward is conditional on provider confirmation
     if (!result.success || !result.rewardGranted) {
@@ -89,21 +97,30 @@ export class MonetizationManager {
   }
 
   /**
-   * Show an interstitial ad at appropriate break points.
+   * Native start-up privacy flow (UMP form where required, iOS tracking
+   * prompt). No-op for the test provider.
    */
-  async showInterstitialAd(config: AdConfig): Promise<AdResult> {
-    if (this.disposed) {
-      return { success: false, error: 'MonetizationManager disposed' }
+  async prepareConsent(): Promise<AdConsentOutcome | null> {
+    return this.provider instanceof AdMobProvider ? this.provider.prepareConsent() : null
+  }
+
+  async showPrivacyOptions(): Promise<void> {
+    if (this.provider instanceof AdMobProvider) {
+      await this.provider.showPrivacyOptions()
     }
+  }
 
-    if (config.type !== 'interstitial') {
-      return { success: false, error: 'Invalid ad type for interstitial' }
-    }
+  /**
+   * Applies the player's consent choice. Providers that support it (AdMob:
+   * `npa=1` for non-personalised requests) read this before each request.
+   */
+  setPersonalizedAds(personalized: boolean): void {
+    this.personalizedAds = personalized
+    this.provider.setPersonalizedAds?.(personalized)
+  }
 
-    const result = await this.provider.showAd(config)
-    this.recordEvent({ type: result.success ? 'ad_completed' : 'ad_failed', timestamp: Date.now(), data: result })
-
-    return result
+  get personalizedAdsAllowed(): boolean {
+    return this.personalizedAds
   }
 
   /**
@@ -132,8 +149,11 @@ export class MonetizationManager {
    */
   private recordEvent(event: MonetizationEvent): void {
     this.events.push(event)
-    // TODO: Send to analytics service when implemented
+    this.onEvent?.(event)
   }
+
+  /** Forwards ad events to analytics (set by the game). */
+  onEvent: ((event: MonetizationEvent) => void) | null = null
 
   /**
    * Get all recorded events.

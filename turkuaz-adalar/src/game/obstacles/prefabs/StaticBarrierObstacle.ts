@@ -1,4 +1,4 @@
-import * as THREE from 'three'
+import type * as THREE from 'three'
 import { GAME_CONFIG } from '../../../config/GameConfig.ts'
 import type { PhysicsWorld } from '../../../systems/physics/PhysicsWorld.ts'
 import type { Rng } from '../../../utils/random.ts'
@@ -68,10 +68,7 @@ export class StaticBarrierObstacle extends ObstacleBase {
         : this.variant === 'spire'
           ? rng.range(0, Math.PI * 2)
           : 0
-    this.body.setTranslation(
-      { x, y: topY + this.colliderCenterY, z },
-      true,
-    )
+    this.body.setTranslation({ x, y: topY + this.colliderCenterY, z }, true)
   }
 
   /** Kept for one-off validation rigs and debugging overlays. */

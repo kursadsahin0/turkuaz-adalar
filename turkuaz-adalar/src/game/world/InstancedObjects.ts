@@ -42,7 +42,12 @@ export class InstancedObjects {
   /**
    * Add an instance at a specific position.
    */
-  addInstance(id: string, position: THREE.Vector3, rotation: THREE.Euler, scale: THREE.Vector3): void {
+  addInstance(
+    id: string,
+    position: THREE.Vector3,
+    rotation: THREE.Euler,
+    scale: THREE.Vector3,
+  ): void {
     const instancedMesh = this.instances.get(id)
     if (!instancedMesh) {
       return
@@ -66,7 +71,13 @@ export class InstancedObjects {
   /**
    * Update an existing instance.
    */
-  updateInstance(id: string, index: number, position: THREE.Vector3, rotation: THREE.Euler, scale: THREE.Vector3): void {
+  updateInstance(
+    id: string,
+    index: number,
+    position: THREE.Vector3,
+    rotation: THREE.Euler,
+    scale: THREE.Vector3,
+  ): void {
     const instancedMesh = this.instances.get(id)
     if (!instancedMesh || index >= instancedMesh.count) {
       return
@@ -114,7 +125,7 @@ export class InstancedObjects {
       this.scene.remove(instancedMesh)
       instancedMesh.geometry.dispose()
       if (Array.isArray(instancedMesh.material)) {
-        instancedMesh.material.forEach(m => m.dispose())
+        instancedMesh.material.forEach((m) => m.dispose())
       } else {
         instancedMesh.material.dispose()
       }

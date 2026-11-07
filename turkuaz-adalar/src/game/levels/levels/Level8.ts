@@ -23,17 +23,6 @@ export const LEVEL_8: LevelDefinition = {
   unlockCost: 600,
   completionCoins: 225,
   completionCrystals: 16,
-  minRowsPerSegment: 3,
-  maxRowsPerSegment: 4,
-  obstacleDensity: 0.75,
-  crystalDensity: 0.35,
-  platforms: {
-    width: 3,
-    gapRange: [3.5, 5],
-    heightVariation: 2.0,
-    segmentLength: 30,
-    floating: true,
-  },
   obstacles: {
     enabledObstacles: [
       'static-barrier',
@@ -48,13 +37,12 @@ export const LEVEL_8: LevelDefinition = {
     ],
     maxDensity: 0.7,
     minObstacleSpacing: 3.5,
-    threeLane: true,
     safeZoneLength: 6,
   },
   collectibles: {
     coinDensity: 0.45,
-    tokenChance: 0.45,
-    powerUpChance: 0.22,
+    tokenChance: 0.18,
+    powerUpChance: 0.33,
     rewardInterval: 2,
     clusterSize: 7,
   },

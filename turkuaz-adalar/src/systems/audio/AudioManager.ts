@@ -1,4 +1,9 @@
-import type { SaveManager } from '../save/SaveManager.ts'
+import {
+  MENU_STYLE,
+  MusicSequencer,
+  type MusicIntensity,
+  type MusicStyle,
+} from './MusicSequencer.ts'
 import { Logger } from '../../utils/logger.ts'
 
 export type SoundName =
@@ -22,16 +27,21 @@ export type SoundName =
   | 'footstep'
   | 'levelComplete'
 
-const MUTE_SAVE_KEY = 'settings.muted'
-const MUSIC_VOLUME_KEY = 'settings.musicVolume'
-const SFX_VOLUME_KEY = 'settings.sfxVolume'
+/** Starting levels; persistence lives in the player's settings, not here. */
+export interface AudioLevels {
+  readonly muted: boolean
+  readonly musicVolume: number
+  readonly sfxVolume: number
+}
+
+const clampVolume = (volume: number): number =>
+  Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 0.8
 
 /**
  * Procedural WebAudio sound system. No binary audio assets are required, which
  * keeps the foundation self-contained while providing real feedback sounds.
  */
 export class AudioManager {
-  private readonly save: SaveManager
   private readonly logger = new Logger('Audio')
 
   private context: AudioContext | null = null
@@ -41,6 +51,9 @@ export class AudioManager {
   private noiseBuffer: AudioBuffer | null = null
   private ambientSource: AudioBufferSourceNode | null = null
   private ambientGain: GainNode | null = null
+  private music: MusicSequencer | null = null
+  private musicIntensity: MusicIntensity = 'menu'
+  private musicStyle: MusicStyle = MENU_STYLE
   private muteState: boolean
   private _musicVolume: number
   private _sfxVolume: number
@@ -49,12 +62,10 @@ export class AudioManager {
   private soundCooldowns = new Map<SoundName, number>()
   private readonly cooldownPeriod = 0.05
 
-  constructor(save: SaveManager) {
-    this.save = save
-    const stored = save.load<unknown>(MUTE_SAVE_KEY, false)
-    this.muteState = stored === true
-    this._musicVolume = save.load<number>(MUSIC_VOLUME_KEY, 0.8)
-    this._sfxVolume = save.load<number>(SFX_VOLUME_KEY, 0.8)
+  constructor(levels: AudioLevels) {
+    this.muteState = levels.muted
+    this._musicVolume = clampVolume(levels.musicVolume)
+    this._sfxVolume = clampVolume(levels.sfxVolume)
   }
 
   get isMuted(): boolean {
@@ -97,10 +108,23 @@ export class AudioManager {
       }
 
       this.startAmbient()
+      this.startMusic()
     } catch (error) {
       this.failed = true
       this.logger.warn('Audio is unavailable; continuing silently.', error)
     }
+  }
+
+  /** Mellow in menus, fuller during a run. Safe to call before unlock(). */
+  /** Menu or island tune; the change lands on the next bar line. */
+  setMusicStyle(style: MusicStyle): void {
+    this.musicStyle = style
+    this.music?.setStyle(style)
+  }
+
+  setMusicIntensity(intensity: MusicIntensity): void {
+    this.musicIntensity = intensity
+    this.music?.setIntensity(intensity)
   }
 
   /** Silences everything while the app is in the background. */
@@ -124,19 +148,16 @@ export class AudioManager {
 
   setMuted(muted: boolean): void {
     this.muteState = muted
-    this.save.save(MUTE_SAVE_KEY, muted)
     this.updateVolumes()
   }
 
   setMusicVolume(volume: number): void {
-    this._musicVolume = Math.max(0, Math.min(1, volume))
-    this.save.save(MUSIC_VOLUME_KEY, this._musicVolume)
+    this._musicVolume = clampVolume(volume)
     this.updateVolumes()
   }
 
   setSfxVolume(volume: number): void {
-    this._sfxVolume = Math.max(0, Math.min(1, volume))
-    this.save.save(SFX_VOLUME_KEY, this._sfxVolume)
+    this._sfxVolume = clampVolume(volume)
     this.updateVolumes()
   }
 
@@ -261,6 +282,9 @@ export class AudioManager {
     }
     this.disposed = true
 
+    this.music?.dispose()
+    this.music = null
+
     try {
       this.ambientSource?.stop()
       this.ambientSource?.disconnect()
@@ -284,6 +308,15 @@ export class AudioManager {
     if (context) {
       void context.close().catch(() => undefined)
     }
+  }
+
+  private startMusic(): void {
+    if (this.music || !this.context || !this.musicGain || !this.noiseBuffer) {
+      return
+    }
+    this.music = new MusicSequencer(this.context, this.musicGain, this.noiseBuffer, this.musicStyle)
+    this.music.setIntensity(this.musicIntensity)
+    this.music.start()
   }
 
   private startAmbient(): void {

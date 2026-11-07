@@ -158,6 +158,12 @@ export class Ocean {
     this.material.uniforms.uTime!.value = elapsed
   }
 
+  /** Island-specific sea colours; `null` restores the authored turquoise. */
+  setColors(deep: number | null, shallow: number | null): void {
+    ;(this.material.uniforms.uDeep!.value as THREE.Color).set(deep ?? PALETTE.oceanDeep)
+    ;(this.material.uniforms.uShallow!.value as THREE.Color).set(shallow ?? PALETTE.oceanShallow)
+  }
+
   dispose(): void {
     this.mesh.removeFromParent()
     this.mesh.geometry.dispose()

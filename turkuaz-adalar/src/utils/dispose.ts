@@ -17,7 +17,11 @@ function disposeMaterial(material: THREE.Material): void {
  */
 export function disposeObject3D(root: THREE.Object3D): void {
   root.traverse((object) => {
-    if (object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Points) {
+    if (
+      object instanceof THREE.Mesh ||
+      object instanceof THREE.Line ||
+      object instanceof THREE.Points
+    ) {
       object.geometry.dispose()
       if (Array.isArray(object.material)) {
         for (const material of object.material) {

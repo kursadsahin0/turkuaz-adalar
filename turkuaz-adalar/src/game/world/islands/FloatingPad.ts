@@ -17,11 +17,7 @@ export class FloatingPad {
   private baseRotation = 0
   private baseScale = 1
 
-  constructor(
-    assets: FloatingIslandAssets,
-    platform: PlatformAssets,
-    phase: number,
-  ) {
+  constructor(assets: FloatingIslandAssets, platform: PlatformAssets, phase: number) {
     this.phase = phase
     this.root.name = 'FloatingPad'
     this.root.add(assets.createPadChecker(), assets.createPadDetails())
@@ -49,10 +45,8 @@ export class FloatingPad {
   }
 
   update(elapsed: number): void {
-    this.root.position.y =
-      this.baseY + Math.sin(elapsed * 0.55 + this.phase) * 0.26
-    this.root.rotation.y =
-      this.baseRotation + Math.sin(elapsed * 0.22 + this.phase) * 0.06
+    this.root.position.y = this.baseY + Math.sin(elapsed * 0.55 + this.phase) * 0.26
+    this.root.rotation.y = this.baseRotation + Math.sin(elapsed * 0.22 + this.phase) * 0.06
     this.mechanism.rotation.y = elapsed * 0.55 + this.phase
   }
 

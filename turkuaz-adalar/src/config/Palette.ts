@@ -72,6 +72,8 @@ export const PALETTE = {
   powerMagnet: 0xff8168,
   powerSpeed: 0xffe066,
   powerDoubleJump: 0xb98cff,
+  powerGlide: 0x9ff3ff,
+  powerSlowMo: 0xff9ed8,
   reward: 0xffc94d,
 
   sun: 0xfff0cf,

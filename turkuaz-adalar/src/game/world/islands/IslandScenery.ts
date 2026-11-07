@@ -95,9 +95,7 @@ export class IslandScenery {
     guard = 0
     while (guard < this.pads.length) {
       guard += 1
-      const candidate = this.pads.find(
-        (pad) => pad.centerZ > playerZ + scenery.recycleBehind + 12,
-      )
+      const candidate = this.pads.find((pad) => pad.centerZ > playerZ + scenery.recycleBehind + 12)
       if (!candidate) {
         break
       }

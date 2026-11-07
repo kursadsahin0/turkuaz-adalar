@@ -24,12 +24,7 @@ export class MovingBlockObstacle extends ObstacleBase {
   private phase = 0
   private moved = false
 
-  constructor(
-    id: number,
-    scene: THREE.Scene,
-    physics: PhysicsWorld,
-    assets: ObstacleAssets,
-  ) {
+  constructor(id: number, scene: THREE.Scene, physics: PhysicsWorld, assets: ObstacleAssets) {
     const config = GAME_CONFIG.obstacles.movingBlock
     const group = new THREE.Group()
     group.name = 'MovingBlock'
@@ -103,10 +98,7 @@ export class MovingBlockObstacle extends ObstacleBase {
     this.block.position.x = offset
     this.baseX = x
     this.baseZ = z
-    this.body.setTranslation(
-      { x: x + offset, y: this.centerY, z },
-      true,
-    )
+    this.body.setTranslation({ x: x + offset, y: this.centerY, z }, true)
     this.moved = false
     this.radiusValue = config.radius
   }
@@ -128,6 +120,5 @@ export const MOVING_BLOCK_PREFAB: ObstaclePrefab = {
   standable: false,
   weight: GAME_CONFIG.obstacles.movingBlock.weight,
   unlockAt: GAME_CONFIG.obstacles.movingBlock.unlockAt,
-  create: (scene, physics, assets, id) =>
-    new MovingBlockObstacle(id, scene, physics, assets),
+  create: (scene, physics, assets, id) => new MovingBlockObstacle(id, scene, physics, assets),
 }

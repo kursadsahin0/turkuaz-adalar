@@ -22,7 +22,6 @@ const PROJECT_ROOT = path.resolve(HERE, '..')
 let passed = 0
 let failed = 0
 const failures = []
-const log = []
 
 function report(ok, name, detail) {
   const suffix = detail ? ` — ${detail}` : ''
@@ -111,18 +110,19 @@ try {
   const { ASSET_REGISTRY, ASSET_DEFINITIONS, AssetRegistry } = await server.ssrLoadModule(
     '/src/assets/AssetRegistry.ts',
   )
-  const { ModelLoader, FetchAssetReader } = await server.ssrLoadModule(
-    '/src/assets/ModelLoader.ts',
-  )
+  const { ModelLoader, FetchAssetReader } = await server.ssrLoadModule('/src/assets/ModelLoader.ts')
   const { AssetError } = await server.ssrLoadModule('/src/assets/AssetError.ts')
-  const { CharacterModel } = await server.ssrLoadModule(
-    '/src/game/player/CharacterModel.ts',
-  )
+  const { CharacterModel } = await server.ssrLoadModule('/src/game/player/CharacterModel.ts')
+  const THREE = await server.ssrLoadModule('three')
 
   console.log('\nAsset pipeline validation\n')
   console.log('Registry')
 
-  check('registry.definitions', () => ASSET_DEFINITIONS.length === 5, `${ASSET_DEFINITIONS.length} assets`)
+  check(
+    'registry.definitions',
+    () => ASSET_DEFINITIONS.length === 5,
+    `${ASSET_DEFINITIONS.length} assets`,
+  )
   check(
     'registry.categories',
     () => {
@@ -137,7 +137,10 @@ try {
     const ids = ASSET_REGISTRY.ids()
     return ids.length === new Set(ids).size
   })
-  check('registry.character_required', () => ASSET_REGISTRY.require('character.turkuaz').required === true)
+  check(
+    'registry.character_required',
+    () => ASSET_REGISTRY.require('character.turkuaz').required === true,
+  )
 
   for (const asset of ASSET_DEFINITIONS) {
     const file = filePathFromUrl(asset.url)
@@ -167,17 +170,34 @@ try {
   })
 
   check('load.character', () => character.definition.category === 'character')
-  check('load.character.animations', () => character.animations.length === 11, `${character.animations.length} clips`)
-  check('load.character.bones', () => character.stats.bones === 22, `${character.stats.bones} bones`)
-  check('load.character.meshes', () => character.stats.meshes === 24, `${character.stats.meshes} meshes`)
+  check(
+    'load.character.animations',
+    () => character.animations.length === 15,
+    `${character.animations.length} clips`,
+  )
+  check(
+    'load.character.bones',
+    () => character.stats.bones === 41,
+    `${character.stats.bones} bones`,
+  )
+  check(
+    'load.character.meshes',
+    // Seven KayKit bodies, their capes, the mage's hat and the knight's helmet.
+    () => character.stats.meshes === 16,
+    `${character.stats.meshes} meshes`,
+  )
+  const characterHeight = character.bounds.max.y - character.bounds.min.y
   check(
     'load.character.height',
-    () => approx(character.bounds.max.y - character.bounds.min.y, 1.7826, 0.001),
-    '1.783 m',
+    // Includes the tall wizard hat; bodies alone are ~2.25 m.
+    () => characterHeight > 1.5 && characterHeight < 3.4,
+    `${characterHeight.toFixed(3)} m`,
   )
   check(
     'load.progress_monotonic',
-    () => progress.length >= 2 && progress.every((value, index) => index === 0 || value >= progress[index - 1]),
+    () =>
+      progress.length >= 2 &&
+      progress.every((value, index) => index === 0 || value >= progress[index - 1]),
     `${progress.map((value) => value.toFixed(2)).join(' → ')}`,
   )
   check('load.progress_complete', () => progress.at(-1) === 1)
@@ -220,10 +240,7 @@ try {
       () => fetched.byteLength === crystalBytes.byteLength,
       `${fetched.byteLength} bytes`,
     )
-    check(
-      'fetch_reader.progress',
-      () => fetchProgress.length > 0 && fetchProgress.at(-1) === 1,
-    )
+    check('fetch_reader.progress', () => fetchProgress.length > 0 && fetchProgress.at(-1) === 1)
 
     let fetchError = null
     try {
@@ -248,9 +265,8 @@ try {
     check(`load.${asset.id}`, () => loaded.stats.meshes > 0, `${loaded.stats.triangles} tris`)
     check(`load.${asset.id}.category`, () => loaded.definition.category === asset.category)
   }
-  check(
-    'load.all_categories',
-    () => ['environment', 'obstacle', 'collectible'].every((category) => categoryResults[category]),
+  check('load.all_categories', () =>
+    ['environment', 'obstacle', 'collectible'].every((category) => categoryResults[category]),
   )
 
   console.log('\nCloning & AnimationMixer')
@@ -259,7 +275,7 @@ try {
   check('clone.distinct_roots', () => cloneA.root !== cloneB.root)
   check(
     'clone.distinct_bones',
-    () => cloneA.root.getObjectByName('handL') !== cloneB.root.getObjectByName('handL'),
+    () => cloneA.root.getObjectByName('handl') !== cloneB.root.getObjectByName('handl'),
   )
 
   const clip = character.animations.find((item) => item.name === 'Run')
@@ -269,15 +285,19 @@ try {
     const mixerB = cloneB.createMixer()
     check('mixer.per_clone', () => mixerA !== mixerB)
 
-    const handA = cloneA.root.getObjectByName('handL')
-    const handB = cloneB.root.getObjectByName('handL')
+    const handA = cloneA.root.getObjectByName('handl')
+    const handB = cloneB.root.getObjectByName('handl')
     const beforeB = handB?.quaternion.toArray()
     mixerA.clipAction(clip).play()
     mixerA.update(0.2)
     const afterA = handA?.quaternion.toArray()
     const afterB = handB?.quaternion.toArray()
-    check('clone.animation_moves_clone_a', () => afterA.some((value, index) => Math.abs(value - beforeB[index]) > 1e-5))
-    check('clone.animation_leaves_clone_b', () => afterB.every((value, index) => Math.abs(value - beforeB[index]) < 1e-9))
+    check('clone.animation_moves_clone_a', () =>
+      afterA.some((value, index) => Math.abs(value - beforeB[index]) > 1e-5),
+    )
+    check('clone.animation_leaves_clone_b', () =>
+      afterB.every((value, index) => Math.abs(value - beforeB[index]) < 1e-9),
+    )
   }
 
   console.log('\nCharacter controller')
@@ -285,7 +305,18 @@ try {
   const model = new CharacterModel(character, { targetHeight })
   check(
     'character.scale_to_capsule',
-    () => approx(model.scale, targetHeight / 1.7826, 0.0001),
+    // The bodies (not hats or helmets) fill the capsule height.
+    () => {
+      model.root.updateMatrixWorld(true)
+      const bodies = new THREE.Box3()
+      model.root.traverse((object) => {
+        if (object.isSkinnedMesh) {
+          object.computeBoundingBox()
+          bodies.union(object.boundingBox.clone().applyMatrix4(object.matrixWorld))
+        }
+      })
+      return approx(bodies.max.y - bodies.min.y, targetHeight, 0.01)
+    },
     `${model.scale.toFixed(4)}×`,
   )
   check(
@@ -338,7 +369,10 @@ try {
   step(0.5, { grounded: true, verticalVelocity: 0, speed: 9.5 })
   check('character.win_locks_locomotion', () => model.state === 'win')
   model.reset()
-  check('character.reset_clears_outcome', () => model.state === 'idle' && model.animator.lockedOutcome === null)
+  check(
+    'character.reset_clears_outcome',
+    () => model.state === 'idle' && model.animator.lockedOutcome === null,
+  )
 
   model.playOutcome('lose')
   check('character.lose', () => model.state === 'lose')
@@ -367,7 +401,7 @@ try {
   const originalError = console.error
   const capture = (...args) => {
     const text = args.map((value) => String(value)).join(' ')
-    if (text.includes('[Turkuaz Adalar]')) {
+    if (text.includes('[Tidelark]')) {
       warnings.push(text)
     }
   }
@@ -383,9 +417,10 @@ try {
     const missingLoader = new ModelLoader(missingRegistry, new NodeAssetReader())
     const missing = await missingLoader.loadSafe('fixture.missing')
     check('missing.returns_null', () => missing === null)
-    check(
-      'missing.dev_warning',
-      () => warnings.some((message) => message.includes('fixture.missing') && message.includes('Could not read')),
+    check('missing.dev_warning', () =>
+      warnings.some(
+        (message) => message.includes('fixture.missing') && message.includes('Could not read'),
+      ),
     )
     missingLoader.dispose()
 
@@ -401,9 +436,8 @@ try {
       invalidCode = error.code
     }
     check('invalid.rejects', () => invalidCode === 'ASSET_INVALID', invalidCode)
-    check(
-      'invalid.dev_warning',
-      () => warnings.some((message) => message.includes('fixture.invalid') && message.includes('magic')),
+    check('invalid.dev_warning', () =>
+      warnings.some((message) => message.includes('fixture.invalid') && message.includes('magic')),
     )
     invalidLoader.dispose()
 

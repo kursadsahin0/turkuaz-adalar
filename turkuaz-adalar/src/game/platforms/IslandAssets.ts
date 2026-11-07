@@ -52,19 +52,9 @@ export class IslandAssets {
     )
 
     this.sandGeometry = this.trackGeometry(
-      new RoundedBoxGeometry(
-        island.bankWidth,
-        island.sandHeight,
-        island.bankLength,
-        2,
-        0.16,
-      ),
+      new RoundedBoxGeometry(island.bankWidth, island.sandHeight, island.bankLength, 2, 0.16),
     )
-    this.sandGeometry.translate(
-      0,
-      topY - island.sandTopDrop - island.sandHeight / 2,
-      0,
-    )
+    this.sandGeometry.translate(0, topY - island.sandTopDrop - island.sandHeight / 2, 0)
     this.sandGeometry.computeBoundingSphere()
 
     const bankGeometry = new RoundedBoxGeometry(
@@ -171,11 +161,7 @@ export class IslandAssets {
       parts.push({
         geometry: new THREE.ConeGeometry(0.9, 2.4, 6),
         color: PALETTE.rockDark,
-        position: new THREE.Vector3(
-          (index - 1.5) * 1.6,
-          top - island.rockHeight - 0.4,
-          0,
-        ),
+        position: new THREE.Vector3((index - 1.5) * 1.6, top - island.rockHeight - 0.4, 0),
         rotation: new THREE.Euler(Math.PI, index * 0.5, 0),
       })
     }

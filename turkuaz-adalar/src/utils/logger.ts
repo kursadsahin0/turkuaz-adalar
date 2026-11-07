@@ -1,6 +1,6 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
-const PREFIX = '[Turkuaz Adalar]'
+const PREFIX = '[Tidelark]'
 
 export class Logger {
   private readonly scope: string
@@ -25,10 +25,12 @@ export class Logger {
     this.write('error', args)
   }
 
+  // The logger is the one place that is meant to write to the console.
   private write(level: LogLevel, args: unknown[]): void {
     const label = `${PREFIX} [${this.scope}]`
     switch (level) {
       case 'debug':
+        // oxlint-disable-next-line no-console
         console.debug(label, ...args)
         break
       case 'info':

@@ -1,4 +1,6 @@
+import { t } from '../../i18n/i18n.ts'
 import { createEl } from '../../utils/dom.ts'
+import { DoubleCoinsButton, type DoubleCoinsOffer } from '../components/DoubleCoinsButton.ts'
 import { Button } from '../components/Button.ts'
 import { formatDistance, formatInteger } from '../format.ts'
 import { Screen } from './Screen.ts'
@@ -14,17 +16,24 @@ export interface LevelCompletedData {
   timeElapsed: number
   isPersonalBest: boolean
   nextLevelAvailable: boolean
+  /** Star goals still open, new unlocks, completed missions... */
+  notes?: readonly string[]
+  /** Rewarded ad offer to double the run's coins. */
+  doubleCoins?: DoubleCoinsOffer
 }
 
 export interface LevelCompletedScreenOptions {
   onNextLevel: () => void
   onRestart: () => void
   onMenu: () => void
+  onDoubleCoins: () => void
+  onShare: () => void
 }
 
 /** Screen shown when a level is completed successfully. */
 export class LevelCompletedScreen extends Screen {
   private readonly nextLevelButton: Button
+  private readonly shareButton: Button
   private readonly restartButton: Button
   private readonly menuButton: Button
   private readonly levelName: HTMLHeadingElement
@@ -35,64 +44,92 @@ export class LevelCompletedScreen extends Screen {
   private readonly timeValue: HTMLSpanElement
   private readonly starsContainer: HTMLDivElement
   private readonly badge: HTMLSpanElement
+  private readonly notes: HTMLUListElement
+  readonly doubleCoins: DoubleCoinsButton
 
   constructor(options: LevelCompletedScreenOptions) {
     super('screen--overlay')
     this.root.classList.add('screen--completed')
+    this.root.classList.add('screen--dialog')
 
     const panel = createPanel('level-completed-panel')
 
-    const eyebrow = createEl('p', 'eyebrow', 'Level complete')
-    this.levelName = createEl('h2', 'screen-title', 'Island cleared')
+    const eyebrow = createEl('p', 'eyebrow', t('levels.complete'))
+    this.levelName = createEl('h2', 'screen-title', t('levels.complete'))
 
     const hero = createEl('div', 'score-hero')
-    const heroLabel = createEl('span', 'score-hero__label', 'Score')
+    const heroLabel = createEl('span', 'score-hero__label', t('common.score'))
     this.scoreValue = createEl('span', 'score-hero__value', '0')
-    this.badge = createEl('span', 'record-badge', 'Personal best')
+    this.badge = createEl('span', 'record-badge', t('over.newBest'))
     this.badge.hidden = true
     hero.append(heroLabel, this.scoreValue, this.badge)
 
     this.starsContainer = createEl('div', 'level-completed__stars')
-    this.starsContainer.innerHTML = '★ ★ ★'
+    for (let i = 0; i < 3; i += 1) {
+      this.starsContainer.append(createEl('span', 'level-completed__star', '☆'))
+    }
 
     const grid = createEl('div', 'result-grid')
-    const distance = this.createResult('Distance', '0 m')
-    const coins = this.createResult('Coins', '0')
-    const crystals = this.createResult('Crystals', '0')
+    const distance = this.createResult(t('common.distance'), '0 m')
+    const coins = this.createResult(t('common.coins'), '0')
+    const crystals = this.createResult(t('common.crystals'), '0')
     this.distanceValue = distance.value
     this.coinsValue = coins.value
     this.crystalsValue = crystals.value
     grid.append(distance.element, coins.element, crystals.element)
 
     const time = createEl('div', 'level-completed__time')
-    const timeLabel = createEl('span', 'level-completed__time-label', 'Time')
+    const timeLabel = createEl('span', 'level-completed__time-label', t('levels.time'))
     this.timeValue = createEl('span', 'level-completed__time-value', '0:00')
     time.append(timeLabel, this.timeValue)
 
     this.nextLevelButton = new Button({
-      label: 'Next level',
+      label: t('levels.next'),
       onClick: options.onNextLevel,
       className: 'level-completed__next',
     })
     this.restartButton = new Button({
-      label: 'Replay',
+      label: t('levels.replay'),
       variant: 'secondary',
       onClick: options.onRestart,
     })
     this.menuButton = new Button({
-      label: 'Level select',
+      label: t('levels.select'),
       variant: 'text',
       onClick: options.onMenu,
     })
 
+    this.shareButton = new Button({
+      label: t('share.button'),
+      variant: 'text',
+      onClick: options.onShare,
+    })
     const actions = createEl('div', 'screen-actions')
-    actions.append(this.nextLevelButton.element, this.restartButton.element, this.menuButton.element)
+    actions.append(
+      this.nextLevelButton.element,
+      this.restartButton.element,
+      this.menuButton.element,
+      this.shareButton.element,
+    )
 
-    panel.append(eyebrow, this.levelName, hero, this.starsContainer, grid, time, actions)
+    this.notes = createEl('ul', 'gameover__notices level-completed__notes')
+    this.doubleCoins = new DoubleCoinsButton(options.onDoubleCoins)
+    panel.append(
+      eyebrow,
+      this.levelName,
+      hero,
+      this.starsContainer,
+      grid,
+      time,
+      this.notes,
+      this.doubleCoins.element,
+      actions,
+    )
     this.root.appendChild(panel)
   }
 
   showResult(data: LevelCompletedData): void {
+    this.doubleCoins.offer(data.doubleCoins)
     this.levelName.textContent = data.levelName
     this.scoreValue.textContent = formatInteger(data.score)
     this.distanceValue.textContent = formatDistance(data.distance)
@@ -102,6 +139,10 @@ export class LevelCompletedScreen extends Screen {
     this.badge.hidden = !data.isPersonalBest
 
     this.renderStars(data.stars)
+    this.starsContainer.setAttribute('aria-label', t('levels.starsLabel', { stars: data.stars }))
+    const notes = data.notes ?? []
+    this.notes.replaceChildren(...notes.map((text) => createEl('li', 'gameover__notice', text)))
+    this.notes.hidden = notes.length === 0
     this.nextLevelButton.element.hidden = !data.nextLevelAvailable
 
     if (!data.nextLevelAvailable) {
@@ -123,6 +164,8 @@ export class LevelCompletedScreen extends Screen {
     this.nextLevelButton.dispose()
     this.restartButton.dispose()
     this.menuButton.dispose()
+    this.shareButton.dispose()
+    this.doubleCoins.dispose()
     super.dispose()
   }
 

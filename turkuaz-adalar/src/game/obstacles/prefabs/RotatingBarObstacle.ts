@@ -21,20 +21,12 @@ export class RotatingBarObstacle extends ObstacleBase {
   private angle = 0
   private readonly speed: number
 
-  constructor(
-    id: number,
-    scene: THREE.Scene,
-    physics: PhysicsWorld,
-    assets: ObstacleAssets,
-  ) {
+  constructor(id: number, scene: THREE.Scene, physics: PhysicsWorld, assets: ObstacleAssets) {
     const config = GAME_CONFIG.obstacles.rotatingBar
     const group = new THREE.Group()
     group.name = 'RotatingBar'
 
-    const base = new THREE.Mesh(
-      assets.cylinder(0.42, 0.5, 0.24, 14),
-      assets.mechanismMaterial,
-    )
+    const base = new THREE.Mesh(assets.cylinder(0.42, 0.5, 0.24, 14), assets.mechanismMaterial)
     base.position.y = 0.12
     base.castShadow = true
     base.receiveShadow = true
@@ -65,10 +57,7 @@ export class RotatingBarObstacle extends ObstacleBase {
       cap.castShadow = true
       group.add(cap)
 
-      const lamp = new THREE.Mesh(
-        assets.cone(0.14, 0.24, 10),
-        assets.mechanismGlowMaterial,
-      )
+      const lamp = new THREE.Mesh(assets.cone(0.14, 0.24, 10), assets.mechanismGlowMaterial)
       lamp.position.set(side * (config.barLength / 2 - 0.08), config.barY + 0.24, 0)
       lamp.rotation.z = Math.PI
       group.add(lamp)
@@ -137,6 +126,5 @@ export const ROTATING_BAR_PREFAB: ObstaclePrefab = {
   standable: false,
   weight: GAME_CONFIG.obstacles.rotatingBar.weight,
   unlockAt: GAME_CONFIG.obstacles.rotatingBar.unlockAt,
-  create: (scene, physics, assets, id) =>
-    new RotatingBarObstacle(id, scene, physics, assets),
+  create: (scene, physics, assets, id) => new RotatingBarObstacle(id, scene, physics, assets),
 }

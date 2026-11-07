@@ -1,5 +1,11 @@
-import type { CharacterDefinition, CosmeticType } from '../../game/characters/CharacterData.ts'
+import { t, tc, type StringKey } from '../../i18n/i18n.ts'
+import type {
+  CharacterDefinition,
+  CosmeticCurrency,
+  CosmeticType,
+} from '../../game/characters/CharacterData.ts'
 import {
+  CRYSTAL_EXCHANGE,
   CHARACTER_ACCESSORIES,
   CHARACTER_COLORS,
   CHARACTERS,
@@ -7,9 +13,12 @@ import {
   CHARACTER_SKINS,
   type CharacterCollectionState,
 } from '../../game/characters/CharacterData.ts'
+import { daysLeftInSeason, isOnSale } from '../../game/characters/Seasons.ts'
 import { createEl } from '../../utils/dom.ts'
 import { Button } from '../components/Button.ts'
 import { IconButton } from '../components/IconButton.ts'
+import { formatInteger } from '../format.ts'
+import { cosmeticIcon } from '../components/CosmeticIcons.ts'
 import { Screen } from './Screen.ts'
 import { createPanel, ICON_PATHS } from './screenUtils.ts'
 
@@ -19,24 +28,104 @@ export interface CharacterSelectionScreenOptions {
   onPurchase: (type: CosmeticType, id: string, cost: number) => void
   /** Equip an owned item (toggles accessories). */
   onEquip: (type: CosmeticType, id: string) => void
+  /** Trade crystals for coins at CRYSTAL_EXCHANGE. */
+  onExchange: () => void
+  /** Horizontal drag on the open stage, in pixels, to turn the preview. */
+  onRotate: (deltaX: number) => void
+  /** Show an item on the runner without equipping it. */
+  onPreview: (type: CosmeticType, id: string) => void
 }
 
 export interface CharacterSelectionData {
   collection: CharacterCollectionState
   currentCoins: number
+  currentCrystals: number
 }
 
 interface CatalogItem {
   readonly id: string
   readonly name: string
+  readonly description?: string
   readonly unlockCost: number
+  readonly currency?: CosmeticCurrency
   readonly isDefault?: boolean
+}
+
+/** Price label with the right currency glyph. */
+function priceLabel(item: CatalogItem): string {
+  return `${formatInteger(item.unlockCost)} ${item.currency === 'crystals' ? '💎' : '●'}`
+}
+
+/** The "equipped" tick in the corner of a card's picture. */
+/**
+ * Lets a horizontal strip scroll with a mouse too: the wheel scrolls it
+ * sideways and it can be dragged. Touch keeps the browser's own swipe.
+ * Returns a check telling whether the last press was a drag (not a tap).
+ */
+function enableSideScroll(strip: HTMLElement): () => boolean {
+  strip.addEventListener(
+    'wheel',
+    (event) => {
+      if (
+        strip.scrollWidth <= strip.clientWidth ||
+        Math.abs(event.deltaX) > Math.abs(event.deltaY)
+      ) {
+        return
+      }
+      event.preventDefault()
+      strip.scrollLeft += event.deltaY
+    },
+    { passive: false },
+  )
+  let startX: number | null = null
+  let startScroll = 0
+  let dragged = false
+  strip.addEventListener('pointerdown', (event) => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) {
+      return
+    }
+    startX = event.clientX
+    startScroll = strip.scrollLeft
+    dragged = false
+  })
+  strip.addEventListener('pointermove', (event) => {
+    if (startX === null) {
+      return
+    }
+    const moved = event.clientX - startX
+    if (!dragged && Math.abs(moved) > 6) {
+      dragged = true
+      strip.setPointerCapture(event.pointerId)
+    }
+    if (dragged) {
+      strip.scrollLeft = startScroll - moved
+    }
+  })
+  const end = (): void => {
+    startX = null
+  }
+  strip.addEventListener('pointerup', end)
+  strip.addEventListener('pointercancel', end)
+  return () => {
+    const was = dragged
+    dragged = false
+    return was
+  }
+}
+
+function equippedMark(): HTMLElement {
+  const mark = createEl('span', 'card-equipped', '✓')
+  mark.title = t('chars.equipped')
+  mark.setAttribute('aria-label', t('chars.equipped'))
+  return mark
 }
 
 /** Screen for selecting playable characters and cosmetics. */
 export class CharacterSelectionScreen extends Screen {
   private readonly backButton: IconButton
   private readonly coinsDisplay: HTMLSpanElement
+  private readonly crystalsDisplay: HTMLSpanElement
+  private readonly exchangeButton: Button
   private readonly selectButton: Button
   private readonly categoryTabs: HTMLDivElement
   private readonly cosmeticsContainer: HTMLDivElement
@@ -48,17 +137,18 @@ export class CharacterSelectionScreen extends Screen {
 
   constructor(options: CharacterSelectionScreenOptions) {
     super('screen--overlay')
+    this.root.classList.add('screen--showcase')
     this.options = options
 
     const panel = createPanel('character-selection-panel')
 
     const top = createEl('div', 'character-selection__top')
-    const eyebrow = createEl('p', 'eyebrow', 'Customize your runner')
-    const title = createEl('h2', 'screen-title', 'Characters')
+    const eyebrow = createEl('p', 'eyebrow', t('chars.eyebrow'))
+    const title = createEl('h2', 'screen-title', t('chars.title'))
 
     this.backButton = new IconButton({
       iconPaths: ICON_PATHS.back,
-      label: 'Back to menu',
+      label: t('common.back'),
       onClick: options.onBack,
       className: 'character-selection__back',
     })
@@ -67,16 +157,45 @@ export class CharacterSelectionScreen extends Screen {
     const coinsIcon = createEl('span', 'character-selection__coins-icon', '●')
     this.coinsDisplay = createEl('span', 'character-selection__coins-value', '0')
     coins.append(coinsIcon, this.coinsDisplay)
+    const crystals = createEl('div', 'character-selection__coins character-selection__crystals')
+    this.crystalsDisplay = createEl('span', 'character-selection__coins-value', '0')
+    crystals.append(
+      createEl('span', 'character-selection__crystals-icon', '💎'),
+      this.crystalsDisplay,
+    )
+    const wallet = createEl('div', 'character-selection__wallet')
+    wallet.append(coins, crystals)
 
-    top.append(eyebrow, title, this.backButton.element, coins)
+    top.append(this.backButton.element, eyebrow, title, wallet)
+
+    this.exchangeButton = new Button({
+      label: t('chars.exchange', {
+        crystals: CRYSTAL_EXCHANGE.crystals,
+        coins: CRYSTAL_EXCHANGE.coins,
+      }),
+      variant: 'text',
+      onClick: options.onExchange,
+      className: 'character-selection__exchange',
+    })
+
+    // The exchange is a small chip beside the wallet it changes.
+    wallet.append(this.exchangeButton.element)
 
     this.categoryTabs = createEl('div', 'character-selection__tabs')
+    const tabsDragged = enableSideScroll(this.categoryTabs)
     this.categoryTabs.addEventListener('click', (e) => {
+      if (tabsDragged()) {
+        return
+      }
       const target = e.target as HTMLElement
       const tab = target.closest('[data-category]')
       if (tab) {
         this.selectedCategory = tab.getAttribute('data-category') as CosmeticType
         this.selectedItem = this.equippedItem()
+        // Switching tabs drops any try-on and shows what is really equipped.
+        if (this.selectedItem) {
+          this.options.onPreview(this.selectedCategory, this.selectedItem)
+        }
         this.renderCategories()
         this.renderCosmetics()
       }
@@ -85,13 +204,36 @@ export class CharacterSelectionScreen extends Screen {
     this.cosmeticsContainer = createEl('div', 'character-selection__cosmetics')
 
     this.selectButton = new Button({
-      label: 'Equip',
+      label: t('chars.equip'),
       onClick: () => this.runAction(),
       className: 'character-selection__select',
     })
 
     panel.append(top, this.categoryTabs, this.cosmeticsContainer, this.selectButton.element)
-    this.root.appendChild(panel)
+    const dragHint = createEl('p', 'showcase__hint', `⟲ ${t('chars.dragHint')}`)
+    this.root.append(dragHint, panel)
+
+    // Dragging on the open stage (outside the panel) turns the runner.
+    let dragX: number | null = null
+    this.root.addEventListener('pointerdown', (event) => {
+      if ((event.target as Element).closest('.panel')) {
+        return
+      }
+      dragX = event.clientX
+      this.root.setPointerCapture(event.pointerId)
+    })
+    this.root.addEventListener('pointermove', (event) => {
+      if (dragX === null) {
+        return
+      }
+      this.options.onRotate(event.clientX - dragX)
+      dragX = event.clientX
+    })
+    const endDrag = (): void => {
+      dragX = null
+    }
+    this.root.addEventListener('pointerup', endDrag)
+    this.root.addEventListener('pointercancel', endDrag)
 
     this.root.addEventListener('click', (event) => {
       const target = event.target as Element
@@ -120,7 +262,9 @@ export class CharacterSelectionScreen extends Screen {
     if (firstOpen || this.selectedItem === null) {
       this.selectedItem = this.equippedItem()
     }
-    this.coinsDisplay.textContent = data.currentCoins.toString()
+    this.coinsDisplay.textContent = formatInteger(data.currentCoins)
+    this.crystalsDisplay.textContent = formatInteger(data.currentCrystals)
+    this.exchangeButton.setDisabled(data.currentCrystals < CRYSTAL_EXCHANGE.crystals)
     this.renderCategories()
     this.renderCosmetics()
   }
@@ -132,6 +276,7 @@ export class CharacterSelectionScreen extends Screen {
 
   dispose(): void {
     this.backButton.dispose()
+    this.exchangeButton.dispose()
     this.selectButton.dispose()
     super.dispose()
   }
@@ -139,19 +284,26 @@ export class CharacterSelectionScreen extends Screen {
   private renderCategories(): void {
     this.categoryTabs.innerHTML = ''
     const categories = [
-      { id: 'character', label: 'Characters' },
-      { id: 'skin', label: 'Skins' },
-      { id: 'outfit', label: 'Outfits' },
-      { id: 'accessory', label: 'Accessories' },
-      { id: 'color', label: 'Colors' },
+      { id: 'character', label: t('chars.tab.character') },
+      { id: 'skin', label: t('chars.tab.skin') },
+      { id: 'outfit', label: t('chars.tab.outfit') },
+      { id: 'accessory', label: t('chars.tab.accessory') },
+      { id: 'color', label: t('chars.tab.color') },
     ]
 
     for (const cat of categories) {
-      const tab = createEl('button', `character-selection__tab ${this.selectedCategory === cat.id ? 'character-selection__tab--active' : ''}`)
+      const tab = createEl(
+        'button',
+        `character-selection__tab ${this.selectedCategory === cat.id ? 'character-selection__tab--active' : ''}`,
+      )
       tab.dataset.category = cat.id
       tab.textContent = cat.label
+      tab.type = 'button'
       this.categoryTabs.appendChild(tab)
     }
+    this.categoryTabs
+      .querySelector('.character-selection__tab--active')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }
 
   private renderCosmetics(): void {
@@ -192,12 +344,26 @@ export class CharacterSelectionScreen extends Screen {
   }
 
   private renderSkins(): void {
+    const today = new Date()
     for (const skin of CHARACTER_SKINS) {
       const isOwned = this.currentData!.collection.ownedSkins.includes(skin.id)
+      // Out-of-season skins are only listed for players who already own them.
+      if (!isOwned && !isOnSale(skin, today)) {
+        continue
+      }
       const isSelected = this.selectedItem === skin.id
       const isEquipped = this.currentData!.collection.equipped.skinId === skin.id
 
       const card = this.createCosmeticCard(skin, isOwned, isSelected, isEquipped, 'skin')
+      if (skin.season && !isOwned) {
+        card.append(
+          createEl(
+            'span',
+            'cosmetic-card__season',
+            t(`season.${skin.season}` as StringKey, { days: daysLeftInSeason(today) }),
+          ),
+        )
+      }
       this.cosmeticsContainer.appendChild(card)
     }
   }
@@ -241,38 +407,53 @@ export class CharacterSelectionScreen extends Screen {
     isSelected: boolean,
     isCurrent: boolean,
   ): HTMLDivElement {
-    const card = createEl('div', `character-card ${isSelected ? 'character-card--selected' : ''} ${isUnlocked ? 'character-card--unlocked' : 'character-card--locked'}`)
+    const card = createEl(
+      'div',
+      `character-card ${isSelected ? 'character-card--selected' : ''} ${isUnlocked ? 'character-card--unlocked' : 'character-card--locked'}`,
+    )
     card.setAttribute('data-character-id', character.id)
 
     const preview = createEl('div', 'character-card__preview')
-    const previewColor = createEl('div', 'character-card__preview-color')
-    const defaultSkin = CHARACTER_SKINS.find(s => s.id === character.defaultSkin)
-    if (defaultSkin) {
-      previewColor.style.backgroundColor = `#${defaultSkin.color.toString(16).padStart(6, '0')}`
-    } else {
-      previewColor.style.backgroundColor = '#61f5e3'
-    }
-    preview.appendChild(previewColor)
+    const defaultSkin = CHARACTER_SKINS.find((skin) => skin.id === character.defaultSkin)
+    const characterName = tc(`character.${character.id}.name`, character.name)
+    preview.innerHTML = cosmeticIcon(
+      'character',
+      character,
+      characterName,
+      character,
+      defaultSkin && !defaultSkin.isDefault ? defaultSkin.color : undefined,
+    )
 
     const info = createEl('div', 'character-card__info')
-    const name = createEl('h3', 'character-card__name', character.name)
-    const description = createEl('p', 'character-card__description', character.description)
+    const name = createEl(
+      'h3',
+      'character-card__name',
+      tc(`character.${character.id}.name`, character.name),
+    )
+    const description = createEl(
+      'p',
+      'character-card__description',
+      tc(`character.${character.id}.description`, character.description),
+    )
 
+    // Characters are cosmetic: show their look, not identical gameplay stats.
     const stats = createEl('div', 'character-card__stats')
-    const speedStat = this.createStat('Speed', '1.0x')
-    const jumpStat = this.createStat('Jump', '1.0x')
-    stats.append(speedStat, jumpStat)
+    stats.append(
+      createEl(
+        'span',
+        'character-card__style',
+        t(`chars.style.${character.build.style}` as StringKey),
+      ),
+    )
 
     info.append(name, description, stats)
 
     if (isCurrent) {
-      const currentBadge = createEl('div', 'character-card__badge', 'Equipped')
-      card.appendChild(currentBadge)
+      preview.appendChild(equippedMark())
     } else if (!isUnlocked) {
-      const lock = createEl('div', 'character-card__lock', '🔒')
-      const unlockCost = createEl('div', 'character-card__unlock-cost', `${character.unlockCost} ●`)
-      card.appendChild(lock)
-      card.appendChild(unlockCost)
+      preview.appendChild(createEl('div', 'character-card__lock', '🔒'))
+      // The price sits with the name, so it reads as part of the card.
+      info.appendChild(createEl('div', 'character-card__unlock-cost', priceLabel(character)))
     }
 
     card.append(preview, info)
@@ -280,58 +461,59 @@ export class CharacterSelectionScreen extends Screen {
   }
 
   private createCosmeticCard(
-    item: any,
+    item: CatalogItem & { color?: number },
     isOwned: boolean,
     isSelected: boolean,
     isEquipped: boolean,
-    type: string,
+    type: Exclude<CosmeticType, 'character'>,
   ): HTMLDivElement {
-    const card = createEl('div', `cosmetic-card ${isSelected ? 'cosmetic-card--selected' : ''} ${isOwned ? 'cosmetic-card--owned' : 'cosmetic-card--locked'}`)
+    const card = createEl(
+      'div',
+      `cosmetic-card ${isSelected ? 'cosmetic-card--selected' : ''} ${isOwned ? 'cosmetic-card--owned' : 'cosmetic-card--locked'}`,
+    )
     card.setAttribute('data-item-id', item.id)
     card.setAttribute('data-item-type', type)
 
     const preview = createEl('div', 'cosmetic-card__preview')
-    const previewColor = createEl('div', 'cosmetic-card__preview-color')
-    if (item.color) {
-      previewColor.style.backgroundColor = `#${item.color.toString(16).padStart(6, '0')}`
-    } else {
-      previewColor.style.backgroundColor = '#61f5e3'
-    }
-    preview.appendChild(previewColor)
+    preview.innerHTML = cosmeticIcon(type, item, tc(`${type}.${item.id}.name`, item.name))
 
     const info = createEl('div', 'cosmetic-card__info')
-    const name = createEl('h3', 'cosmetic-card__name', item.name)
-    const description = createEl('p', 'cosmetic-card__description', item.description)
+    const name = createEl('h3', 'cosmetic-card__name', tc(`${type}.${item.id}.name`, item.name))
+    const description = createEl(
+      'p',
+      'cosmetic-card__description',
+      tc(`${type}.${item.id}.description`, item.description ?? ''),
+    )
 
     const cost = createEl('div', 'cosmetic-card__cost')
     if (isOwned) {
-      cost.textContent = 'Owned'
+      cost.textContent = t('chars.owned')
       cost.classList.add('cosmetic-card__cost--owned')
     } else {
-      cost.textContent = `${item.unlockCost} ●`
+      cost.textContent = priceLabel(item)
+      if (item.currency === 'crystals') {
+        cost.classList.add('cosmetic-card__cost--crystal')
+        card.classList.add('cosmetic-card--premium')
+        card.title = t('chars.crystalOnly')
+      }
     }
 
     info.append(name, description, cost)
 
     if (isEquipped) {
-      const equippedBadge = createEl('div', 'cosmetic-card__badge', 'Equipped')
-      card.appendChild(equippedBadge)
+      preview.appendChild(equippedMark())
+    } else if (!isOwned) {
+      preview.appendChild(createEl('div', 'character-card__lock', '🔒'))
     }
 
     card.append(preview, info)
     return card
   }
 
-  private createStat(label: string, value: string): HTMLDivElement {
-    const stat = createEl('div', 'character-card__stat')
-    const statLabel = createEl('span', 'character-card__stat-label', label)
-    const statValue = createEl('span', 'character-card__stat-value', value)
-    stat.append(statLabel, statValue)
-    return stat
-  }
-
   private selectCosmetic(itemId: string): void {
     this.selectedItem = itemId
+    // Try it on: the runner shows the item even before it is bought.
+    this.options.onPreview(this.selectedCategory, itemId)
     this.renderCosmetics()
   }
 
@@ -421,7 +603,7 @@ export class CharacterSelectionScreen extends Screen {
     }
     const type = this.selectedCategory
     if (!this.isOwned(type, item.id)) {
-      if (this.currentData.currentCoins >= item.unlockCost) {
+      if (this.balanceFor(item) >= item.unlockCost) {
         this.options.onPurchase(type, item.id, item.unlockCost)
       }
       return
@@ -432,30 +614,39 @@ export class CharacterSelectionScreen extends Screen {
     }
   }
 
+  private balanceFor(item: CatalogItem): number {
+    if (!this.currentData) {
+      return 0
+    }
+    return item.currency === 'crystals'
+      ? this.currentData.currentCrystals
+      : this.currentData.currentCoins
+  }
+
   private updateSelectButton(): void {
     const item = this.selectedEntry()
     if (!this.currentData || !item) {
-      this.selectButton.setLabel('Equip')
+      this.selectButton.setLabel(t('chars.equip'))
       this.selectButton.setDisabled(true)
       return
     }
 
     const type = this.selectedCategory
     if (!this.isOwned(type, item.id)) {
-      const verb = type === 'character' ? 'Unlock' : 'Buy'
-      this.selectButton.setLabel(`${verb} · ${item.unlockCost} ●`)
-      this.selectButton.setDisabled(this.currentData.currentCoins < item.unlockCost)
+      const key = type === 'character' ? 'chars.unlock' : 'chars.buy'
+      this.selectButton.setLabel(t(key, { cost: priceLabel(item) }))
+      this.selectButton.setDisabled(this.balanceFor(item) < item.unlockCost)
       return
     }
 
     if (this.isEquipped(type, item.id)) {
       const removable = type === 'accessory' && !item.isDefault
-      this.selectButton.setLabel(removable ? 'Remove' : 'Equipped')
+      this.selectButton.setLabel(removable ? t('chars.remove') : t('chars.equipped'))
       this.selectButton.setDisabled(!removable)
       return
     }
 
-    this.selectButton.setLabel('Equip')
+    this.selectButton.setLabel(t('chars.equip'))
     this.selectButton.setDisabled(false)
   }
 }

@@ -1,4 +1,4 @@
-import * as THREE from 'three'
+import type * as THREE from 'three'
 import { GAME_CONFIG } from '../../config/GameConfig.ts'
 import type { PhysicsWorld } from '../../systems/physics/PhysicsWorld.ts'
 import { createSeed, mixSeed, Rng } from '../../utils/random.ts'
@@ -47,8 +47,7 @@ export class IslandField {
     while (guard < this.segments.length) {
       guard += 1
       const candidate = this.segments.find(
-        (segment) =>
-          segment.centerZ - length / 2 > playerZ + GAME_CONFIG.track.recycleBehind,
+        (segment) => segment.centerZ - length / 2 > playerZ + GAME_CONFIG.track.recycleBehind,
       )
       if (!candidate) {
         break

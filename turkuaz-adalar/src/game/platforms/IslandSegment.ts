@@ -39,12 +39,7 @@ export class IslandSegment {
   private centerPosition = 0
   private generationIndex = 0
 
-  constructor(
-    id: number,
-    scene: THREE.Scene,
-    physics: PhysicsWorld,
-    assets: WorldAssets,
-  ) {
+  constructor(id: number, scene: THREE.Scene, physics: PhysicsWorld, assets: WorldAssets) {
     this.id = id
     this.assets = assets
 
@@ -162,11 +157,7 @@ export class IslandSegment {
     this.layout(new RandomSource(this.id * 0x9e3779b1 + 1))
   }
 
-  private addProp(
-    object: THREE.Object3D,
-    kind: PropKind,
-    crown: THREE.Group | null,
-  ): void {
+  private addProp(object: THREE.Object3D, kind: PropKind, crown: THREE.Group | null): void {
     const prop: SegmentProp = {
       object,
       kind,
@@ -200,16 +191,8 @@ export class IslandSegment {
         prop.object.scale.setScalar(scale)
       } else if (prop.kind === 'rock') {
         const scale = rng.range(0.6, 1.12)
-        prop.object.position.set(
-          side * rng.range(4.9, 5.6),
-          grassTop + 0.16 * scale,
-          z,
-        )
-        prop.object.rotation.set(
-          rng.range(-0.3, 0.3),
-          rng.range(0, Math.PI),
-          rng.range(-0.3, 0.3),
-        )
+        prop.object.position.set(side * rng.range(4.9, 5.6), grassTop + 0.16 * scale, z)
+        prop.object.rotation.set(rng.range(-0.3, 0.3), rng.range(0, Math.PI), rng.range(-0.3, 0.3))
         prop.object.scale.set(scale, scale * rng.range(0.6, 0.95), scale * rng.range(0.85, 1.15))
       } else if (prop.kind === 'bush') {
         const scale = rng.range(0.72, 1.12)

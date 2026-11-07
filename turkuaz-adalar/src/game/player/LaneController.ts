@@ -93,12 +93,7 @@ export class LaneController {
    * lets temporary effects and slides tune authority without duplicating the
    * lane rules.
    */
-  step(
-    currentX: number,
-    grounded: boolean,
-    delta: number,
-    controlScale = 1,
-  ): number {
+  step(currentX: number, grounded: boolean, delta: number, controlScale = 1): number {
     this.lastX = currentX
     const remaining = this.laneX - currentX
     const scale = clamp(controlScale, 0.1, 2)
@@ -111,16 +106,8 @@ export class LaneController {
       return remaining
     }
 
-    const desiredSpeed = clamp(
-      remaining * this.config.arrivalGain,
-      -maxSpeed,
-      maxSpeed,
-    )
-    this.velocity = moveTowards(
-      this.velocity,
-      desiredSpeed,
-      acceleration * Math.max(0, delta),
-    )
+    const desiredSpeed = clamp(remaining * this.config.arrivalGain, -maxSpeed, maxSpeed)
+    this.velocity = moveTowards(this.velocity, desiredSpeed, acceleration * Math.max(0, delta))
 
     const maxStep = Math.abs(remaining)
     const movement = clamp(this.velocity * Math.max(0, delta), -maxStep, maxStep)

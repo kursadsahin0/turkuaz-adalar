@@ -73,10 +73,13 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualitySettings> = {
  */
 export function detectQualityLevel(): QualityLevel {
   // Check for mobile device
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent,
+  )
 
   // Check device memory (if available)
-  const deviceMemory = (navigator as any).deviceMemory || 4 // Default to 4GB if unknown
+  // Chromium-only (Device Memory API); assume 4 GB elsewhere.
+  const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory || 4
 
   // Check GPU capabilities via WebGL context
   let isLowEnd = false
@@ -100,7 +103,7 @@ export function detectQualityLevel(): QualityLevel {
         }
       }
     }
-  } catch (e) {
+  } catch {
     // Fall back to memory check
   }
 
@@ -142,10 +145,11 @@ export function applyQualitySettings(
   renderer.shadowMap.type = settings.shadowMapType
 
   // Log the applied settings
-  console.log(`[Quality] Applied ${settings.level} quality settings:`, {
-    antialias: settings.antialias,
-    maxPixelRatio: settings.maxPixelRatio,
-    shadowMapSize: settings.shadowMapSize,
-    particleMultiplier: settings.particleMultiplier,
-  })
+  if (import.meta.env.DEV)
+    console.info(`[Quality] Applied ${settings.level} quality settings:`, {
+      antialias: settings.antialias,
+      maxPixelRatio: settings.maxPixelRatio,
+      shadowMapSize: settings.shadowMapSize,
+      particleMultiplier: settings.particleMultiplier,
+    })
 }

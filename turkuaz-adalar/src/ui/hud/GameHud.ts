@@ -1,3 +1,4 @@
+import { t, tc } from '../../i18n/i18n.ts'
 import { createEl } from '../../utils/dom.ts'
 import { formatDistance, formatInteger } from '../format.ts'
 import { IconButton } from '../components/IconButton.ts'
@@ -38,6 +39,8 @@ export interface HUDState {
   levelProgress: number
   /** Target distance for current level. */
   targetDistance: number
+  /** Metres to the chasing wave, or null on islands without one. */
+  chaseGap: number | null
 }
 
 export interface GameHudOptions {
@@ -45,6 +48,13 @@ export interface GameHudOptions {
   onJump: () => void
   onSlide: () => void
   onDash: () => void
+  onSkipTutorial: () => void
+}
+
+/** What the tutorial card shows; `null` hides it. */
+export interface HudTutorial {
+  readonly text: string
+  readonly progress: string
 }
 
 const DASH_RADIUS = 24
@@ -55,6 +65,8 @@ const POWER_UP_GLYPHS: Readonly<Record<string, string>> = {
   magnet: '∩',
   speed: '»',
   doubleJump: '⇈',
+  glide: '≋',
+  slowMo: '⧗',
 }
 
 /**
@@ -68,6 +80,7 @@ export class GameHud {
   private readonly distanceValue: HTMLSpanElement
   private readonly crystalsValue: HTMLSpanElement
   private readonly coinsValue: HTMLSpanElement
+  private readonly coinsStat: HTMLDivElement
   private readonly coinsLabel: HTMLSpanElement
   private readonly powerUpTray: HTMLDivElement
   private readonly toastTray: HTMLDivElement
@@ -89,6 +102,10 @@ export class GameHud {
   private readonly levelName: HTMLSpanElement
   private readonly levelProgress: HTMLDivElement
   private readonly levelProgressFill: HTMLDivElement
+  private readonly chase: HTMLSpanElement
+  private readonly tutorialCard: HTMLDivElement
+  private readonly tutorialText: HTMLParagraphElement
+  private readonly tutorialProgress: HTMLSpanElement
 
   private readonly handleClick = (event: Event): void => {
     const target = event.target
@@ -103,6 +120,8 @@ export class GameHud {
       this.actions.onSlide()
     } else if (action === 'dash') {
       this.actions.onDash()
+    } else if (action === 'skip-tutorial') {
+      this.actions.onSkipTutorial()
     }
   }
 
@@ -115,40 +134,43 @@ export class GameHud {
     const top = createEl('div', 'hud__top')
 
     const score = createEl('div', 'hud-stat hud-stat--score')
-    const scoreLabel = createEl('span', 'hud-stat__label', 'Score')
+    const scoreLabel = createEl('span', 'hud-stat__label', t('common.score'))
     this.scoreValue = createEl('span', 'hud-stat__value', '0')
     score.append(scoreLabel, this.scoreValue)
 
     const metrics = createEl('div', 'hud__metrics')
-    const distance = createEl('div', 'hud-stat hud-stat--small')
-    const distanceLabel = createEl('span', 'hud-stat__label', 'Distance')
+    const distance = createEl('div', 'hud-stat hud-stat--small hud-stat--distance')
+    const distanceLabel = createEl('span', 'hud-stat__label', t('common.distance'))
     this.distanceValue = createEl('span', 'hud-stat__value', '0 m')
     distance.append(distanceLabel, this.distanceValue)
 
-    const crystals = createEl('div', 'hud-stat hud-stat--small')
-    const crystalsLabel = createEl('span', 'hud-stat__label', 'Crystals')
+    const crystals = createEl('div', 'hud-stat hud-stat--small hud-stat--crystals')
+    const crystalsLabel = createEl('span', 'hud-stat__label', t('common.crystals'))
     this.crystalsValue = createEl('span', 'hud-stat__value', '0')
     crystals.append(crystalsLabel, this.crystalsValue)
 
     const coins = createEl('div', 'hud-stat hud-stat--small hud-stat--coins')
-    this.coinsLabel = createEl('span', 'hud-stat__label', 'Coins')
+    this.coinsStat = coins
+    this.coinsLabel = createEl('span', 'hud-stat__label', t('common.coins'))
     this.coinsValue = createEl('span', 'hud-stat__value', '0')
     coins.append(this.coinsLabel, this.coinsValue)
     metrics.append(distance, crystals, coins)
 
     const level = createEl('div', 'hud-stat hud-stat--level')
-    this.levelName = createEl('span', 'hud-stat__label', 'Level')
+    this.levelName = createEl('span', 'hud-stat__label', t('hud.level'))
     this.levelProgress = createEl('div', 'hud-stat__progress')
     this.levelProgressFill = createEl('div', 'hud-stat__progress-fill')
     this.levelProgress.appendChild(this.levelProgressFill)
-    level.append(this.levelName, this.levelProgress)
+    this.chase = createEl('span', 'hud-stat__chase')
+    this.chase.hidden = true
+    level.append(this.levelName, this.levelProgress, this.chase)
 
     const stats = createEl('div', 'hud__stats')
     stats.append(score, metrics, level)
 
     this.pauseButton = new IconButton({
       iconPaths: ICON_PATHS.pause,
-      label: 'Pause run',
+      label: t('hud.pause'),
       onClick: options.onPause,
       className: 'hud__pause',
     })
@@ -176,23 +198,23 @@ export class GameHud {
     const jump = createEl('button', 'action-btn action-btn--jump')
     jump.type = 'button'
     jump.dataset.action = 'jump'
-    jump.setAttribute('aria-label', 'Jump')
+    jump.setAttribute('aria-label', t('hud.jump'))
     const jumpGlyph = createEl('span', 'action-btn__glyph', '↑')
-    const jumpLabel = createEl('span', 'action-btn__label', 'Jump')
+    const jumpLabel = createEl('span', 'action-btn__label', t('hud.jump'))
     jump.append(jumpGlyph, jumpLabel)
 
     this.slideButton = createEl('button', 'action-btn action-btn--slide')
     this.slideButton.type = 'button'
     this.slideButton.dataset.action = 'slide'
-    this.slideButton.setAttribute('aria-label', 'Slide')
+    this.slideButton.setAttribute('aria-label', t('hud.slide'))
     const slideGlyph = createEl('span', 'action-btn__glyph', '↓')
-    const slideLabel = createEl('span', 'action-btn__label', 'Slide')
+    const slideLabel = createEl('span', 'action-btn__label', t('hud.slide'))
     this.slideButton.append(slideGlyph, slideLabel)
 
     this.dashButton = createEl('button', 'action-btn action-btn--dash')
     this.dashButton.type = 'button'
     this.dashButton.dataset.action = 'dash'
-    this.dashButton.setAttribute('aria-label', 'Dash, ready')
+    this.dashButton.setAttribute('aria-label', t('hud.dashReady'))
 
     const namespace = 'http://www.w3.org/2000/svg'
     const ring = document.createElementNS(namespace, 'svg')
@@ -218,8 +240,8 @@ export class GameHud {
 
     const dashContent = createEl('span', 'action-btn__content')
     const dashGlyph = createEl('span', 'action-btn__glyph', '»')
-    const dashLabel = createEl('span', 'action-btn__label', 'Dash')
-    this.dashTimer = createEl('span', 'action-btn__timer', 'Ready')
+    const dashLabel = createEl('span', 'action-btn__label', t('hud.dash'))
+    this.dashTimer = createEl('span', 'action-btn__timer', t('hud.ready'))
     dashContent.append(dashGlyph, dashLabel)
     this.dashButton.append(ring, dashContent, this.dashTimer)
 
@@ -229,19 +251,35 @@ export class GameHud {
     hint.append(
       createEl('kbd', '', 'A'),
       createEl('kbd', '', 'D'),
-      createEl('span', '', ' lanes  ·  '),
+      createEl('span', '', t('hint.keys.lanes')),
       createEl('kbd', '', 'Space'),
-      createEl('span', '', ' jump  ·  '),
+      createEl('span', '', t('hint.keys.jump')),
       createEl('kbd', '', 'S'),
-      createEl('span', '', ' slide  ·  '),
+      createEl('span', '', t('hint.keys.slide')),
       createEl('kbd', '', 'Shift'),
-      createEl('span', '', ' dash  ·  '),
+      createEl('span', '', t('hint.keys.dashPause')),
       createEl('kbd', '', 'Esc'),
-      createEl('span', '', ' pause'),
+      createEl('span', '', t('hint.keys.pause')),
     )
+
+    // Tutorial card: one instruction at a time, with a skip button.
+    this.tutorialCard = createEl('div', 'hud__tutorial')
+    this.tutorialCard.hidden = true
+    this.tutorialCard.setAttribute('role', 'status')
+    this.tutorialCard.setAttribute('aria-live', 'polite')
+    const tutorialHead = createEl('div', 'hud__tutorial-head')
+    tutorialHead.append(createEl('span', 'hud__tutorial-title', t('tutorial.title')))
+    this.tutorialProgress = createEl('span', 'hud__tutorial-progress', '')
+    tutorialHead.append(this.tutorialProgress)
+    this.tutorialText = createEl('p', 'hud__tutorial-text', '')
+    const skip = createEl('button', 'hud__tutorial-skip', t('tutorial.skip'))
+    skip.type = 'button'
+    skip.dataset.action = 'skip-tutorial'
+    this.tutorialCard.append(tutorialHead, this.tutorialText, skip)
 
     this.root.append(
       top,
+      this.tutorialCard,
       this.effectBadge,
       this.powerUpTray,
       this.toastTray,
@@ -280,14 +318,45 @@ export class GameHud {
     this.toastTimers.add(timer)
   }
 
+  /**
+   * A plain coin is too frequent for a toast: the coin counter gives a small
+   * bump instead (restarted on every coin).
+   */
+  bumpCoins(): void {
+    this.coinsStat.classList.remove('is-bumped')
+    void this.coinsStat.offsetWidth
+    this.coinsStat.classList.add('is-bumped')
+  }
+
+  setTutorial(tutorial: HudTutorial | null): void {
+    this.tutorialCard.hidden = tutorial === null
+    if (tutorial) {
+      this.tutorialText.textContent = tutorial.text
+      this.tutorialProgress.textContent = tutorial.progress
+      // Restart the attention pulse for each new step.
+      this.tutorialCard.classList.remove('is-new')
+      void this.tutorialCard.offsetWidth
+      this.tutorialCard.classList.add('is-new')
+    }
+  }
+
   update(state: HUDState): void {
     this.scoreValue.textContent = formatInteger(state.score)
     this.distanceValue.textContent = formatDistance(state.distance)
     this.crystalsValue.textContent = formatInteger(state.crystals)
     this.coinsValue.textContent = formatInteger(state.coins)
-    this.coinsLabel.textContent = `Coins · ${formatInteger(state.coinBalance)}`
+    this.coinsLabel.textContent = t('hud.coinsBalance', {
+      balance: formatInteger(state.coinBalance),
+    })
     this.levelName.textContent = state.levelName
     this.levelProgressFill.style.transform = `scaleX(${state.levelProgress})`
+    this.chase.hidden = state.chaseGap === null
+    if (state.chaseGap !== null) {
+      this.chase.textContent = t('chase.gap', {
+        distance: formatDistance(Math.max(0, state.chaseGap)),
+      })
+      this.chase.classList.toggle('hud-stat__chase--danger', state.chaseGap < 12)
+    }
     this.syncPowerUps(state.powerUps)
 
     const hasEffect = state.effectLabel.length > 0 && state.effectRemaining > 0
@@ -307,21 +376,18 @@ export class GameHud {
     this.slideButton.classList.toggle('is-cooling', slideCooling)
     this.slideButton.classList.toggle('is-ready', !state.slideActive && !slideCooling)
     if (state.slideActive) {
-      this.slideButton.setAttribute('aria-label', 'Sliding')
+      this.slideButton.setAttribute('aria-label', t('hud.sliding'))
     } else if (slideCooling) {
       this.slideButton.setAttribute(
         'aria-label',
-        `Slide recovering, ${state.slideCooldown.toFixed(1)} seconds`,
+        t('hud.slideRecovering', { seconds: state.slideCooldown.toFixed(1) }),
       )
     } else {
-      this.slideButton.setAttribute('aria-label', 'Slide, ready')
+      this.slideButton.setAttribute('aria-label', t('hud.slideReady'))
     }
 
     const charge = Math.min(1, Math.max(0, state.dashCharge))
-    this.dashRing.setAttribute(
-      'stroke-dashoffset',
-      String(DASH_CIRCUMFERENCE * (1 - charge)),
-    )
+    this.dashRing.setAttribute('stroke-dashoffset', String(DASH_CIRCUMFERENCE * (1 - charge)))
 
     this.dashButton.classList.toggle('is-ready', state.dashReady)
     this.dashButton.classList.toggle('is-active', state.dashActive)
@@ -331,14 +397,14 @@ export class GameHud {
       this.dashTimer.textContent = `${state.dashCooldown.toFixed(1)}s`
       this.dashButton.setAttribute(
         'aria-label',
-        `Dash recharging, ${state.dashCooldown.toFixed(1)} seconds`,
+        t('hud.dashRecharging', { seconds: state.dashCooldown.toFixed(1) }),
       )
     } else if (state.dashActive) {
-      this.dashTimer.textContent = 'Boost'
-      this.dashButton.setAttribute('aria-label', 'Dash active')
+      this.dashTimer.textContent = t('hud.boost')
+      this.dashButton.setAttribute('aria-label', t('hud.dashActive'))
     } else {
-      this.dashTimer.textContent = 'Ready'
-      this.dashButton.setAttribute('aria-label', 'Dash, ready')
+      this.dashTimer.textContent = t('hud.ready')
+      this.dashButton.setAttribute('aria-label', t('hud.dashReady'))
     }
   }
 
@@ -363,9 +429,7 @@ export class GameHud {
           ? `${powerUp.charges}× ${powerUp.remaining.toFixed(1)}s`
           : `${powerUp.remaining.toFixed(1)}s`
       const ratio =
-        powerUp.duration > 0
-          ? Math.min(1, Math.max(0, powerUp.remaining / powerUp.duration))
-          : 0
+        powerUp.duration > 0 ? Math.min(1, Math.max(0, powerUp.remaining / powerUp.duration)) : 0
       chip.fill.style.transform = `scaleX(${ratio})`
     }
 
@@ -383,14 +447,10 @@ export class GameHud {
     fill: HTMLSpanElement
   } {
     const root = createEl('div', `hud-power hud-power--${powerUp.kind}`)
-    const glyph = createEl(
-      'span',
-      'hud-power__glyph',
-      POWER_UP_GLYPHS[powerUp.kind] ?? '✦',
-    )
+    const glyph = createEl('span', 'hud-power__glyph', POWER_UP_GLYPHS[powerUp.kind] ?? '✦')
     glyph.setAttribute('aria-hidden', 'true')
     const body = createEl('div', 'hud-power__body')
-    const label = createEl('span', 'hud-power__label', powerUp.label)
+    const label = createEl('span', 'hud-power__label', tc(`powerup.${powerUp.kind}`, powerUp.label))
     const time = createEl('span', 'hud-power__time', '')
     const track = createEl('span', 'hud-power__track')
     const fill = createEl('span', 'hud-power__fill')

@@ -1,3 +1,4 @@
+import { t } from '../../i18n/i18n.ts'
 import { clamp } from '../../utils/math.ts'
 import { createEl } from '../../utils/dom.ts'
 import { Screen } from './Screen.ts'
@@ -15,10 +16,10 @@ export class LoadingScreen extends Screen {
     const mark = createEl('div', 'brand-mark brand-mark--small')
     mark.appendChild(createEl('span', 'brand-mark__glow'))
 
-    const eyebrow = createEl('p', 'eyebrow', 'Turkuaz Adalar')
-    const title = createEl('h1', 'loading__title', 'Charting the islands')
+    const eyebrow = createEl('p', 'eyebrow', t('loading.eyebrow'))
+    const title = createEl('h1', 'loading__title', t('loading.title'))
 
-    this.status = createEl('p', 'loading__status', 'Preparing the engine')
+    this.status = createEl('p', 'loading__status', t('loading.preparing'))
 
     this.track = createEl('div', 'loading__track')
     this.track.setAttribute('role', 'progressbar')
@@ -28,7 +29,7 @@ export class LoadingScreen extends Screen {
     this.bar = createEl('div', 'loading__bar')
     this.track.appendChild(this.bar)
 
-    const hint = createEl('p', 'loading__hint', 'Best experienced in portrait with sound on.')
+    const hint = createEl('p', 'loading__hint', t('loading.hint'))
 
     content.append(mark, eyebrow, title, this.status, this.track, hint)
     this.root.appendChild(content)

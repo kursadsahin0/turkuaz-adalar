@@ -7,7 +7,7 @@ const root = join(__dirname, '..')
 
 const CHARACTER_DATA_FILE = join(root, 'src/game/characters/CharacterData.ts')
 const CHARACTER_MANAGER_FILE = join(root, 'src/systems/save/PlayerSaveManager.ts')
-const GAME_FILE = join(root, 'src/core/Game.ts')
+const SHOP_FILE = join(root, 'src/core/controllers/ShopController.ts')
 
 function readFile(path) {
   try {
@@ -68,9 +68,17 @@ function validateCharacterData() {
 
   test('Skins have at least 3 options', skins.length >= 3, `Found ${skins.length} skins`)
   test('Outfits have at least 3 options', outfits.length >= 3, `Found ${outfits.length} outfits`)
-  test('Accessories have at least 3 options', accessories.length >= 3, `Found ${accessories.length} accessories`)
+  test(
+    'Accessories have at least 3 options',
+    accessories.length >= 3,
+    `Found ${accessories.length} accessories`,
+  )
   test('Colors have at least 3 options', colors.length >= 3, `Found ${colors.length} colors`)
-  test('Characters have at least 1 option', characters.length >= 1, `Found ${characters.length} characters`)
+  test(
+    'Characters have at least 1 option',
+    characters.length >= 1,
+    `Found ${characters.length} characters`,
+  )
 
   test('Default skin exists', skins.includes('skin-default'), 'Default skin not found')
   test('Default outfit exists', outfits.includes('outfit-default'), 'Default outfit not found')
@@ -78,12 +86,32 @@ function validateCharacterData() {
   test('Default color exists', colors.includes('color-default'), 'Default color not found')
 
   test('No duplicate skin IDs', new Set(skins).size === skins.length, 'Duplicate skin IDs found')
-  test('No duplicate outfit IDs', new Set(outfits).size === outfits.length, 'Duplicate outfit IDs found')
-  test('No duplicate accessory IDs', new Set(accessories).size === accessories.length, 'Duplicate accessory IDs found')
-  test('No duplicate color IDs', new Set(colors).size === colors.length, 'Duplicate color IDs found')
-  test('No duplicate character IDs', new Set(characters).size === characters.length, 'Duplicate character IDs found')
+  test(
+    'No duplicate outfit IDs',
+    new Set(outfits).size === outfits.length,
+    'Duplicate outfit IDs found',
+  )
+  test(
+    'No duplicate accessory IDs',
+    new Set(accessories).size === accessories.length,
+    'Duplicate accessory IDs found',
+  )
+  test(
+    'No duplicate color IDs',
+    new Set(colors).size === colors.length,
+    'Duplicate color IDs found',
+  )
+  test(
+    'No duplicate character IDs',
+    new Set(characters).size === characters.length,
+    'Duplicate character IDs found',
+  )
 
-  test('No gameplay advantages (speed = 1.0)', content.includes('speed: 1.0'), 'Speed not set to 1.0')
+  test(
+    'No gameplay advantages (speed = 1.0)',
+    content.includes('speed: 1.0'),
+    'Speed not set to 1.0',
+  )
   test('No gameplay advantages (jump = 1.0)', content.includes('jump: 1.0'), 'Jump not set to 1.0')
 
   console.log(`\n${passed + failed} tests: ${passed} passed, ${failed} failed`)
@@ -94,7 +122,7 @@ function validateCharacterManager() {
   console.log('\nValidating character collection manager...\n')
 
   const content = readFile(CHARACTER_MANAGER_FILE)
-  const game = readFile(GAME_FILE)
+  const game = readFile(SHOP_FILE)
 
   let passed = 0
   let failed = 0
@@ -112,9 +140,17 @@ function validateCharacterManager() {
   test('Purchase method exists', content.includes('purchaseCosmetic('), 'Purchase method not found')
   test('Ownership check exists', content.includes('isOwned('), 'Ownership check not found')
   test('Equip method exists', content.includes('equip('), 'Equip method not found')
-  test('Duplicate purchase prevention', content.includes('if (this.isOwned(type, id))'), 'Duplicate purchase check not found')
+  test(
+    'Duplicate purchase prevention',
+    content.includes('if (this.isOwned(type, id))'),
+    'Duplicate purchase check not found',
+  )
   test('Coin balance validation', game.includes('Not enough coins'), 'Coin balance check not found')
-  test('Appearance applied to the runner', game.includes('applyAppearance('), 'Equipped cosmetics are never applied')
+  test(
+    'Appearance applied to the runner',
+    game.includes('applyAppearance('),
+    'Equipped cosmetics are never applied',
+  )
   test('Save state method exists', content.includes('saveNow'), 'Save state method not found')
   test('Load state method exists', content.includes('load()'), 'Load state method not found')
 

@@ -1,7 +1,7 @@
 /**
  * In-app purchase interface for future premium features.
  * Placeholder showing integration points for IAP systems.
- * 
+ *
  * INTEGRATION NOTES:
  * - Android: Google Play Billing Library
  * - iOS: StoreKit 2 (StoreKit Framework)
@@ -9,13 +9,13 @@
  * - Always validate receipts with platform servers
  * - Store purchase records securely
  * - Handle refunds gracefully
- * 
+ *
  * PRODUCT IDs (example):
- * - com.turkuazadalar.skin.crimson
- * - com.turkuazadalar.outfit.explorer
- * - com.turkuazadalar.premium.no_ads
- * - com.turkuazadalar.premium.double_coins
- * 
+ * - com.tidelark.skin.crimson
+ * - com.tidelark.outfit.explorer
+ * - com.tidelark.premium.no_ads
+ * - com.tidelark.premium.double_coins
+ *
  * SECURITY WARNINGS:
  * - Never trust client-side purchase validation
  * - Always verify receipts with platform servers
@@ -111,7 +111,7 @@ export abstract class IAPProvider {
 export class TestIAPProvider extends IAPProvider {
   private readonly products: Product[] = [
     {
-      id: 'com.turkuazadalar.skin.crimson',
+      id: 'com.tidelark.skin.crimson',
       type: 'consumable',
       name: 'Crimson Tide Skin',
       description: 'Bold red color for daring runners.',
@@ -120,7 +120,7 @@ export class TestIAPProvider extends IAPProvider {
       currency: 'USD',
     },
     {
-      id: 'com.turkuazadalar.skin.golden',
+      id: 'com.tidelark.skin.golden',
       type: 'consumable',
       name: 'Golden Sun Skin',
       description: 'Shine bright like the tropical sun.',
@@ -129,7 +129,7 @@ export class TestIAPProvider extends IAPProvider {
       currency: 'USD',
     },
     {
-      id: 'com.turkuazadalar.premium.no_ads',
+      id: 'com.tidelark.premium.no_ads',
       type: 'non-consumable',
       name: 'No Ads',
       description: 'Remove all advertisements permanently.',
@@ -153,7 +153,7 @@ export class TestIAPProvider extends IAPProvider {
   }
 
   async purchase(productId: string): Promise<PurchaseResult> {
-    const product = this.products.find(p => p.id === productId)
+    const product = this.products.find((p) => p.id === productId)
     if (!product) {
       return { success: false, productId, error: 'Product not found' }
     }
@@ -163,7 +163,7 @@ export class TestIAPProvider extends IAPProvider {
     }
 
     // Simulate purchase processing (test mode only)
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise((resolve) => setTimeout(resolve, 500))
 
     const transactionId = `test_txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     this.purchasedProducts.add(productId)
@@ -194,7 +194,7 @@ export class TestIAPProvider extends IAPProvider {
   }
 
   async consume(productId: string): Promise<void> {
-    const product = this.products.find(p => p.id === productId)
+    const product = this.products.find((p) => p.id === productId)
     if (!product) {
       throw new Error('Product not found')
     }

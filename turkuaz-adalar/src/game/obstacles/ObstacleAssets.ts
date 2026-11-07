@@ -211,12 +211,7 @@ export class ObstacleAssets {
     this.spireMaterial.emissiveIntensity = 0.32 + Math.sin(elapsed * 2.2) * 0.1
   }
 
-  roundedBox(
-    width: number,
-    height: number,
-    depth: number,
-    radius = 0.12,
-  ): THREE.BufferGeometry {
+  roundedBox(width: number, height: number, depth: number, radius = 0.12): THREE.BufferGeometry {
     const safeRadius = Math.min(radius, Math.min(width, height, depth) * 0.45)
     const key = `box:${width}:${height}:${depth}:${safeRadius}`
     const cached = this.geometryCache.get(key)
@@ -240,12 +235,7 @@ export class ObstacleAssets {
     if (cached) {
       return cached
     }
-    const geometry = new THREE.CylinderGeometry(
-      radiusTop,
-      radiusBottom,
-      height,
-      segments,
-    )
+    const geometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, segments)
     this.geometryCache.set(key, geometry)
     this.geometries.push(geometry)
     return geometry
@@ -262,12 +252,7 @@ export class ObstacleAssets {
     if (cached) {
       return cached
     }
-    const geometry = new THREE.TorusGeometry(
-      radius,
-      tube,
-      radialSegments,
-      tubularSegments,
-    )
+    const geometry = new THREE.TorusGeometry(radius, tube, radialSegments, tubularSegments)
     this.geometryCache.set(key, geometry)
     this.geometries.push(geometry)
     return geometry

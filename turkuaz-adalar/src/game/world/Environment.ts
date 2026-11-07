@@ -68,6 +68,7 @@ export class Environment {
   private readonly clouds: CloudData[] = []
   private readonly nearCloudMaterial: THREE.MeshStandardMaterial
   private readonly farCloudMaterial: THREE.MeshStandardMaterial
+  private readonly hemisphere: THREE.HemisphereLight
 
   constructor() {
     this.root.name = 'Environment'
@@ -119,6 +120,7 @@ export class Environment {
     const hemisphere = new THREE.HemisphereLight(PALETTE.skyTop, PALETTE.sand, 1.45)
     hemisphere.name = 'HemisphereFill'
     hemisphere.position.set(0, 40, 0)
+    this.hemisphere = hemisphere
 
     this.sun = new THREE.DirectionalLight(PALETTE.sun, 2.9)
     this.sun.name = 'Sun'
@@ -142,15 +144,30 @@ export class Environment {
     this.root.add(this.skyRoot, hemisphere, this.sun, this.sunTarget, fill)
   }
 
+  /**
+   * Tints the sky toward a level's colours. The authored palette stays the
+   * base so every level still reads as the same archipelago; `null` restores
+   * the default look.
+   */
+  setTheme(sky: number | null, fog: number | null): void {
+    const top = new THREE.Color(PALETTE.skyTop)
+    const horizon = new THREE.Color(PALETTE.skyHorizon)
+    if (sky !== null) {
+      top.lerp(new THREE.Color(sky), 0.6)
+    }
+    if (fog !== null) {
+      horizon.lerp(new THREE.Color(fog), 0.3)
+    }
+    ;(this.skyMaterial.uniforms.uTopColor.value as THREE.Color).copy(top)
+    ;(this.skyMaterial.uniforms.uHorizonColor.value as THREE.Color).copy(horizon)
+    this.hemisphere.color.copy(top)
+  }
+
   update(delta: number, elapsed: number, playerPosition: THREE.Vector3): void {
     this.skyRoot.position.set(playerPosition.x, 0, playerPosition.z)
 
     this.sunTarget.position.set(playerPosition.x, GAME_CONFIG.track.topY, playerPosition.z)
-    this.sun.position.set(
-      playerPosition.x - 34,
-      GAME_CONFIG.track.topY + 52,
-      playerPosition.z - 48,
-    )
+    this.sun.position.set(playerPosition.x - 34, GAME_CONFIG.track.topY + 52, playerPosition.z - 48)
     this.sunTarget.updateMatrixWorld()
 
     for (const cloud of this.clouds) {
@@ -159,8 +176,7 @@ export class Environment {
         cloud.drift = -cloud.limit
       }
       cloud.mesh.position.x = cloud.drift
-      cloud.mesh.position.y =
-        cloud.baseY + Math.sin(elapsed * 0.14 + cloud.speed * 40) * 0.7
+      cloud.mesh.position.y = cloud.baseY + Math.sin(elapsed * 0.14 + cloud.speed * 40) * 0.7
     }
   }
 
@@ -191,21 +207,9 @@ export class Environment {
         parts.push({
           geometry: new THREE.IcosahedronGeometry(1, 1),
           color: puffY < 0.05 ? PALETTE.cloudShade : PALETTE.cloud,
-          position: new THREE.Vector3(
-            random(-6.8, 6.8),
-            puffY,
-            random(-3.4, 3.4),
-          ),
-          scale: new THREE.Vector3(
-            scale,
-            scale * random(0.42, 0.62),
-            scale * random(0.7, 1.0),
-          ),
-          rotation: new THREE.Euler(
-            random(0, Math.PI),
-            random(0, Math.PI),
-            random(0, Math.PI),
-          ),
+          position: new THREE.Vector3(random(-6.8, 6.8), puffY, random(-3.4, 3.4)),
+          scale: new THREE.Vector3(scale, scale * random(0.42, 0.62), scale * random(0.7, 1.0)),
+          rotation: new THREE.Euler(random(0, Math.PI), random(0, Math.PI), random(0, Math.PI)),
         })
       }
 

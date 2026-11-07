@@ -1,4 +1,4 @@
-import * as THREE from 'three'
+import type * as THREE from 'three'
 import { GAME_CONFIG } from '../../config/GameConfig.ts'
 import type { PhysicsWorld } from '../../systems/physics/PhysicsWorld.ts'
 import { clamp } from '../../utils/math.ts'
@@ -8,6 +8,7 @@ import { ObstacleAssets, type ObstacleModels } from './ObstacleAssets.ts'
 import type { ObstaclePrefab } from './ObstacleModule.ts'
 import { pickObstaclePrefab } from './ObstacleRegistry.ts'
 import { ObstaclePool } from './ObstaclePool.ts'
+import { chooseBlockedLanes, DEFAULT_SPAWN_RULES, type SpawnRules } from '../levels/SpawnRules.ts'
 
 /**
  * Rebuilt obstacle streamer. Every obstacle lives in its own module and is
@@ -37,6 +38,10 @@ export class ObstacleManager {
     rng: Rng,
     difficulty: number,
     density: number,
+    allowedKinds: readonly string[] | null = null,
+    rules: SpawnRules = DEFAULT_SPAWN_RULES,
+    /** Run speed at this segment (m/s); 0 skips the reaction-time rule. */
+    speed = 0,
   ): void {
     this.clearSegment(segmentId)
 
@@ -45,20 +50,34 @@ export class ObstacleManager {
     const nearZ = centerZ + track.segmentLength / 2 - spawn.edgeMargin
     const farZ = centerZ - track.segmentLength / 2 + spawn.edgeMargin
     const baseRows = Math.round(1 + difficulty * 1.6 + (density - 0.5))
-    const rowCount = clamp(baseRows, 1, 3)
+    // Calm islands ask for wide gaps between rows; that caps the row count.
+    const spacingCap =
+      rules.minObstacleSpacing > 0
+        ? Math.max(1, Math.floor((nearZ - farZ) / rules.minObstacleSpacing))
+        : 3
+    const rowCount = clamp(Math.min(baseRows, spacingCap), 1, 3)
     const rowSpacing = (nearZ - farZ) / rowCount
+    // The runner starts at startZ and runs toward -Z.
+    const safeUntilZ = GAME_CONFIG.player.startZ - rules.safeStartDistance
     const obstacles: Obstacle[] = []
+    // Rows that follow too quickly must not force a lane change.
+    const tight = speed > 0 && rowSpacing / speed < rules.reactionTime
+    let previouslyOpen: number[] | null = null
 
     for (let row = 0; row < rowCount; row += 1) {
       const rowZ = nearZ - rowSpacing * (row + 0.5) + rng.range(-spawn.zJitter, spawn.zJitter)
+      if (rowZ > safeUntilZ) {
+        continue
+      }
       const useTwo =
         rng.chance(spawn.twoLaneChance + difficulty * spawn.twoLaneDifficulty) &&
         track.lanePositions.length >= 3
       const laneOrder = rng.shuffled([...track.lanePositions])
-      const blockedLanes = useTwo ? laneOrder.slice(0, 2) : laneOrder.slice(0, 1)
+      const blockedLanes = chooseBlockedLanes(laneOrder, useTwo, previouslyOpen, tight)
+      previouslyOpen = track.lanePositions.filter((lane) => !blockedLanes.includes(lane))
 
       for (const lane of blockedLanes) {
-        const prefab = pickObstaclePrefab(difficulty, rng)
+        const prefab = pickObstaclePrefab(difficulty, rng, allowedKinds, rules.favouredObstacle)
         if (!prefab) {
           continue
         }
@@ -66,9 +85,7 @@ export class ObstacleManager {
         if (this.wouldBlockAllLanes(blockedLanes, lane, track.lanePositions.length)) {
           continue
         }
-        obstacles.push(
-          this.spawnObstacle(segmentId, prefab, x, rowZ, rng, difficulty),
-        )
+        obstacles.push(this.spawnObstacle(segmentId, prefab, x, rowZ, rng, difficulty))
       }
     }
 
@@ -97,6 +114,59 @@ export class ObstacleManager {
     this.bySegment.delete(segmentId)
   }
 
+  /** Removes one obstacle (a shield smashed it). Returns false if it is gone already. */
+  remove(target: Obstacle): boolean {
+    for (const [segmentId, obstacles] of this.bySegment) {
+      const index = obstacles.indexOf(target)
+      if (index < 0) {
+        continue
+      }
+      obstacles.splice(index, 1)
+      this.releaseOne(target)
+      if (obstacles.length === 0) {
+        this.bySegment.delete(segmentId)
+      }
+      return true
+    }
+    return false
+  }
+
+  /**
+   * Clears a runway: every obstacle from just behind `z` to `length` metres
+   * ahead (the runner runs towards -Z). Used where the runner respawns, so a
+   * continue never lands it in front of the obstacle it just hit.
+   */
+  clearAhead(z: number, length: number): number {
+    let removed = 0
+    for (const [segmentId, obstacles] of this.bySegment) {
+      const keep = obstacles.filter((obstacle) => {
+        const inRunway = obstacle.z <= z + 3 && obstacle.z >= z - length
+        if (inRunway) {
+          this.releaseOne(obstacle)
+          removed += 1
+        }
+        return !inRunway
+      })
+      if (keep.length === 0) {
+        this.bySegment.delete(segmentId)
+      } else if (keep.length !== obstacles.length) {
+        this.bySegment.set(segmentId, keep)
+      }
+    }
+    return removed
+  }
+
+  private releaseOne(obstacle: Obstacle): void {
+    this.byColliderHandle.delete(obstacle.collider.handle)
+    const pool = this.pools.get(obstacle.prefabId)
+    if (pool) {
+      pool.release(obstacle)
+    } else {
+      obstacle.release()
+      obstacle.dispose()
+    }
+  }
+
   clearAll(): void {
     for (const segmentId of [...this.bySegment.keys()]) {
       this.clearSegment(segmentId)
@@ -111,6 +181,17 @@ export class ObstacleManager {
   platformVelocity(handle: number): { x: number; y: number; z: number } | null {
     const obstacle = this.byColliderHandle.get(handle)
     return obstacle?.platformVelocity() ?? null
+  }
+
+  /** Calls `visit` for every active obstacle. */
+  forEachActive(visit: (obstacle: Obstacle) => void): void {
+    for (const obstacles of this.bySegment.values()) {
+      for (const obstacle of obstacles) {
+        if (obstacle.active) {
+          visit(obstacle)
+        }
+      }
+    }
   }
 
   isBlocked(x: number, z: number, radius: number): boolean {
@@ -191,7 +272,10 @@ export class ObstacleManager {
     // laneBlocker is intentionally wide; prefer not blocking every lane in
     // the same row. The registry/prefab selection can still choose it, but we
     // avoid creating an impossible corridor here.
-    if (blockedLanes.length >= laneCount - 1 && currentLane === blockedLanes[blockedLanes.length - 1]) {
+    if (
+      blockedLanes.length >= laneCount - 1 &&
+      currentLane === blockedLanes[blockedLanes.length - 1]
+    ) {
       // If we'd cover all but maybe one, allow unless it truly covers all.
     }
     if (blockedLanes.length >= laneCount) {

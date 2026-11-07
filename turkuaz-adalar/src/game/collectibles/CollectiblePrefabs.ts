@@ -52,15 +52,18 @@ export class CollectiblePrefabs {
       case 'doubleJump':
         this.buildDoubleJump(root, kind)
         break
+      case 'glide':
+        this.buildGlide(root, kind)
+        break
+      case 'slowMo':
+        this.buildSlowMo(root, kind)
+        break
       case 'reward':
         this.buildReward(root, kind)
         break
     }
 
-    const halo =
-      kind === 'coin'
-        ? null
-        : this.buildHalo(root, kind, kind === 'token' ? 0.42 : 0.44)
+    const halo = kind === 'coin' ? null : this.buildHalo(root, kind, kind === 'token' ? 0.42 : 0.44)
 
     root.scale.setScalar(kind === 'reward' ? 1.15 : 1)
     // Keep the palette authoritative even if a prefab forgets an accent.
@@ -250,6 +253,46 @@ export class CollectiblePrefabs {
     }
   }
 
+  /** A pair of swept wings around a small gem. */
+  private buildGlide(root: THREE.Group, kind: CollectibleKind): void {
+    const core = this.mesh(
+      this.geometry(new THREE.OctahedronGeometry(0.12, 0)),
+      this.bodyMaterial(kind),
+    )
+    root.add(core)
+    for (const side of [-1, 1]) {
+      const wing = this.mesh(
+        this.geometry(new THREE.ConeGeometry(0.11, 0.42, 4)),
+        this.accentMaterial(PALETTE.crystal, 0.8),
+        false,
+      )
+      wing.rotation.z = side * Math.PI * 0.42
+      wing.position.set(side * 0.22, 0.06, 0)
+      root.add(wing)
+    }
+  }
+
+  /** An hourglass: two cones tip to tip with caps. */
+  private buildSlowMo(root: THREE.Group, kind: CollectibleKind): void {
+    for (const side of [-1, 1]) {
+      const bulb = this.mesh(
+        this.geometry(new THREE.ConeGeometry(0.17, 0.24, 8)),
+        this.bodyMaterial(kind),
+        side > 0,
+      )
+      bulb.rotation.x = side > 0 ? Math.PI : 0
+      bulb.position.y = side * 0.12
+      root.add(bulb)
+      const cap = this.mesh(
+        this.geometry(new THREE.CylinderGeometry(0.2, 0.2, 0.04, 12)),
+        this.accentMaterial(PALETTE.coinLight, 0.85),
+        false,
+      )
+      cap.position.y = side * 0.26
+      root.add(cap)
+    }
+  }
+
   private buildReward(root: THREE.Group, kind: CollectibleKind): void {
     const base = this.mesh(
       this.geometry(new THREE.BoxGeometry(0.52, 0.32, 0.4)),
@@ -274,11 +317,7 @@ export class CollectiblePrefabs {
     root.add(star)
   }
 
-  private buildHalo(
-    root: THREE.Group,
-    kind: CollectibleKind,
-    radius: number,
-  ): THREE.Mesh {
+  private buildHalo(root: THREE.Group, kind: CollectibleKind, radius: number): THREE.Mesh {
     const definition = COLLECTIBLE_DEFINITIONS[kind]
     const halo = this.mesh(
       this.geometry(new THREE.TorusGeometry(radius, 0.022, 5, 22)),

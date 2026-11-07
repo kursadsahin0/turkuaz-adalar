@@ -11,9 +11,13 @@ export class SceneManager {
 
   constructor() {
     this.scene = new THREE.Scene()
-    this.scene.name = 'TurkuazAdalar'
+    this.scene.name = 'Tidelark'
     this.scene.background = new THREE.Color(RENDER_CONFIG.clearColor)
-    this.scene.fog = new THREE.Fog(RENDER_CONFIG.fogColor, RENDER_CONFIG.fogNear, RENDER_CONFIG.fogFar)
+    this.scene.fog = new THREE.Fog(
+      RENDER_CONFIG.fogColor,
+      RENDER_CONFIG.fogNear,
+      RENDER_CONFIG.fogFar,
+    )
   }
 
   add(...objects: THREE.Object3D[]): void {

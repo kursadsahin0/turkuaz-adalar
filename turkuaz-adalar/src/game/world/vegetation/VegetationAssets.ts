@@ -135,13 +135,9 @@ export class VegetationAssets {
 
     this.palmTrunkGeometry = this.trackGeometry(this.buildPalmTrunk())
     this.palmCrownGeometry = this.trackGeometry(this.buildPalmCrown())
-    this.roundTrunkGeometry = this.trackGeometry(
-      new THREE.CylinderGeometry(0.2, 0.31, 1.8, 6),
-    )
+    this.roundTrunkGeometry = this.trackGeometry(new THREE.CylinderGeometry(0.2, 0.31, 1.8, 6))
     this.roundCrownGeometry = this.trackGeometry(this.buildRoundCrown())
-    this.pineTrunkGeometry = this.trackGeometry(
-      new THREE.CylinderGeometry(0.16, 0.26, 1.5, 6),
-    )
+    this.pineTrunkGeometry = this.trackGeometry(new THREE.CylinderGeometry(0.16, 0.26, 1.5, 6))
     this.pineCrownGeometry = this.trackGeometry(this.buildPineCrown())
     this.bushGeometry = this.trackGeometry(this.buildBush())
     this.grassGeometry = this.trackGeometry(this.buildGrass())
@@ -263,6 +259,31 @@ export class VegetationAssets {
     rock.castShadow = true
     rock.receiveShadow = true
     return rock
+  }
+
+  /**
+   * Tints every leaf material toward an island's foliage colour while keeping
+   * the light/dark shading between them; `null` restores the authored greens.
+   */
+  setFoliageTint(tint: number | null): void {
+    const leaves: [THREE.MeshStandardMaterial, number][] = [
+      [this.leafDarkMaterial, PALETTE.foliageDark],
+      [this.leafMaterial, PALETTE.foliage],
+      [this.leafLightMaterial, PALETTE.foliageLight],
+      [this.leafSunMaterial, PALETTE.foliageSun],
+    ]
+    const target = tint === null ? null : new THREE.Color(tint)
+    const hsl = { h: 0, s: 0, l: 0 }
+    const targetHsl = { h: 0, s: 0, l: 0 }
+    target?.getHSL(targetHsl)
+    for (const [material, base] of leaves) {
+      material.color.set(base)
+      if (target) {
+        // Take the island's hue and saturation, keep each leaf's lightness.
+        material.color.getHSL(hsl)
+        material.color.setHSL(targetHsl.h, targetHsl.s, hsl.l)
+      }
+    }
   }
 
   dispose(): void {
@@ -459,9 +480,7 @@ export class VegetationAssets {
     const clones: THREE.BufferGeometry[] = []
 
     for (const part of parts) {
-      const clone = part.geometry.index
-        ? part.geometry.toNonIndexed()
-        : part.geometry.clone()
+      const clone = part.geometry.index ? part.geometry.toNonIndexed() : part.geometry.clone()
       const matrix = new THREE.Matrix4().compose(
         part.position ?? new THREE.Vector3(),
         new THREE.Quaternion().setFromEuler(part.rotation ?? new THREE.Euler()),

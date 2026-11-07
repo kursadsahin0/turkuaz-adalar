@@ -70,13 +70,7 @@ export abstract class ObstacleBase implements Obstacle {
     return this.activeValue
   }
 
-  spawn(
-    segmentId: number,
-    x: number,
-    z: number,
-    rng: Rng,
-    difficulty: number,
-  ): void {
+  spawn(segmentId: number, x: number, z: number, rng: Rng, difficulty: number): void {
     this.segmentValue = segmentId
     this.xValue = x
     this.zValue = z
@@ -120,12 +114,7 @@ export abstract class ObstacleBase implements Obstacle {
   abstract fixedUpdate(delta: number): void
 
   /** Position the visual and existing physics body for a fresh spawn. */
-  protected abstract place(
-    x: number,
-    z: number,
-    rng: Rng,
-    difficulty: number,
-  ): void
+  protected abstract place(x: number, z: number, rng: Rng, difficulty: number): void
 
   protected onRelease(): void {
     // Modules can reset their local animation state here.

@@ -1,6 +1,9 @@
 import * as THREE from 'three'
 import type { LoadedAsset } from '../../assets/ModelLoader.ts'
 import { GAME_CONFIG } from '../../config/GameConfig.ts'
+import { RENDER_CONFIG } from '../../config/RenderConfig.ts'
+import { FinishLine } from './FinishLine.ts'
+import { ISLAND_LOOKS } from '../levels/IslandLooks.ts'
 import type { PhysicsWorld } from '../../systems/physics/PhysicsWorld.ts'
 import { createSeed, mixSeed, Rng } from '../../utils/random.ts'
 import type { CollectiblePickup } from '../collectibles/CollectibleKind.ts'
@@ -25,6 +28,7 @@ export interface WorldPropModels {
   readonly crate?: LoadedAsset | null
   readonly spire?: LoadedAsset | null
   readonly crystal?: LoadedAsset | null
+  readonly beacon?: LoadedAsset | null
 }
 
 /**
@@ -34,6 +38,8 @@ export interface WorldPropModels {
  */
 export class World {
   readonly environment: Environment
+  private readonly finishLine: FinishLine
+  private obstaclesEnabled = true
   readonly ocean: Ocean
   readonly obstacles: ObstacleManager
   readonly collectibles: CollectibleManager
@@ -69,6 +75,7 @@ export class World {
     this.collectibles = new CollectibleManager(scene, 1, props.crystal ?? null)
     this.interactions = new InteractionManager(scene, physics)
     this.instancedObjects = new InstancedObjects(scene)
+    this.finishLine = new FinishLine(scene, props.beacon ?? null)
   }
 
   init(): void {
@@ -104,7 +111,42 @@ export class World {
     this.interactions.fixedUpdate(delta)
   }
 
+  /**
+   * Turns obstacle spawning off (tutorial) or back on. Affects segments as
+   * they are (re)populated; call before reset() for a clean start.
+   */
+  setObstaclesEnabled(enabled: boolean): void {
+    this.obstaclesEnabled = enabled
+  }
+
+  /**
+   * Whether a world Z still has track under it, with `margin` metres to
+   * spare. Segments behind the runner are recycled ahead, so an old
+   * position (a checkpoint passed long ago) can be over open sea.
+   */
+  hasTrackAt(z: number, margin = 0): boolean {
+    const segments = this.field.all
+    if (segments.length === 0) {
+      return false
+    }
+    const half = GAME_CONFIG.track.segmentLength / 2
+    let front = Infinity
+    let rear = -Infinity
+    for (const segment of segments) {
+      front = Math.min(front, segment.centerZ - half)
+      rear = Math.max(rear, segment.centerZ + half)
+    }
+    // Segments are laid end to end, so the live track is one span.
+    return z >= front + margin && z <= rear - margin
+  }
+
+  /** Shows the finish line at a world Z, or hides it (`null`) for the endless run. */
+  setFinishLine(z: number | null): void {
+    this.finishLine.setPosition(z)
+  }
+
   updateVisuals(delta: number, elapsed: number, playerPosition: THREE.Vector3): void {
+    this.finishLine.update(elapsed)
     this.assets.update(elapsed)
     this.environment.update(delta, elapsed, playerPosition)
     this.ocean.update(playerPosition, elapsed)
@@ -114,6 +156,30 @@ export class World {
     this.obstacles.update(elapsed)
     this.collectibles.update(delta, elapsed)
     this.interactions.updateVisuals(elapsed)
+  }
+
+  /** Applies a level's sky and fog tint; `null` restores the default look. */
+  applyTheme(
+    theme: { readonly id: string; readonly skyColor: number; readonly fogColor: number } | null,
+  ): void {
+    this.environment.setTheme(theme?.skyColor ?? null, theme?.fogColor ?? null)
+    // Track tiles, sea and foliage change per island too, not just the sky.
+    const look = theme ? (ISLAND_LOOKS[theme.id] ?? null) : null
+    this.assets.platform.setTrackAccent(look?.trackAccent ?? null)
+    this.ocean.setColors(look?.oceanDeep ?? null, look?.oceanShallow ?? null)
+    this.assets.vegetation.setFoliageTint(look?.foliage ?? null)
+    const fog = this.scene.fog
+    if (fog instanceof THREE.Fog) {
+      fog.color.set(RENDER_CONFIG.fogColor)
+      if (theme) {
+        fog.color.lerp(new THREE.Color(theme.fogColor), 0.35)
+      }
+    }
+  }
+
+  /** Hides pickups for the character showcase; gameplay state is untouched. */
+  setCollectiblesVisible(visible: boolean): void {
+    this.collectibles.setVisible(visible)
   }
 
   collectAt(position: THREE.Vector3, playerRadius: number): CollectiblePickup[] {
@@ -189,6 +255,7 @@ export class World {
   }
 
   dispose(): void {
+    this.finishLine.dispose()
     this.instancedObjects.dispose()
     this.ocean.dispose()
     this.environment.dispose()
@@ -205,15 +272,19 @@ export class World {
     const distance = Math.max(0, -segment.centerZ)
     const difficulty = this.level.difficultyForDistance(distance)
     const random = new Rng(mixSeed(this.runSeed, segment.id, segment.generation))
+    const rules = this.level.spawnRules
 
     // The first segment stays obstacle-free so the player can settle in.
-    if (segment.centerZ < -12) {
+    if (segment.centerZ < -12 && this.obstaclesEnabled) {
       this.obstacles.populateSegment(
         segment.id,
         segment.centerZ,
         random,
         difficulty,
         this.level.obstacleDensity,
+        this.level.allowedObstacles,
+        rules,
+        this.level.speedForDistance(distance),
       )
       this.interactions.populateSegment(
         segment.id,
@@ -221,6 +292,7 @@ export class World {
         random,
         difficulty,
         (x, z, radius) => this.obstacles.isBlocked(x, z, radius),
+        rules,
       )
     }
 
@@ -231,8 +303,8 @@ export class World {
       difficulty,
       this.level.crystalDensity,
       (x, z, radius) =>
-        this.obstacles.isBlocked(x, z, radius) ||
-        this.interactions.isBlocked(x, z, radius),
+        this.obstacles.isBlocked(x, z, radius) || this.interactions.isBlocked(x, z, radius),
+      rules,
     )
   }
 }

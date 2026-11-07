@@ -24,12 +24,7 @@ export class SlidingObstacle extends ObstacleBase {
   private readonly speed: number
   private phase = 0
 
-  constructor(
-    id: number,
-    scene: THREE.Scene,
-    physics: PhysicsWorld,
-    assets: ObstacleAssets,
-  ) {
+  constructor(id: number, scene: THREE.Scene, physics: PhysicsWorld, assets: ObstacleAssets) {
     const config = GAME_CONFIG.obstacles.slidingObstacle
     const group = new THREE.Group()
     group.name = 'SlidingObstacle'
@@ -115,10 +110,7 @@ export class SlidingObstacle extends ObstacleBase {
     this.slab.position.set(0, 0, offsetZ)
     this.baseX = x
     this.baseZ = z
-    this.body.setTranslation(
-      { x, y: this.centerY, z: z + offsetZ },
-      true,
-    )
+    this.body.setTranslation({ x, y: this.centerY, z: z + offsetZ }, true)
     const mat = this.warningStrip.material as THREE.MeshBasicMaterial
     mat.opacity = 0.36
     this.warningStrip.scale.z = 1
@@ -133,6 +125,5 @@ export const SLIDING_OBSTACLE_PREFAB: ObstaclePrefab = {
   standable: false,
   weight: GAME_CONFIG.obstacles.slidingObstacle.weight,
   unlockAt: GAME_CONFIG.obstacles.slidingObstacle.unlockAt,
-  create: (scene, physics, assets, id) =>
-    new SlidingObstacle(id, scene, physics, assets),
+  create: (scene, physics, assets, id) => new SlidingObstacle(id, scene, physics, assets),
 }

@@ -26,12 +26,7 @@ export class MovingPlatformObstacle extends ObstacleBase {
   private currentCenterY = 0
   private velocity = { x: 0, y: 0, z: 0 }
 
-  constructor(
-    id: number,
-    scene: THREE.Scene,
-    physics: PhysicsWorld,
-    assets: ObstacleAssets,
-  ) {
+  constructor(id: number, scene: THREE.Scene, physics: PhysicsWorld, assets: ObstacleAssets) {
     const config = GAME_CONFIG.obstacles.movingPlatform
     const group = new THREE.Group()
     group.name = 'ObstacleMovingPlatform'
@@ -121,10 +116,7 @@ export class MovingPlatformObstacle extends ObstacleBase {
     this.baseZ = z
     this.currentCenterY = this.baseCenterY + offsetY
     this.velocity = { x: 0, y: 0, z: 0 }
-    this.body.setTranslation(
-      { x: x + offsetX, y: this.currentCenterY, z },
-      true,
-    )
+    this.body.setTranslation({ x: x + offsetX, y: this.currentCenterY, z }, true)
     this.radiusValue = config.radius
   }
 }
@@ -136,6 +128,5 @@ export const MOVING_PLATFORM_OBSTACLE_PREFAB: ObstaclePrefab = {
   standable: true,
   weight: GAME_CONFIG.obstacles.movingPlatform.weight,
   unlockAt: GAME_CONFIG.obstacles.movingPlatform.unlockAt,
-  create: (scene, physics, assets, id) =>
-    new MovingPlatformObstacle(id, scene, physics, assets),
+  create: (scene, physics, assets, id) => new MovingPlatformObstacle(id, scene, physics, assets),
 }

@@ -22,12 +22,7 @@ export class BounceTrapObstacle extends ObstacleBase {
   private readonly glow: THREE.Mesh
   private lastContactTime = -1000
 
-  constructor(
-    id: number,
-    scene: THREE.Scene,
-    physics: PhysicsWorld,
-    assets: ObstacleAssets,
-  ) {
+  constructor(id: number, scene: THREE.Scene, physics: PhysicsWorld, assets: ObstacleAssets) {
     const config = GAME_CONFIG.obstacles.bounceTrap
     const group = new THREE.Group()
     group.name = 'BounceTrap'
@@ -129,10 +124,7 @@ export class BounceTrapObstacle extends ObstacleBase {
   protected place(x: number, z: number): void {
     const config = GAME_CONFIG.obstacles.bounceTrap
     this.root.position.set(x, GAME_CONFIG.track.topY, z)
-    this.body.setTranslation(
-      { x, y: GAME_CONFIG.track.topY + config.thickness / 2, z },
-      true,
-    )
+    this.body.setTranslation({ x, y: GAME_CONFIG.track.topY + config.thickness / 2, z }, true)
     this.spring.scale.set(1, 1, 1)
     this.lastContactTime = -1000
   }
@@ -145,6 +137,5 @@ export const BOUNCE_TRAP_PREFAB: ObstaclePrefab = {
   standable: false,
   weight: GAME_CONFIG.obstacles.bounceTrap.weight,
   unlockAt: GAME_CONFIG.obstacles.bounceTrap.unlockAt,
-  create: (scene, physics, assets, id) =>
-    new BounceTrapObstacle(id, scene, physics, assets),
+  create: (scene, physics, assets, id) => new BounceTrapObstacle(id, scene, physics, assets),
 }

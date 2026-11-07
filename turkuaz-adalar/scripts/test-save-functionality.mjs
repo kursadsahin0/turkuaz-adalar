@@ -32,7 +32,12 @@ global.window = {
   clearTimeout: (id) => clearTimeout(id),
 }
 
-import { sanitiseSaveState, DEFAULT_PLAYER_SAVE, CURRENT_SAVE_VERSION, createDefaultSave } from '../src/systems/save/PlayerSaveState.ts'
+import {
+  sanitiseSaveState,
+  DEFAULT_PLAYER_SAVE,
+  CURRENT_SAVE_VERSION,
+  createDefaultSave,
+} from '../src/systems/save/PlayerSaveState.ts'
 import { toggleAccessory } from '../src/game/characters/CharacterData.ts'
 import { PlayerSaveManager } from '../src/systems/save/PlayerSaveManager.ts'
 import { SaveManager } from '../src/systems/save/SaveManager.ts'
@@ -106,23 +111,55 @@ const validState = {
 }
 
 const sanitisedValid = sanitiseSaveState(validState)
-test('Valid state preserves version', sanitisedValid.version === CURRENT_SAVE_VERSION, 'Version mismatch')
+test(
+  'Valid state preserves version',
+  sanitisedValid.version === CURRENT_SAVE_VERSION,
+  'Version mismatch',
+)
 test('Valid state preserves coins', sanitisedValid.progression.coins === 100, 'Coins mismatch')
-test('Valid state preserves unlocked levels', sanitisedValid.unlockedLevels.length === 2, 'Unlocked levels mismatch')
-test('Valid state preserves character collection', sanitisedValid.characterCollection.ownedSkins.length === 2, 'Character collection mismatch')
-test('Valid state preserves settings', sanitisedValid.settings.musicVolume === 0.7, 'Settings mismatch')
-test('Valid state preserves tutorial', sanitisedValid.tutorial.completed === true, 'Tutorial mismatch')
+test(
+  'Valid state preserves unlocked levels',
+  sanitisedValid.unlockedLevels.length === 2,
+  'Unlocked levels mismatch',
+)
+test(
+  'Valid state preserves character collection',
+  sanitisedValid.characterCollection.ownedSkins.length === 2,
+  'Character collection mismatch',
+)
+test(
+  'Valid state preserves settings',
+  sanitisedValid.settings.musicVolume === 0.7,
+  'Settings mismatch',
+)
+test(
+  'Valid state preserves tutorial',
+  sanitisedValid.tutorial.completed === true,
+  'Tutorial mismatch',
+)
 
 // Test 2: Null input
 console.log('\nTest 2: Null input')
 const nullResult = sanitiseSaveState(null)
-test('Null input returns defaults', nullResult.progression.coins === 0, 'Null should return defaults')
-test('Null input has correct version', nullResult.version === CURRENT_SAVE_VERSION, 'Version should be current')
+test(
+  'Null input returns defaults',
+  nullResult.progression.coins === 0,
+  'Null should return defaults',
+)
+test(
+  'Null input has correct version',
+  nullResult.version === CURRENT_SAVE_VERSION,
+  'Version should be current',
+)
 
 // Test 3: Invalid object
 console.log('\nTest 3: Invalid object')
 const invalidResult = sanitiseSaveState({ random: 'data' })
-test('Invalid object returns defaults', invalidResult.progression.coins === 0, 'Invalid should return defaults')
+test(
+  'Invalid object returns defaults',
+  invalidResult.progression.coins === 0,
+  'Invalid should return defaults',
+)
 
 // Test 4: Corrupted numbers
 console.log('\nTest 4: Corrupted numbers')
@@ -145,11 +182,27 @@ const corruptedNumbers = {
 }
 
 const sanitisedNumbers = sanitiseSaveState(corruptedNumbers)
-test('Negative numbers sanitized to 0', sanitisedNumbers.progression.bestScore === 0, 'Negative number not sanitized')
-test('String numbers sanitized to 0', sanitisedNumbers.progression.bestDistance === 0, 'String number not sanitized')
-test('Infinity sanitized to 0', sanitisedNumbers.progression.totalRuns === 0, 'Infinity not sanitized')
+test(
+  'Negative numbers sanitized to 0',
+  sanitisedNumbers.progression.bestScore === 0,
+  'Negative number not sanitized',
+)
+test(
+  'String numbers sanitized to 0',
+  sanitisedNumbers.progression.bestDistance === 0,
+  'String number not sanitized',
+)
+test(
+  'Infinity sanitized to 0',
+  sanitisedNumbers.progression.totalRuns === 0,
+  'Infinity not sanitized',
+)
 test('NaN sanitized to 0', sanitisedNumbers.progression.totalCrystals === 0, 'NaN not sanitized')
-test('Invalid coins sanitized to 0', sanitisedNumbers.progression.coins === 0, 'Invalid coins not sanitized')
+test(
+  'Invalid coins sanitized to 0',
+  sanitisedNumbers.progression.coins === 0,
+  'Invalid coins not sanitized',
+)
 
 // Test 5: Corrupted arrays
 console.log('\nTest 5: Corrupted arrays')
@@ -172,9 +225,28 @@ const corruptedArrays = {
 }
 
 const sanitisedArrays = sanitiseSaveState(corruptedArrays)
-test('Invalid array elements filtered', sanitisedArrays.unlockedLevels.length === 2, 'Invalid array elements not filtered')
-test('Null arrays replaced with defaults', sanitisedArrays.characterCollection.ownedOutfits.length === 1, 'Null array not replaced')
-test('Undefined arrays replaced with defaults', sanitisedArrays.characterCollection.ownedColors.length === 1, 'Undefined array not replaced')
+test(
+  'Invalid array elements filtered',
+  sanitisedArrays.unlockedLevels.every((id) => typeof id === 'string') &&
+    sanitisedArrays.unlockedLevels.includes('valid') &&
+    sanitisedArrays.unlockedLevels.includes('also-valid'),
+  'Invalid array elements not filtered',
+)
+test(
+  'First level always unlocked after sanitising',
+  sanitisedArrays.unlockedLevels.includes('turkuaz-shallows'),
+  'First level missing',
+)
+test(
+  'Null arrays replaced with defaults',
+  sanitisedArrays.characterCollection.ownedOutfits.length === 1,
+  'Null array not replaced',
+)
+test(
+  'Undefined arrays replaced with defaults',
+  sanitisedArrays.characterCollection.ownedColors.length === 1,
+  'Undefined array not replaced',
+)
 
 // Test 6: Corrupted booleans
 console.log('\nTest 6: Corrupted booleans')
@@ -212,12 +284,36 @@ const corruptedBooleans = {
 }
 
 const sanitisedBooleans = sanitiseSaveState(corruptedBooleans)
-test('Invalid boolean defaults to false', sanitisedBooleans.levelProgress['test-level'].completed === false, 'Invalid boolean not defaulted')
-test('Invalid quality defaults to medium', sanitisedBooleans.settings.quality === 'medium', 'Invalid quality not defaulted')
-test('Invalid control hints defaults to true', sanitisedBooleans.settings.controlHints === true, 'Invalid control hints not defaulted')
-test('Invalid vibration defaults to true', sanitisedBooleans.settings.vibration === true, 'Invalid vibration not defaulted')
-test('Invalid muted defaults to false', sanitisedBooleans.settings.muted === false, 'Invalid muted not defaulted')
-test('Invalid tutorial completed defaults to false', sanitisedBooleans.tutorial.completed === false, 'Invalid tutorial completed not defaulted')
+test(
+  'Invalid boolean defaults to false',
+  sanitisedBooleans.levelProgress['test-level'].completed === false,
+  'Invalid boolean not defaulted',
+)
+test(
+  'Invalid quality defaults to auto',
+  sanitisedBooleans.settings.quality === 'auto',
+  'Invalid quality not defaulted',
+)
+test(
+  'Invalid control hints defaults to true',
+  sanitisedBooleans.settings.controlHints === true,
+  'Invalid control hints not defaulted',
+)
+test(
+  'Invalid vibration defaults to true',
+  sanitisedBooleans.settings.vibration === true,
+  'Invalid vibration not defaulted',
+)
+test(
+  'Invalid muted defaults to false',
+  sanitisedBooleans.settings.muted === false,
+  'Invalid muted not defaulted',
+)
+test(
+  'Invalid tutorial completed defaults to false',
+  sanitisedBooleans.tutorial.completed === false,
+  'Invalid tutorial completed not defaulted',
+)
 
 // Test 7: Version mismatch
 console.log('\nTest 7: Version mismatch')
@@ -234,7 +330,11 @@ const oldVersion = {
 }
 
 const sanitisedVersion = sanitiseSaveState(oldVersion)
-test('Old version preserved in sanitisation (upgrade in PlayerSaveManager)', sanitisedVersion.version === 0, 'Version should be preserved in sanitisation')
+test(
+  'Old version preserved in sanitisation (upgrade in PlayerSaveManager)',
+  sanitisedVersion.version === 0,
+  'Version should be preserved in sanitisation',
+)
 
 // Test 8: Clamped values
 console.log('\nTest 8: Clamped values')
@@ -258,14 +358,26 @@ const outOfRange = {
 }
 
 const sanitisedClamped = sanitiseSaveState(outOfRange)
-test('Volume clamped to max 1', sanitisedClamped.settings.musicVolume === 1, 'Volume not clamped to max')
-test('Volume clamped to min 0', sanitisedClamped.settings.sfxVolume === 0, 'Volume not clamped to min')
+test(
+  'Volume clamped to max 1',
+  sanitisedClamped.settings.musicVolume === 1,
+  'Volume not clamped to max',
+)
+test(
+  'Volume clamped to min 0',
+  sanitisedClamped.settings.sfxVolume === 0,
+  'Volume not clamped to min',
+)
 
 // --- Cosmetics: ownership, equip and integrity -------------------------------
 
 const fresh = createDefaultSave()
 fresh.characterCollection.ownedSkins.push('skin-crimson')
-test('Default save arrays are not shared', !DEFAULT_PLAYER_SAVE.characterCollection.ownedSkins.includes('skin-crimson'), 'Mutating a fresh save leaked into DEFAULT_PLAYER_SAVE')
+test(
+  'Default save arrays are not shared',
+  !DEFAULT_PLAYER_SAVE.characterCollection.ownedSkins.includes('skin-crimson'),
+  'Mutating a fresh save leaked into DEFAULT_PLAYER_SAVE',
+)
 
 const forged = sanitiseSaveState({
   ...DEFAULT_PLAYER_SAVE,
@@ -274,28 +386,94 @@ const forged = sanitiseSaveState({
     ownedOutfits: [],
     ownedAccessories: [],
     ownedColors: [],
-    equipped: { characterId: 'ocean-master', skinId: 'skin-royal', outfitId: 'outfit-default', accessoryIds: ['acc-wings'], colorId: 'color-default' },
+    equipped: {
+      characterId: 'ocean-master',
+      skinId: 'skin-royal',
+      outfitId: 'outfit-default',
+      accessoryIds: ['acc-wings'],
+      colorId: 'color-default',
+    },
   },
 })
-test('Default items are always owned', forged.characterCollection.ownedSkins.includes('skin-default') && forged.characterCollection.ownedCharacters.includes('turkuaz-runner'), 'Default items missing after sanitise')
-test('Unowned equipped character reset', forged.characterCollection.equipped.characterId === 'turkuaz-runner', 'Unowned character stayed equipped')
-test('Unowned equipped skin reset', forged.characterCollection.equipped.skinId === 'skin-default', 'Unowned skin stayed equipped')
-test('Unowned accessory dropped', forged.characterCollection.equipped.accessoryIds.join() === 'acc-none', 'Unowned accessory stayed equipped')
+test(
+  'Default items are always owned',
+  forged.characterCollection.ownedSkins.includes('skin-default') &&
+    forged.characterCollection.ownedCharacters.includes('turkuaz-runner'),
+  'Default items missing after sanitise',
+)
+test(
+  'Unowned equipped character reset',
+  forged.characterCollection.equipped.characterId === 'turkuaz-runner',
+  'Unowned character stayed equipped',
+)
+test(
+  'Unowned equipped skin reset',
+  forged.characterCollection.equipped.skinId === 'skin-default',
+  'Unowned skin stayed equipped',
+)
+test(
+  'Unowned accessory dropped',
+  forged.characterCollection.equipped.accessoryIds.join() === 'acc-none',
+  'Unowned accessory stayed equipped',
+)
 
-test('Accessory slot replaces same slot', toggleAccessory(['acc-cap'], 'acc-goggles').join() === 'acc-goggles', 'Two head accessories equipped')
-test('Accessories in different slots stack', toggleAccessory(['acc-cap', 'acc-bandana'], 'acc-wings').sort().join() === 'acc-bandana,acc-cap,acc-wings', 'Different slots did not stack')
-test('Equipping a worn accessory removes it', toggleAccessory(['acc-cap'], 'acc-cap').join() === 'acc-none', 'Worn accessory not removed')
-test('acc-none clears all accessories', toggleAccessory(['acc-cap', 'acc-wings'], 'acc-none').join() === 'acc-none', 'acc-none did not clear')
+test(
+  'Accessory slot replaces same slot',
+  toggleAccessory(['acc-cap'], 'acc-goggles').join() === 'acc-goggles',
+  'Two head accessories equipped',
+)
+test(
+  'Accessories in different slots stack',
+  toggleAccessory(['acc-cap', 'acc-bandana'], 'acc-wings').sort().join() ===
+    'acc-bandana,acc-cap,acc-wings',
+  'Different slots did not stack',
+)
+test(
+  'Equipping a worn accessory removes it',
+  toggleAccessory(['acc-cap'], 'acc-cap').join() === 'acc-none',
+  'Worn accessory not removed',
+)
+test(
+  'acc-none clears all accessories',
+  toggleAccessory(['acc-cap', 'acc-wings'], 'acc-none').join() === 'acc-none',
+  'acc-none did not clear',
+)
 
 window.localStorage.clear()
 const manager = new PlayerSaveManager(new SaveManager())
-test('Cannot equip unowned item', manager.equip('skin', 'skin-golden') === false && manager.characterCollection.equipped.skinId === 'skin-default', 'Unowned skin was equipped')
-test('Purchase records ownership once', manager.purchaseCosmetic('skin', 'skin-golden') === true && manager.purchaseCosmetic('skin', 'skin-golden') === false, 'Duplicate purchase accepted')
-test('Owned item can be equipped', manager.equip('skin', 'skin-golden') && manager.characterCollection.equipped.skinId === 'skin-golden', 'Owned skin not equipped')
-test('Characters can be unlocked and equipped', manager.purchaseCosmetic('character', 'swift-runner') && manager.equip('character', 'swift-runner') && manager.characterCollection.equipped.characterId === 'swift-runner', 'Character unlock failed')
+test(
+  'Cannot equip unowned item',
+  manager.equip('skin', 'skin-golden') === false &&
+    manager.characterCollection.equipped.skinId === 'skin-default',
+  'Unowned skin was equipped',
+)
+test(
+  'Purchase records ownership once',
+  manager.purchaseCosmetic('skin', 'skin-golden') === true &&
+    manager.purchaseCosmetic('skin', 'skin-golden') === false,
+  'Duplicate purchase accepted',
+)
+test(
+  'Owned item can be equipped',
+  manager.equip('skin', 'skin-golden') &&
+    manager.characterCollection.equipped.skinId === 'skin-golden',
+  'Owned skin not equipped',
+)
+test(
+  'Characters can be unlocked and equipped',
+  manager.purchaseCosmetic('character', 'swift-runner') &&
+    manager.equip('character', 'swift-runner') &&
+    manager.characterCollection.equipped.characterId === 'swift-runner',
+  'Character unlock failed',
+)
 manager.saveNow()
 const reloaded = new PlayerSaveManager(new SaveManager())
-test('Equipped cosmetics survive reload', reloaded.characterCollection.equipped.skinId === 'skin-golden' && reloaded.characterCollection.equipped.characterId === 'swift-runner', 'Equip state lost after reload')
+test(
+  'Equipped cosmetics survive reload',
+  reloaded.characterCollection.equipped.skinId === 'skin-golden' &&
+    reloaded.characterCollection.equipped.characterId === 'swift-runner',
+  'Equip state lost after reload',
+)
 manager.dispose()
 reloaded.dispose()
 

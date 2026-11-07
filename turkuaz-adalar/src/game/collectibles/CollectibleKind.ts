@@ -3,16 +3,10 @@ import { PALETTE } from '../../config/Palette.ts'
 
 /** Every pickup the streaming track can place. */
 export type CollectibleKind =
-  | 'coin'
-  | 'token'
-  | 'shield'
-  | 'magnet'
-  | 'speed'
-  | 'doubleJump'
-  | 'reward'
+  'coin' | 'token' | 'shield' | 'magnet' | 'speed' | 'doubleJump' | 'glide' | 'slowMo' | 'reward'
 
 /** Power-ups that apply a timed modifier to the run. */
-export type PowerUpKind = 'shield' | 'magnet' | 'speed' | 'doubleJump'
+export type PowerUpKind = 'shield' | 'magnet' | 'speed' | 'doubleJump' | 'glide' | 'slowMo'
 
 export const COLLECTIBLE_KINDS: readonly CollectibleKind[] = [
   'coin',
@@ -21,6 +15,8 @@ export const COLLECTIBLE_KINDS: readonly CollectibleKind[] = [
   'magnet',
   'speed',
   'doubleJump',
+  'glide',
+  'slowMo',
   'reward',
 ]
 
@@ -29,6 +25,8 @@ export const POWER_UP_KINDS: readonly PowerUpKind[] = [
   'magnet',
   'speed',
   'doubleJump',
+  'glide',
+  'slowMo',
 ]
 
 export function isPowerUpKind(kind: CollectibleKind): kind is PowerUpKind {
@@ -58,9 +56,7 @@ const powerUpConfig = GAME_CONFIG.powerUps
  * and audio all read this table, so a new pickup only needs one entry here plus
  * one prefab branch.
  */
-export const COLLECTIBLE_DEFINITIONS: Readonly<
-  Record<CollectibleKind, CollectibleDefinition>
-> = {
+export const COLLECTIBLE_DEFINITIONS: Readonly<Record<CollectibleKind, CollectibleDefinition>> = {
   coin: {
     kind: 'coin',
     label: collectibleConfig.coins.label,
@@ -120,6 +116,26 @@ export const COLLECTIBLE_DEFINITIONS: Readonly<
     color: PALETTE.powerDoubleJump,
     accent: PALETTE.crystal,
     spin: 1.6,
+  },
+  glide: {
+    kind: 'glide',
+    label: powerUpConfig.glide.label,
+    coins: 0,
+    score: collectibleConfig.powerUps.scoreValue,
+    powerUp: 'glide',
+    color: PALETTE.powerGlide,
+    accent: PALETTE.crystal,
+    spin: 1.3,
+  },
+  slowMo: {
+    kind: 'slowMo',
+    label: powerUpConfig.slowMo.label,
+    coins: 0,
+    score: collectibleConfig.powerUps.scoreValue,
+    powerUp: 'slowMo',
+    color: PALETTE.powerSlowMo,
+    accent: PALETTE.coinLight,
+    spin: 0.9,
   },
   reward: {
     kind: 'reward',

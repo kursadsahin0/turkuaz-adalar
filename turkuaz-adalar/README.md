@@ -1,8 +1,26 @@
-# Turkuaz Adalar
+# Tidelark
 
 A mobile-first, endless island runner built with **Three.js**, **TypeScript**, **Vite** and **Rapier3D**. Guide a glowing tide-runner across recycled island platforms, dodge crates and coral spires, collect crystals and dash across the emerald shallows.
 
 The project is a complete gameplay foundation rather than a static scene: it has a fixed-step simulation, streamed level segments, physics collisions, collectibles, a dash ability, procedural audio, persistent records and a full screen-flow UI.
+
+## Features at a glance
+
+- **Turkish, English, German and Spanish** — every screen, HUD string and content name. The language follows the device on first launch and can be changed in Settings (`src/i18n/`). The privacy policy page is in all four languages too.
+- **Original procedural music** — a generated island loop played through WebAudio (`MusicSequencer.ts`), mellow in menus and fuller in runs. No audio files.
+- **Crystals as a second currency** — relic tokens add a spendable crystal; premium cosmetics cost crystals, and 5 crystals trade for 50 coins on the Characters screen.
+- **Daily reward** — seven-day login streak; missing a day restarts it.
+- **Daily missions** — three per day, identical for every player on that date, paid in coins.
+- **Achievements** — seventeen lifetime goals paid in crystals, including islands finished, island stars and runners owned.
+- **30 islands in three chapters** — each with its own colours, music and spawn rules. Six islands add a rule of their own (❄ ice: slippery lane changes, 🌬 wind: announced gusts push you a lane, 🔥 embers: frequent falling hazards) and the last island of each chapter is a chase: a tidal wave follows you and only regular dashing keeps you ahead (`IslandMechanicsController`, `ChaseController`).
+- **Weekly event island** — every ISO week one mid-game island returns with a twist (wind, ice, embers and/or the chase) and pays 600 coins + 15 crystals once (`WeeklyEvent.ts`).
+- **Seasonal skins** — one skin per season (winter, spring, summer, autumn), on sale only in its season and kept forever once bought (`Seasons.ts`).
+- **Six power-ups** — shield, magnet, speed, double jump, glide (lighter gravity) and slow time (the whole run, obstacles and wave at 68%).
+- **Double your coins** — the run summary offers one rewarded ad per run that pays the run's coins again.
+- **Records** — the player's ten best runs on this device. `LeaderboardService` is the seam for Google Play Games leaderboards (needs a Play Console setup and a native plugin).
+- **Second chance** — after a crash, continue for coins (100, then 250) or once per run with a rewarded ad. Ads use the test provider until AdMob is integrated.
+- **Character showcase** — the Characters screen frames the runner in close-up with drag-to-turn; picking a runner plays its own celebration (each body has a `Win_<body>` clip).
+- **Reset all progress** — Settings → Data, behind a two-tap confirmation.
 
 ## Run it
 
@@ -23,13 +41,13 @@ npm run preview
 
 ## Controls
 
-| Action | Desktop | Touch |
-| --- | --- | --- |
+| Action      | Desktop                | Touch                                   |
+| ----------- | ---------------------- | --------------------------------------- |
 | Change lane | `A` / `D` or `←` / `→` | Swipe left / right (one lane per swipe) |
-| Jump | `Space`, `W` or `↑` | Tap, swipe up, or press **Jump** |
-| Dash | `Shift` or `K` | Swipe down, or press **Dash** |
-| Pause | `Esc` or `P` | Pause button in the HUD |
-| Mute | `M` | Sound toggle on the menu / pause screen |
+| Jump        | `Space`, `W` or `↑`    | Tap, swipe up, or press **Jump**        |
+| Dash        | `Shift` or `K`         | Swipe down, or press **Dash**           |
+| Pause       | `Esc` or `P`           | Pause button in the HUD                 |
+| Mute        | `M`                    | Sound toggle on the menu / pause screen |
 
 Touch controls are shown automatically on coarse-pointer devices. The layout respects safe areas and works in portrait as well as desktop browser windows.
 
@@ -46,7 +64,8 @@ src/
 │   └── models/                 Real Blender GLB exports (character and props)
 ├── config/                     Gameplay tuning, palette, render and world settings
 ├── core/
-│   ├── Game.ts                 Central state machine and fixed-step loop
+│   ├── Game.ts                 Central state machine, run loop and fixed-step loop
+│   ├── controllers/            Tutorial, shop, meta/islands, settings/consent, continue offer
 │   ├── Renderer.ts             WebGL renderer, colour management, resizing
 │   ├── SceneManager.ts         Scene ownership and disposal
 │   └── Time.ts                 Frame clock and fixed-step accumulator
@@ -98,7 +117,7 @@ src/
 
 ### World streaming
 
-Island segments are created once and teleported forward when they fall behind the runner. Each recycled segment clears its old obstacles and crystals, then repopulates them from a deterministic seed. The player is a kinematic Rapier capsule moved by Rapier's character controller; obstacle colliders are mapped back to gameplay obstacles by collider handle.
+Island segments are created once and teleported forward when they fall behind the runner. Each island sets its own spawn rules (`src/game/levels/SpawnRules.ts`): obstacle-free start, minimum gap between obstacle rows, relic and power-up chances, cache interval, coin trail length and checkpoint spacing; the endless run keeps the global defaults. A fairness rule keeps obstacle rows that arrive less than 0.45 s apart sharing at least one open lane, so no row pair ever demands an impossible lane change at top speed. Each recycled segment clears its old obstacles and crystals, then repopulates them from a deterministic seed. The player is a kinematic Rapier capsule moved by Rapier's character controller; obstacle colliders are mapped back to gameplay obstacles by collider handle.
 
 The decorative archipelago uses the same idea: ten floating islands and five checker pads are built once and recycled behind the camera. They are scenery only and never create colliders, so they cannot invite impossible jumps. Distant horizon silhouettes are unlit and follow the runner, giving permanent depth without any per-frame spawning.
 
@@ -172,13 +191,13 @@ Every colour is centralised in `src/config/Palette.ts`, and environment tuning (
 
 ### Assets
 
-World scenery is still generated procedurally, while characters and reusable props are authored in Blender and loaded as GLB. The character, the crate and coral-spire obstacles and the relic-token crystal are used in gameplay; each prop falls back to its procedural version if its GLB fails to load. The tide beacon is registered and validated but not placed yet.
+World scenery is still generated procedurally, while characters and reusable props are loaded as GLB. The seven runners come from Kay Lousberg's [KayKit Adventurers](https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0) pack (CC0, see `../blender/KAYKIT_LICENSE.txt`): Rogue, Rogue Hooded, Barbarian, Mage (with and without its hat) and Knight (with and without its helmet), recoloured and bound to one shared rig. The runner is scaled by its body, so hats and helmets stand above it. The character, the crate and coral-spire obstacles and the relic-token crystal are used in gameplay; each prop falls back to its procedural version if its GLB fails to load. The tide beacon is registered and validated but not placed yet.
 
-Cosmetics bought on the Characters screen are applied live: skins recolour the jacket, colours the coral/gold accents, outfits the shorts and trims, and accessories (cap, goggles, bandana, bedroll, wings) are fitted to the head, neck and chest bones from bind-pose measurements, so they follow every animation.
+Each character shows its own body from the GLB. Cosmetics bought on the Characters screen are applied live by repainting swatches of that body's palette texture: skins recolour the tunic, colours the trim/cape, outfits the trousers, boots and leather. Accessories (cap, goggles, bandana, bedroll, wings) are fitted per body to the head and chest bones from bind-pose measurements, so they follow every animation.
 
 ```text
 src/assets/models/
-├── turkuaz_runner.glb     22-bone character, 11 clips
+├── turkuaz_runner.glb     7 KayKit runners on one 41-joint rig, 9 clips
 ├── environment/           tide beacon
 ├── obstacles/             crate, coral spire
 └── collectibles/          tide crystal
@@ -191,8 +210,8 @@ const model = await loader.load('character.turkuaz', {
   onProgress: ({ ratio }) => loadingScreen.setProgress(ratio),
 })
 
-const instance = model.createInstance()      // SkeletonUtils clone + own skeleton
-const mixer = instance.createMixer()         // one AnimationMixer per clone
+const instance = model.createInstance() // SkeletonUtils clone + own skeleton
+const mixer = instance.createMixer() // one AnimationMixer per clone
 const crate = loader.get('obstacle.crate')?.createInstance()
 ```
 
@@ -223,6 +242,9 @@ Level pacing lives in `src/game/levels/LevelCatalog.ts`. Add another `LevelDefin
 ## Verification
 
 ```bash
+npm run check                 # typecheck + lint + all tests + build
+npm run test:e2e              # real game in headless Chrome (run after build)
+npm run playtest              # bot plays islands, reports survival and knockout causes
 npx tsc --noEmit              # strict type check
 npm run build                 # type check + production bundle
 npm run validate:assets       # registry, loading, cache, clones, controller
@@ -240,11 +262,19 @@ npm run validate:movement     # lanes, input gestures, jump, landing, Rapier + d
 ```bash
 /Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup \
   --python blender/build_prop_assets.py
-/Applications/Blender.app/Contents/MacOS/Blender -b \
-  --python blender/build_character_rig.py
+# Characters: KayKit sources in blender/kaykit_source/ -> blender/turkuaz_character.blend
+# and the game's turkuaz_runner.glb
+/Applications/Blender.app/Contents/MacOS/Blender -b --factory-startup \
+  --python blender/build_kaykit_characters.py --python-exit-code 1
 ```
 
-The production bundle currently includes Three.js and the Rapier WASM runtime in one main chunk; Vite reports the usual large-chunk advisory for this dependency pair.
+The earlier procedural runner (its scripts, .blend and GLB) is kept in `blender/legacy/`; it no longer writes the game's character.
+
+The production bundle splits Three.js into its own cached chunk and loads Rapier lazily. Rapier's WASM ships as a separate `.wasm` asset (3.1 MB, ~1.2 MB gzipped) instead of the package's 4.3 MB base64 string; see `rapierExternalWasm` in `vite.config.ts`.
+
+`test:e2e` boots the dev build in headless Google Chrome and walks the menu, character screen, a tutorial run, pause/resume and crash → continue → game over. It then finishes island 1 for real (the runner crosses the finish line, earns three stars, unlocks island 2 and "Next island" starts it), starts every island once, and finally boots the release build from `dist/` and checks the physics WASM loads. Any page or console error fails it. CI runs it after the build.
+
+`playtest` lets a simple bot play islands in headless Chrome (fast-forwarded, no rendering) and prints how far it gets and what knocked it out, e.g. `npm run playtest -- 13 24 30 --tries 5`. The bot steers with the player's inputs and looks ~1.5 s ahead, so its numbers are only for comparing islands with each other; it does not replace playing by hand.
 
 The environment has also been exercised in headless Chrome (SwiftShader):
 
@@ -254,3 +284,5 @@ The environment has also been exercised in headless Chrome (SwiftShader):
 - Screenshot pixel checks confirm the turquoise/green/white/yellow palette, checker and mechanism details, and no black frames.
 - Camera smoke runs in landscape (1280×800) and portrait (390×844), covering menu, run, jumps, a live resize and pause; both viewports render non-blank frames with no exceptions.
 - Movement smoke drives the live game through `A`/`D`, arrows, Space, keyboard repeats, tap, swipe left/right/up/down, a long one-lane swipe, pause → resume, and a live portrait resize. Every lane change lands on the expected lane centre, jumps leave and return to the ground, dash activates, and no console exception is raised.
+
+# deneme

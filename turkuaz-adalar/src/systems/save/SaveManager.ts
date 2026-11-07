@@ -71,6 +71,29 @@ export class SaveManager {
     }
   }
 
+  /**
+   * Removes every key this game wrote (anything under the namespace, plus the
+   * legacy un-namespaced level key). Used by "Reset all progress".
+   */
+  clearAll(): void {
+    try {
+      const storage = window.localStorage
+      const prefix = `${this.namespace}:`
+      const doomed: string[] = []
+      for (let i = 0; i < storage.length; i += 1) {
+        const key = storage.key(i)
+        if (key && (key.startsWith(prefix) || key === 'level_progression')) {
+          doomed.push(key)
+        }
+      }
+      for (const key of doomed) {
+        storage.removeItem(key)
+      }
+    } catch {
+      // Storage unavailable: nothing persisted, nothing to clear.
+    }
+  }
+
   private storageKey(key: string): string {
     return `${this.namespace}:${key}`
   }

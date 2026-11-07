@@ -4,13 +4,7 @@ import { Logger } from '../../utils/logger.ts'
 import { clamp } from '../../utils/math.ts'
 
 export type CharacterAnimationState =
-  | 'idle'
-  | 'run'
-  | 'jump'
-  | 'fall'
-  | 'land'
-  | 'win'
-  | 'lose'
+  'idle' | 'run' | 'jump' | 'fall' | 'land' | 'slide' | 'hit' | 'win' | 'lose'
 
 export interface CharacterMotion {
   readonly grounded: boolean
@@ -20,6 +14,10 @@ export interface CharacterMotion {
   readonly dashing?: boolean
   /** Menu / spectator mode: always idle unless an outcome is locked. */
   readonly idle?: boolean
+  /** True while the runner slides under an obstacle. */
+  readonly sliding?: boolean
+  /** Length of the current slide, so the roll fits it. */
+  readonly slideDuration?: number
 }
 
 export interface CharacterAnimatorOptions {
@@ -38,6 +36,8 @@ const CLIP_NAMES: Record<CharacterAnimationState, readonly string[]> = {
   jump: ['Jump', 'Airborne'],
   fall: ['Fall', 'Airborne'],
   land: ['Land'],
+  slide: ['Slide'],
+  hit: ['Hit'],
   win: ['Win'],
   lose: ['Lose'],
 }
@@ -48,6 +48,8 @@ const DEFAULT_FADES: Record<CharacterAnimationState, number> = {
   jump: 0.12,
   fall: 0.2,
   land: 0.08,
+  slide: 0.06,
+  hit: 0.06,
   win: 0.22,
   lose: 0.22,
 }
@@ -58,6 +60,8 @@ const FALLBACKS: Partial<Record<CharacterAnimationState, CharacterAnimationState
   jump: 'fall',
   fall: 'idle',
   land: 'run',
+  slide: 'run',
+  hit: 'run',
   run: 'idle',
   win: 'idle',
   lose: 'idle',
@@ -81,13 +85,17 @@ export class CharacterAnimator {
   private currentAction: THREE.AnimationAction | null = null
   private locked: 'win' | 'lose' | null = null
   private landTimer = 0
+  /** Remaining time of a one-shot stagger (shield absorbed a hit). */
+  private hitTimer = 0
+  /** Per-runner celebrations ("Win_<model>" clips); the shared Win is the default. */
+  private readonly winVariants = new Map<string, THREE.AnimationAction>()
+  private defaultWin: THREE.AnimationAction | null = null
+  /** A showcase celebration returns to idle once it has played. */
+  private celebrateTimer = 0
   private wasGrounded = true
   private disposed = false
 
-  constructor(
-    instance: ModelInstance,
-    options: CharacterAnimatorOptions = {},
-  ) {
+  constructor(instance: ModelInstance, options: CharacterAnimatorOptions = {}) {
     this.instance = instance
     this.mixer = instance.createMixer()
     this.fades = { ...DEFAULT_FADES, ...options.fades }
@@ -115,7 +123,35 @@ export class CharacterAnimator {
       this.actions.set(state, action)
     }
 
+    this.defaultWin = this.actions.get('win') ?? null
+    for (const [name, clip] of clips) {
+      if (name.startsWith('Win_')) {
+        const action = this.mixer.clipAction(clip)
+        action.setLoop(THREE.LoopOnce, 1)
+        action.clampWhenFinished = true
+        this.winVariants.set(name.slice(4), action)
+      }
+    }
+
     this.playState('idle', 0, true)
+  }
+
+  /** Picks the celebration of the runner being shown (falls back to Win). */
+  setWinVariant(model: string): void {
+    const action = this.winVariants.get(model) ?? this.defaultWin
+    if (action) {
+      this.actions.set('win', action)
+    }
+  }
+
+  /** Plays the celebration once (character screen), then returns to idle. */
+  celebrate(): void {
+    const win = this.actions.get('win')
+    if (this.disposed || !win) {
+      return
+    }
+    this.playOutcome('win')
+    this.celebrateTimer = win.getClip().duration + 0.15
   }
 
   get state(): CharacterAnimationState | null {
@@ -137,11 +173,20 @@ export class CharacterAnimator {
 
     if (this.locked) {
       this.mixer.update(delta)
+      if (this.celebrateTimer > 0) {
+        this.celebrateTimer -= delta
+        if (this.celebrateTimer <= 0) {
+          this.releaseOutcome()
+        }
+      }
       return
     }
 
     if (this.landTimer > 0) {
       this.landTimer = Math.max(0, this.landTimer - delta)
+    }
+    if (this.hitTimer > 0) {
+      this.hitTimer = Math.max(0, this.hitTimer - delta)
     }
 
     const grounded = motion.idle ? true : motion.grounded
@@ -157,17 +202,39 @@ export class CharacterAnimator {
     }
 
     const next = this.chooseState(motion)
+    const entering = next !== this.currentState
     this.playState(next, this.fades[next])
+    if (entering && next === 'slide') {
+      // Fit the roll to the slide so the runner stands up as the slide ends.
+      const slide = this.actions.get('slide')
+      const duration = motion.slideDuration ?? 0
+      if (slide && duration > 0) {
+        slide.setEffectiveTimeScale(clamp(slide.getClip().duration / duration, 0.4, 2))
+      }
+    }
 
     const run = this.actions.get('run')
     if (run) {
       const rate = motion.dashing ? 1.25 : 1
-      run.setEffectiveTimeScale(
-        clamp((motion.speed / this.runReferenceSpeed) * rate, 0.7, 2.5),
-      )
+      run.setEffectiveTimeScale(clamp((motion.speed / this.runReferenceSpeed) * rate, 0.7, 2.5))
     }
 
     this.mixer.update(delta)
+  }
+
+  /** A short stagger that does not end the run (e.g. a shield absorbed a hit). */
+  playHit(): void {
+    const hit = this.actions.get('hit')
+    if (this.disposed || this.locked || !hit) {
+      return
+    }
+    this.hitTimer = hit.getClip().duration * 0.8
+    this.playState('hit', this.fades.hit, true)
+  }
+
+  /** Whether a dedicated slide clip exists (the model then animates the slide itself). */
+  get hasSlide(): boolean {
+    return this.actions.has('slide')
   }
 
   /** Locks the character in a one-shot celebration or defeat pose. */
@@ -177,6 +244,7 @@ export class CharacterAnimator {
     }
     this.locked = outcome
     this.landTimer = 0
+    this.celebrateTimer = 0
     this.playState(outcome, this.fades[outcome], true)
   }
 
@@ -197,6 +265,8 @@ export class CharacterAnimator {
     this.mixer.stopAllAction()
     this.locked = null
     this.landTimer = 0
+    this.hitTimer = 0
+    this.celebrateTimer = 0
     this.wasGrounded = true
     this.currentState = null
     this.currentAction = null
@@ -222,6 +292,12 @@ export class CharacterAnimator {
     if (motion.idle) {
       return 'idle'
     }
+    if (motion.sliding && motion.grounded) {
+      return 'slide'
+    }
+    if (this.hitTimer > 0) {
+      return 'hit'
+    }
     if (this.landTimer > 0) {
       return 'land'
     }
@@ -231,11 +307,7 @@ export class CharacterAnimator {
     return motion.speed > 0.2 ? 'run' : 'idle'
   }
 
-  private playState(
-    requested: CharacterAnimationState,
-    fade: number,
-    restart = false,
-  ): void {
+  private playState(requested: CharacterAnimationState, fade: number, restart = false): void {
     const state = this.resolveState(requested)
     if (!state) {
       return
@@ -266,10 +338,7 @@ export class CharacterAnimator {
     this.currentAction = action
   }
 
-  private resolveState(
-    state: CharacterAnimationState,
-    depth = 0,
-  ): CharacterAnimationState | null {
+  private resolveState(state: CharacterAnimationState, depth = 0): CharacterAnimationState | null {
     if (this.actions.has(state)) {
       return state
     }

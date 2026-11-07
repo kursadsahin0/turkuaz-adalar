@@ -8,7 +8,6 @@
  *
  * Usage: npm run validate:camera
  */
-import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as THREE from 'three'
@@ -80,9 +79,7 @@ try {
   const { IsometricCameraRig } = await server.ssrLoadModule(
     '/src/game/camera/IsometricCameraRig.ts',
   )
-  const { CameraOcclusion } = await server.ssrLoadModule(
-    '/src/game/camera/CameraOcclusion.ts',
-  )
+  const { CameraOcclusion } = await server.ssrLoadModule('/src/game/camera/CameraOcclusion.ts')
   const { baseFraming, composeFraming, resolveAspectProfile, resolveCameraSection } =
     await server.ssrLoadModule('/src/game/camera/CameraFraming.ts')
   const { CAMERA_CONFIG } = await server.ssrLoadModule('/src/config/CameraConfig.ts')
@@ -109,10 +106,7 @@ try {
     'camera.elevated_iso',
     () => {
       const pitch = THREE.MathUtils.radToDeg(
-        Math.atan2(
-          landscape.camera.position.y - target.y,
-          landscape.camera.position.z - target.z,
-        ),
+        Math.atan2(landscape.camera.position.y - target.y, landscape.camera.position.z - target.z),
       )
       return pitch > 28 && pitch < 40
     },
@@ -147,12 +141,7 @@ try {
     () => {
       const feet = project(landscape, target.clone().add(new THREE.Vector3(0, -0.78, 0)))
       const head = project(landscape, target.clone().add(new THREE.Vector3(0, 0.78, 0)))
-      return (
-        Math.abs(feet.x) < 0.6 &&
-        Math.abs(head.x) < 0.6 &&
-        feet.y > -1 &&
-        head.y < 1
-      )
+      return Math.abs(feet.x) < 0.6 && Math.abs(head.x) < 0.6 && feet.y > -1 && head.y < 1
     },
     'portrait keeps the runner visible',
   )
@@ -175,11 +164,7 @@ try {
     maxStep = Math.max(maxStep, followRig.camera.position.distanceTo(previous))
     previous = followRig.camera.position.clone()
   }
-  check(
-    'follow.no_position_snap',
-    () => maxStep < 0.6,
-    `max frame step ${maxStep.toFixed(3)} m`,
-  )
+  check('follow.no_position_snap', () => maxStep < 0.6, `max frame step ${maxStep.toFixed(3)} m`)
   check(
     'follow.stays_behind',
     () => {
@@ -232,8 +217,7 @@ try {
         CAMERA_CONFIG.rotation.steerYawDegrees
       const expectedX =
         2.7 * CAMERA_CONFIG.follow.pivotXFollow +
-        Math.sin(THREE.MathUtils.degToRad(framing.yawDegrees + steer)) *
-          framing.distance
+        Math.sin(THREE.MathUtils.degToRad(framing.yawDegrees + steer)) * framing.distance
       return Math.abs(lateralRig.camera.position.x - expectedX) < 0.2
     },
     `camera x ${lateralRig.camera.position.x.toFixed(2)}`,
@@ -247,8 +231,16 @@ try {
   framingRig.setDistance(14)
   framingRig.setHeight(9)
   settle(framingRig, target, 'follow', 3)
-  check('framing.distance_setter', () => approx(framingRig.distance, 14, 0.02), `${framingRig.distance.toFixed(2)} m`)
-  check('framing.height_setter', () => approx(framingRig.height, 9, 0.02), `${framingRig.height.toFixed(2)} m`)
+  check(
+    'framing.distance_setter',
+    () => approx(framingRig.distance, 14, 0.02),
+    `${framingRig.distance.toFixed(2)} m`,
+  )
+  check(
+    'framing.height_setter',
+    () => approx(framingRig.height, 9, 0.02),
+    `${framingRig.height.toFixed(2)} m`,
+  )
   check(
     'framing.setter_moves_camera',
     () => approx(framingRig.camera.position.y - target.y, 9, 0.15),
@@ -257,7 +249,10 @@ try {
   framingRig.adjustDistance(-1.5)
   framingRig.adjustHeight(-1)
   settle(framingRig, target, 'follow', 3)
-  check('framing.adjust_setters', () => approx(framingRig.distance, 12.5, 0.05) && approx(framingRig.height, 8, 0.05))
+  check(
+    'framing.adjust_setters',
+    () => approx(framingRig.distance, 12.5, 0.05) && approx(framingRig.height, 8, 0.05),
+  )
   framingRig.setDistance(100)
   framingRig.setHeight(-5)
   settle(framingRig, target, 'follow', 4)
@@ -272,7 +267,9 @@ try {
   settle(framingRig, target, 'follow', 3)
   check(
     'framing.overrides_clear',
-    () => approx(framingRig.distance, baseDistance, 0.05) && approx(framingRig.height, baseHeight, 0.05),
+    () =>
+      approx(framingRig.distance, baseDistance, 0.05) &&
+      approx(framingRig.height, baseHeight, 0.05),
   )
 
   console.log('\nJump & landing feedback')
@@ -414,8 +411,13 @@ try {
   recenterRig.recenter(new THREE.Vector3(0, 3.36, -120), 0)
   check(
     'menu.recenter_preserves_framing',
-    () => approx(recenterRig.distance, recenterMenuDistance, 0.001) &&
-      approx(recenterRig.camera.position.z, -120 + Math.cos(THREE.MathUtils.degToRad(10)) * recenterMenuDistance, 0.3),
+    () =>
+      approx(recenterRig.distance, recenterMenuDistance, 0.001) &&
+      approx(
+        recenterRig.camera.position.z,
+        -120 + Math.cos(THREE.MathUtils.degToRad(10)) * recenterMenuDistance,
+        0.3,
+      ),
   )
 
   const driftRig = makeRig(16 / 9, false)
@@ -453,27 +455,24 @@ try {
   const sectionAt = (value) => resolveCameraSection(value).section.id
   check('section.shallows', () => sectionAt(0) === 'shallows' && sectionAt(120) === 'shallows')
   check('section.coral', () => sectionAt(200) === 'coral-reach' && sectionAt(360) === 'coral-reach')
-  check('section.horizon', () => sectionAt(420) === 'horizon-run' && sectionAt(5000) === 'horizon-run')
   check(
-    'section.blends_before_boundary',
-    () => {
-      const early = resolveCameraSection(140)
-      const late = resolveCameraSection(168)
-      return early.blend === 0 && late.blend > 0.6 && late.next?.id === 'coral-reach'
-    },
+    'section.horizon',
+    () => sectionAt(420) === 'horizon-run' && sectionAt(5000) === 'horizon-run',
   )
-  check(
-    'section.continuous_boundary',
-    () => {
-      const before = resolveCameraSection(169.9999).framing
-      const after = resolveCameraSection(170).framing
-      return (
-        approx(before.heightBias, after.heightBias, 1e-6) &&
-        approx(before.yawBiasDegrees, after.yawBiasDegrees, 1e-6) &&
-        approx(before.fovBias, after.fovBias, 1e-6)
-      )
-    },
-  )
+  check('section.blends_before_boundary', () => {
+    const early = resolveCameraSection(140)
+    const late = resolveCameraSection(168)
+    return early.blend === 0 && late.blend > 0.6 && late.next?.id === 'coral-reach'
+  })
+  check('section.continuous_boundary', () => {
+    const before = resolveCameraSection(169.9999).framing
+    const after = resolveCameraSection(170).framing
+    return (
+      approx(before.heightBias, after.heightBias, 1e-6) &&
+      approx(before.yawBiasDegrees, after.yawBiasDegrees, 1e-6) &&
+      approx(before.fovBias, after.fovBias, 1e-6)
+    )
+  })
   check(
     'section.tightens_bounds',
     () =>
@@ -486,11 +485,23 @@ try {
   sectionRig.snapTo(roamTarget, 'follow', 0)
   roamTarget.x = 100
   settle(sectionRig, roamTarget, 'follow', 2, { distance: 20 })
-  check('bounds.shallows_lateral', () => sectionRig.sectionId === 'shallows' && Math.abs(sectionRig.camera.position.x) <= 5 + 1.4 + 0.01, `x ${sectionRig.camera.position.x.toFixed(2)}`)
+  check(
+    'bounds.shallows_lateral',
+    () =>
+      sectionRig.sectionId === 'shallows' &&
+      Math.abs(sectionRig.camera.position.x) <= 5 + 1.4 + 0.01,
+    `x ${sectionRig.camera.position.x.toFixed(2)}`,
+  )
   sectionRig.snapTo(roamTarget, 'follow', 500)
   roamTarget.x = 100
   settle(sectionRig, roamTarget, 'follow', 2, { distance: 500 })
-  check('bounds.horizon_lateral', () => sectionRig.sectionId === 'horizon-run' && Math.abs(sectionRig.camera.position.x) <= 3.8 + 1.4 + 0.01, `x ${sectionRig.camera.position.x.toFixed(2)}`)
+  check(
+    'bounds.horizon_lateral',
+    () =>
+      sectionRig.sectionId === 'horizon-run' &&
+      Math.abs(sectionRig.camera.position.x) <= 3.8 + 1.4 + 0.01,
+    `x ${sectionRig.camera.position.x.toFixed(2)}`,
+  )
   check(
     'bounds.horizon_opens_distance',
     () => sectionRig.distance > 10.8 + 1 && sectionRig.height > 7.1 + 0.6,
@@ -523,18 +534,12 @@ try {
   const origin = new THREE.Vector3(0, 3, 0)
   const desired = new THREE.Vector3(0, 3, 10)
   const safe = new THREE.Vector3()
-  const blocker = new THREE.Box3(
-    new THREE.Vector3(-2, 1, 4),
-    new THREE.Vector3(2, 5, 6),
-  )
-  check(
-    'occlusion.without_source',
-    () => {
-      const out = new THREE.Vector3()
-      const hit = occlusion.resolve(origin, desired, out)
-      return hit === false && out.z === 10
-    },
-  )
+  const blocker = new THREE.Box3(new THREE.Vector3(-2, 1, 4), new THREE.Vector3(2, 5, 6))
+  check('occlusion.without_source', () => {
+    const out = new THREE.Vector3()
+    const hit = occlusion.resolve(origin, desired, out)
+    return hit === false && out.z === 10
+  })
   occlusion.setSource(() => [blocker])
   check(
     'occlusion.pulls_camera_in',
@@ -544,81 +549,60 @@ try {
     },
     `boom ${safe.z.toFixed(2)} m`,
   )
-  check(
-    'occlusion.clear_path',
-    () => {
-      const out = new THREE.Vector3()
-      const hit = occlusion.resolve(origin, new THREE.Vector3(0, 3, 2), out)
-      return hit === false && approx(out.z, 2, 1e-6)
-    },
-  )
-  check(
-    'occlusion.minimum_distance',
-    () => {
-      const closeBlocker = new THREE.Box3(
-        new THREE.Vector3(-2, 1, 0.4),
-        new THREE.Vector3(2, 5, 0.8),
-      )
-      occlusion.setSource(() => [closeBlocker])
-      const out = new THREE.Vector3()
-      occlusion.resolve(origin, desired, out)
-      return out.z >= 2.5 - 1e-6
-    },
-  )
+  check('occlusion.clear_path', () => {
+    const out = new THREE.Vector3()
+    const hit = occlusion.resolve(origin, new THREE.Vector3(0, 3, 2), out)
+    return hit === false && approx(out.z, 2, 1e-6)
+  })
+  check('occlusion.minimum_distance', () => {
+    const closeBlocker = new THREE.Box3(new THREE.Vector3(-2, 1, 0.4), new THREE.Vector3(2, 5, 0.8))
+    occlusion.setSource(() => [closeBlocker])
+    const out = new THREE.Vector3()
+    occlusion.resolve(origin, desired, out)
+    return out.z >= 2.5 - 1e-6
+  })
   occlusion.setSource(null)
 
   console.log('\nRobustness')
   const robust = makeRig()
   robust.snapTo(target, 'follow', 0)
-  check(
-    'robust.finite_after_stress',
-    () => {
-      let value = 0
-      for (let index = 0; index < 600; index += 1) {
-        value += 0.37
-        const point = new THREE.Vector3(
-          Math.sin(value) * 40,
-          3 + Math.cos(value * 0.7) * 8,
-          -value * 3,
-        )
-        robust.update(DT, point, index % 90 < 20 ? 'menu' : 'follow', value, value * 3)
-      }
-      const p = robust.camera.position
-      return Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z)
-    },
-  )
-  check(
-    'robust.rig_dispose',
-    () => {
-      robust.dispose()
-      return true
-    },
-  )
+  check('robust.finite_after_stress', () => {
+    let value = 0
+    for (let index = 0; index < 600; index += 1) {
+      value += 0.37
+      const point = new THREE.Vector3(
+        Math.sin(value) * 40,
+        3 + Math.cos(value * 0.7) * 8,
+        -value * 3,
+      )
+      robust.update(DT, point, index % 90 < 20 ? 'menu' : 'follow', value, value * 3)
+    }
+    const p = robust.camera.position
+    return Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z)
+  })
+  check('robust.rig_dispose', () => {
+    robust.dispose()
+    return true
+  })
 
   console.log('\nConfig integrity')
-  check(
-    'config.aspects',
-    () => ['landscape', 'square', 'portrait'].every((profile) => baseFraming(profile).distance > 0),
+  check('config.aspects', () =>
+    ['landscape', 'square', 'portrait'].every((profile) => baseFraming(profile).distance > 0),
   )
-  check(
-    'config.sections_ordered',
-    () =>
-      CAMERA_CONFIG.sections.definitions.every(
-        (section, index, list) =>
-          section.to > section.from &&
-          (index === list.length - 1 || section.to === list[index + 1].from),
-      ),
+  check('config.sections_ordered', () =>
+    CAMERA_CONFIG.sections.definitions.every(
+      (section, index, list) =>
+        section.to > section.from &&
+        (index === list.length - 1 || section.to === list[index + 1].from),
+    ),
   )
-  check(
-    'config.menu_closer_than_follow',
-    () => {
-      const base = baseFraming('landscape')
-      const section = resolveCameraSection(0)
-      const menu = composeFraming(base, section, 'menu')
-      const follow = composeFraming(base, section, 'follow')
-      return menu.distance < follow.distance && menu.lookAhead < follow.lookAhead
-    },
-  )
+  check('config.menu_closer_than_follow', () => {
+    const base = baseFraming('landscape')
+    const section = resolveCameraSection(0)
+    const menu = composeFraming(base, section, 'menu')
+    const follow = composeFraming(base, section, 'follow')
+    return menu.distance < follow.distance && menu.lookAhead < follow.lookAhead
+  })
   check(
     'config.floor_clearance',
     () => CAMERA_CONFIG.bounds.floorClearance > 0 && CAMERA_CONFIG.bounds.lookFloorClearance > 0,

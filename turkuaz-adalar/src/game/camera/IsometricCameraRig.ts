@@ -15,10 +15,7 @@ import {
   type CameraFramingValues,
   type ResolvedCameraSection,
 } from './CameraFraming.ts'
-import {
-  CameraOcclusion,
-  type CameraOccluderSource,
-} from './CameraOcclusion.ts'
+import { CameraOcclusion, type CameraOccluderSource } from './CameraOcclusion.ts'
 
 export interface IsometricCameraOptions {
   /** Override the OS reduced-motion preference (useful for deterministic tests). */
@@ -260,9 +257,7 @@ export class IsometricCameraRig {
     const rotation = CAMERA_CONFIG.rotation
     const bound = Math.max(0.001, this.section.bounds.lateral)
     const steerTarget =
-      clamp(target.x / bound, -1, 1) *
-      degToRad(rotation.steerYawDegrees) *
-      motionScale
+      clamp(target.x / bound, -1, 1) * degToRad(rotation.steerYawDegrees) * motionScale
     this.steerYaw = damp(this.steerYaw, steerTarget, rotation.steerLambda, frameDelta)
 
     // Ambient yaw keeps the isometric view alive, but it is exactly the kind
@@ -271,9 +266,7 @@ export class IsometricCameraRig {
     const ambient =
       ambientScale *
       Math.sin((elapsed / rotation.periodSeconds) * Math.PI * 2) *
-      degToRad(
-        mode === 'menu' ? rotation.menuYawDegrees : rotation.gameplayYawDegrees,
-      )
+      degToRad(mode === 'menu' ? rotation.menuYawDegrees : rotation.gameplayYawDegrees)
     const yaw = degToRad(this.framing.yawDegrees) + ambient + this.steerYaw
 
     this.focusX = damp(
@@ -306,11 +299,7 @@ export class IsometricCameraRig {
 
     this.computeDesiredPosition(target, yaw, jumpRise, landingDrop)
 
-    this.boomOrigin.set(
-      this.focusX,
-      this.focusY + this.framing.lookHeight,
-      target.z,
-    )
+    this.boomOrigin.set(this.focusX, this.focusY + this.framing.lookHeight, target.z)
     this.occlusion.resolve(this.boomOrigin, this.desiredPosition, this.desiredPosition)
     this.clampToBounds(this.desiredPosition)
 
@@ -334,9 +323,8 @@ export class IsometricCameraRig {
     this.camera.lookAt(this.look)
 
     const roll =
-      degToRad(
-        jump.rollDegrees * this.jumpEnergy + landing.rollDegrees * this.landingEnergy,
-      ) * motionScale
+      degToRad(jump.rollDegrees * this.jumpEnergy + landing.rollDegrees * this.landingEnergy) *
+      motionScale
     this.camera.rotation.z += roll
     this.applyShake(frameDelta)
 
@@ -361,11 +349,7 @@ export class IsometricCameraRig {
       0.001,
       CAMERA_CONFIG.landing.referenceImpactSpeed - CAMERA_CONFIG.landing.minImpactSpeed,
     )
-    const normalized = clamp(
-      (impactSpeed - CAMERA_CONFIG.landing.minImpactSpeed) / range,
-      0,
-      1,
-    )
+    const normalized = clamp((impactSpeed - CAMERA_CONFIG.landing.minImpactSpeed) / range, 0, 1)
     this.landingEnergy = Math.max(this.landingEnergy, 0.35 + normalized * 0.65)
   }
 

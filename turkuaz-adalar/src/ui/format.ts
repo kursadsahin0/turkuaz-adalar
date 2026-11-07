@@ -1,7 +1,8 @@
-const integerFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
+import { formatNumber } from '../i18n/i18n.ts'
 
+/** Locale-aware integer (1,234 in English, 1.234 in Turkish). */
 export function formatInteger(value: number): string {
-  return integerFormatter.format(Math.max(0, Math.floor(value)))
+  return formatNumber(Math.max(0, Math.floor(value)))
 }
 
 export function formatDistance(value: number): string {

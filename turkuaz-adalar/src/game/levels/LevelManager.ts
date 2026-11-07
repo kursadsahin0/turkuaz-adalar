@@ -1,19 +1,69 @@
 import { easeOutCubic, smoothstep } from '../../utils/math.ts'
 import type { LevelDefinition } from './LevelDefinition.ts'
 import { LEVEL_CATALOG } from './LevelCatalog.ts'
+import { DEFAULT_SPAWN_RULES, spawnRulesFor, type SpawnRules } from './SpawnRules.ts'
+
+/** Speed and obstacle-density factors per assist level (0 = off). */
+const ASSIST_SPEED = [1, 0.95, 0.9] as const
+const ASSIST_DENSITY = [1, 0.88, 0.78] as const
 
 /**
  * Turns a level definition plus travelled distance into live difficulty
  * parameters (speed, obstacle density, crystal density).
  */
 export class LevelManager {
-  readonly definition: LevelDefinition
-
+  private current: LevelDefinition
+  /** Endless runs use the first level's pacing with no finish line. */
+  private endless = true
   private currentDistance = 0
   private difficultyMultiplier = 1.0
+  /** Struggle assist: 0 off, 1-2 gently slower and sparser (see IslandAssist). */
+  private assistLevel = 0
 
   constructor(definition: LevelDefinition = LEVEL_CATALOG[0]) {
-    this.definition = definition
+    this.current = definition
+  }
+
+  get definition(): LevelDefinition {
+    return this.current
+  }
+
+  get isEndless(): boolean {
+    return this.endless
+  }
+
+  /** Applies the struggle assist for this run (0 = none). */
+  setAssist(level: number): void {
+    this.assistLevel = Math.max(0, Math.min(ASSIST_SPEED.length - 1, Math.floor(level)))
+  }
+
+  get assist(): number {
+    return this.assistLevel
+  }
+
+  /** Selects a catalogue level, or `null` for the endless run. */
+  setLevel(level: LevelDefinition | null): void {
+    this.endless = level === null
+    this.current = level ?? LEVEL_CATALOG[0]
+  }
+
+  /** Spawning rules for this run (the island's, or the endless defaults). */
+  get spawnRules(): SpawnRules {
+    return this.endless ? DEFAULT_SPAWN_RULES : spawnRulesFor(this.current)
+  }
+
+  /** Obstacle kinds this run may spawn; `null` allows every kind. */
+  get allowedObstacles(): readonly string[] | null {
+    return this.endless ? null : this.current.obstacles.enabledObstacles
+  }
+
+  /** 0..1 progress toward the finish line (levels only). */
+  get completion(): number {
+    return this.endless ? 0 : Math.min(1, this.currentDistance / this.current.targetDistance)
+  }
+
+  get reachedTarget(): boolean {
+    return !this.endless && this.currentDistance >= this.current.targetDistance
   }
 
   get distance(): number {
@@ -25,8 +75,10 @@ export class LevelManager {
   }
 
   get speed(): number {
-    const baseSpeed = this.definition.baseSpeed + (this.definition.maxSpeed - this.definition.baseSpeed) * easeOutCubic(this.progress)
-    return baseSpeed * this.difficultyMultiplier
+    const baseSpeed =
+      this.definition.baseSpeed +
+      (this.definition.maxSpeed - this.definition.baseSpeed) * easeOutCubic(this.progress)
+    return baseSpeed * this.difficultyMultiplier * ASSIST_SPEED[this.assistLevel]
   }
 
   get difficulty(): number {
@@ -34,11 +86,20 @@ export class LevelManager {
   }
 
   get obstacleDensity(): number {
-    return this.definition.obstacles.maxDensity * (0.7 + this.progress * 0.3) * this.difficultyMultiplier
+    return (
+      this.definition.obstacles.maxDensity *
+      (0.7 + this.progress * 0.3) *
+      this.difficultyMultiplier *
+      ASSIST_DENSITY[this.assistLevel]
+    )
   }
 
   get crystalDensity(): number {
-    return this.definition.collectibles.coinDensity * (1 - this.progress * 0.2) * this.difficultyMultiplier
+    return (
+      this.definition.collectibles.coinDensity *
+      (1 - this.progress * 0.2) *
+      this.difficultyMultiplier
+    )
   }
 
   get targetDistance(): number {
@@ -47,10 +108,6 @@ export class LevelManager {
 
   get theme() {
     return this.definition.theme
-  }
-
-  get platforms() {
-    return this.definition.platforms
   }
 
   get obstacles() {
@@ -75,7 +132,9 @@ export class LevelManager {
         this.difficultyMultiplier = 1.0
         break
       case 'hard':
-        this.difficultyMultiplier = 5.0
+        // Was 5.0, which made speed and obstacle density five times higher
+        // and the game effectively unplayable.
+        this.difficultyMultiplier = 1.3
         break
     }
   }
@@ -84,7 +143,18 @@ export class LevelManager {
     this.currentDistance = Math.max(0, distance)
   }
 
+  /** Run speed when the runner reaches `distance` (for spawning ahead of it). */
+  speedForDistance(distance: number): number {
+    const progress = smoothstep(0, this.definition.rampDistance, Math.max(0, distance))
+    const base =
+      this.definition.baseSpeed +
+      (this.definition.maxSpeed - this.definition.baseSpeed) * easeOutCubic(progress)
+    return base * this.difficultyMultiplier
+  }
+
   difficultyForDistance(distance: number): number {
-    return smoothstep(0, this.definition.rampDistance, Math.max(0, distance)) * this.difficultyMultiplier
+    return (
+      smoothstep(0, this.definition.rampDistance, Math.max(0, distance)) * this.difficultyMultiplier
+    )
   }
 }

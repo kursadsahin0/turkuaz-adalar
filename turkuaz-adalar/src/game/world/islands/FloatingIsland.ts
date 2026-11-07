@@ -116,10 +116,7 @@ export class FloatingIslandAssets {
     if (!geometry) {
       throw new Error('Distant island terrain variant is missing.')
     }
-    const mesh = new THREE.Mesh(
-      geometry,
-      near ? this.distantNearMaterial : this.distantFarMaterial,
-    )
+    const mesh = new THREE.Mesh(geometry, near ? this.distantNearMaterial : this.distantFarMaterial)
     mesh.name = 'DistantIsland'
     return mesh
   }
@@ -154,13 +151,7 @@ function buildFloatingTerrain(variant: number): THREE.BufferGeometry {
       position: new THREE.Vector3(0, -0.17, 0),
     },
     {
-      geometry: new THREE.CylinderGeometry(
-        0.66 * topRadius,
-        0.62 * topRadius,
-        0.025,
-        12,
-        1,
-      ),
+      geometry: new THREE.CylinderGeometry(0.66 * topRadius, 0.62 * topRadius, 0.025, 12, 1),
       color: PALETTE.grassLight,
       position: new THREE.Vector3(0, 0.006, 0),
     },
@@ -211,11 +202,7 @@ function buildFloatingTerrain(variant: number): THREE.BufferGeometry {
   return buildGeometry(parts, true)
 }
 
-function roughenRock(
-  geometry: THREE.CylinderGeometry,
-  depth: number,
-  seed: number,
-): void {
+function roughenRock(geometry: THREE.CylinderGeometry, depth: number, seed: number): void {
   const position = geometry.attributes.position
   if (!position) {
     return
@@ -329,11 +316,7 @@ export class FloatingIsland {
       const distance = rng.range(0.34, 0.74) * radius
       const scale = rng.range(prop.minScale, prop.maxScale) * (0.72 + radius * 0.09)
 
-      prop.object.position.set(
-        Math.cos(angle) * distance,
-        0,
-        Math.sin(angle) * distance,
-      )
+      prop.object.position.set(Math.cos(angle) * distance, 0, Math.sin(angle) * distance)
       prop.object.rotation.y = rng.range(0, Math.PI * 2)
       prop.object.scale.setScalar(scale)
       prop.phase = rng.range(0, Math.PI * 2)

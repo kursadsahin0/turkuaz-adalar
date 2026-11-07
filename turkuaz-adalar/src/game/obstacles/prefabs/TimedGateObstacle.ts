@@ -24,12 +24,7 @@ export class TimedGateObstacle extends ObstacleBase {
   private phase = 0
   private open = false
 
-  constructor(
-    id: number,
-    scene: THREE.Scene,
-    physics: PhysicsWorld,
-    assets: ObstacleAssets,
-  ) {
+  constructor(id: number, scene: THREE.Scene, physics: PhysicsWorld, assets: ObstacleAssets) {
     const config = GAME_CONFIG.obstacles.timedGate
     const group = new THREE.Group()
     group.name = 'TimedGate'
@@ -51,10 +46,7 @@ export class TimedGateObstacle extends ObstacleBase {
       base.position.set(side * 1.08, 0.08, 0)
       group.add(base)
 
-      const beacon = new THREE.Mesh(
-        assets.cone(0.16, 0.28, 10),
-        assets.mechanismGlowMaterial,
-      )
+      const beacon = new THREE.Mesh(assets.cone(0.16, 0.28, 10), assets.mechanismGlowMaterial)
       beacon.position.set(side * 1.08, config.height + 0.08, 0)
       beacon.rotation.z = Math.PI
       group.add(beacon)
@@ -122,10 +114,8 @@ export class TimedGateObstacle extends ObstacleBase {
     if (!closed && t < config.closedTime + config.warningTime) {
       const warn = 1 - (t - config.closedTime) / config.warningTime
       const pulse = 0.6 + warn * 0.4 * ((Math.sin(this.age * 10) + 1) / 2)
-      ;(this.gateMaterial as THREE.MeshStandardMaterial).emissiveIntensity =
-        0.08 + warn * 0.24
-      ;(this.beaconMaterial as THREE.MeshStandardMaterial).emissiveIntensity =
-        0.4 + pulse * 0.5
+      ;(this.gateMaterial as THREE.MeshStandardMaterial).emissiveIntensity = 0.08 + warn * 0.24
+      ;(this.beaconMaterial as THREE.MeshStandardMaterial).emissiveIntensity = 0.4 + pulse * 0.5
     } else if (closed) {
       ;(this.gateMaterial as THREE.MeshStandardMaterial).emissiveIntensity = 0.16
       ;(this.beaconMaterial as THREE.MeshStandardMaterial).emissiveIntensity =
@@ -154,18 +144,14 @@ export class TimedGateObstacle extends ObstacleBase {
     this.root.position.set(x, this.topY, z)
     this.baseX = x
     this.baseZ = z
-    const t = (this.phase) % (config.openTime + config.closedTime)
+    const t = this.phase % (config.openTime + config.closedTime)
     const closed = t < config.closedTime
     this.open = !closed
     this.gate.position.y = closed ? 0 : config.lift
     this.body.setTranslation(
       {
         x,
-        y:
-          this.topY +
-          (closed ? 0 : config.lift) +
-          config.height / 2 -
-          0.06,
+        y: this.topY + (closed ? 0 : config.lift) + config.height / 2 - 0.06,
         z,
       },
       true,
@@ -185,6 +171,5 @@ export const TIMED_GATE_PREFAB: ObstaclePrefab = {
   standable: false,
   weight: GAME_CONFIG.obstacles.timedGate.weight,
   unlockAt: GAME_CONFIG.obstacles.timedGate.unlockAt,
-  create: (scene, physics, assets, id) =>
-    new TimedGateObstacle(id, scene, physics, assets),
+  create: (scene, physics, assets, id) => new TimedGateObstacle(id, scene, physics, assets),
 }

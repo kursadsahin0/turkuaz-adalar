@@ -21,12 +21,7 @@ export class LaneBlockerObstacle extends ObstacleBase {
   private readonly slab: THREE.Group
   private readonly warningLights: THREE.Mesh[] = []
 
-  constructor(
-    id: number,
-    scene: THREE.Scene,
-    physics: PhysicsWorld,
-    assets: ObstacleAssets,
-  ) {
+  constructor(id: number, scene: THREE.Scene, physics: PhysicsWorld, assets: ObstacleAssets) {
     const config = GAME_CONFIG.obstacles.laneBlocker
     const group = new THREE.Group()
     group.name = 'LaneBlocker'
@@ -43,10 +38,7 @@ export class LaneBlockerObstacle extends ObstacleBase {
       post.receiveShadow = true
       group.add(post)
 
-      const light = new THREE.Mesh(
-        assets.cone(0.16, 0.26, 10),
-        assets.mechanismGlowMaterial,
-      )
+      const light = new THREE.Mesh(assets.cone(0.16, 0.26, 10), assets.mechanismGlowMaterial)
       light.position.set(side * (config.width / 2 + 0.26), config.height + 0.46, 0)
       light.rotation.z = Math.PI
       lights.push(light)
@@ -99,8 +91,7 @@ export class LaneBlockerObstacle extends ObstacleBase {
     this.age += delta
     const pulse = (Math.sin(this.age * 7.2) + 1) / 2
     for (const light of this.warningLights) {
-      ;(light.material as THREE.MeshStandardMaterial).emissiveIntensity =
-        0.5 + pulse * 0.6
+      ;(light.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.5 + pulse * 0.6
     }
   }
 
@@ -108,10 +99,7 @@ export class LaneBlockerObstacle extends ObstacleBase {
     const config = GAME_CONFIG.obstacles.laneBlocker
     this.root.position.set(x, GAME_CONFIG.track.topY, z)
     this.slab.rotation.y = rng.range(-0.08, 0.08)
-    this.body.setTranslation(
-      { x, y: GAME_CONFIG.track.topY + config.height / 2, z },
-      true,
-    )
+    this.body.setTranslation({ x, y: GAME_CONFIG.track.topY + config.height / 2, z }, true)
   }
 }
 
@@ -122,6 +110,5 @@ export const LANE_BLOCKER_PREFAB: ObstaclePrefab = {
   standable: false,
   weight: GAME_CONFIG.obstacles.laneBlocker.weight,
   unlockAt: GAME_CONFIG.obstacles.laneBlocker.unlockAt,
-  create: (scene, physics, assets, id) =>
-    new LaneBlockerObstacle(id, scene, physics, assets),
+  create: (scene, physics, assets, id) => new LaneBlockerObstacle(id, scene, physics, assets),
 }

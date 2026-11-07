@@ -34,10 +34,7 @@ export class CollectionBurstField {
     this.baseColor = new Float32Array(this.capacity * 3)
 
     this.geometry = new THREE.BufferGeometry()
-    this.geometry.setAttribute(
-      'position',
-      new THREE.BufferAttribute(this.positions, 3),
-    )
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(this.positions, 3))
     this.geometry.setAttribute('color', new THREE.BufferAttribute(this.colors, 3))
     this.geometry.setDrawRange(0, 0)
 
@@ -52,6 +49,7 @@ export class CollectionBurstField {
     })
 
     this.points = new THREE.Points(this.geometry, this.material)
+    this.points.visible = false
     this.points.name = 'CollectionBurst'
     this.points.frustumCulled = false
   }
@@ -137,6 +135,8 @@ export class CollectionBurstField {
 
     this.live = write
     this.geometry.setDrawRange(0, write)
+    // A 0-count draw call costs a frame slot and logs a WebGL warning on Android.
+    this.points.visible = write > 0
     const positionAttribute = this.geometry.getAttribute('position')
     const colorAttribute = this.geometry.getAttribute('color')
     positionAttribute.needsUpdate = true
@@ -147,6 +147,7 @@ export class CollectionBurstField {
     this.life.fill(0)
     this.live = 0
     this.geometry.setDrawRange(0, 0)
+    this.points.visible = false
   }
 
   dispose(): void {

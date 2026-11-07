@@ -12,6 +12,12 @@ export interface PerformanceMetrics {
   memoryFraction: number
 }
 
+interface ChromiumMemory {
+  readonly usedJSHeapSize: number
+  readonly totalJSHeapSize: number
+  readonly jsHeapSizeLimit: number
+}
+
 export class PerformanceMonitor {
   private fps = 0
   private frameTime = 0
@@ -72,8 +78,9 @@ export class PerformanceMonitor {
   }
 
   private updateMemoryMetrics(): void {
-    if ((performance as any).memory) {
-      const memory = (performance as any).memory
+    // Chromium-only, non-standard API.
+    const memory = (performance as Performance & { memory?: ChromiumMemory }).memory
+    if (memory) {
       this.metrics.memoryUsed = memory.usedJSHeapSize / (1024 * 1024) // MB
       this.metrics.memoryTotal = memory.totalJSHeapSize / (1024 * 1024) // MB
       this.metrics.memoryLimit = memory.jsHeapSizeLimit / (1024 * 1024) // MB

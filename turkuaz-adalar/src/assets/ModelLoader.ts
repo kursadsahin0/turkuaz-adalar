@@ -57,7 +57,10 @@ export class FetchAssetReader implements AssetReader {
 
     const response = await fetch(request.url, {
       signal: request.signal,
-      cache: 'force-cache',
+      // Release builds fingerprint every model URL, so a cached copy is always
+      // current. In dev the URL never changes: revalidate, or an edited GLB
+      // would keep showing the old file.
+      cache: import.meta.env?.DEV ? 'no-cache' : 'force-cache',
     })
 
     if (!response.ok) {
@@ -561,7 +564,12 @@ export class ModelLoader {
     }
 
     const header = new Uint8Array(buffer, 0, 12)
-    const magic = String.fromCharCode(header[0] ?? 0, header[1] ?? 0, header[2] ?? 0, header[3] ?? 0)
+    const magic = String.fromCharCode(
+      header[0] ?? 0,
+      header[1] ?? 0,
+      header[2] ?? 0,
+      header[3] ?? 0,
+    )
     if (magic !== 'glTF') {
       throw new AssetError(
         `"${definition.id}" does not start with the GLB magic "glTF". It is not a binary glTF file.`,
@@ -607,9 +615,7 @@ export class ModelLoader {
           ? Math.floor(geometry.index.count / 3)
           : Math.floor(positions.count / 3)
       }
-      const objectMaterials = Array.isArray(object.material)
-        ? object.material
-        : [object.material]
+      const objectMaterials = Array.isArray(object.material) ? object.material : [object.material]
       for (const material of objectMaterials) {
         materials.add(material)
         for (const value of Object.values(material as unknown as Record<string, unknown>)) {

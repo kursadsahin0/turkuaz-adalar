@@ -1,7 +1,7 @@
 import { Logger } from '../../utils/logger.ts'
 import { toggleAccessory, type CosmeticType } from '../../game/characters/CharacterData.ts'
-import { SaveManager } from './SaveManager.ts'
-import type { PlayerSaveState } from './PlayerSaveState.ts'
+import type { SaveManager } from './SaveManager.ts'
+import type { LevelProgress, PlayerSaveState } from './PlayerSaveState.ts'
 import { CURRENT_SAVE_VERSION, createDefaultSave, sanitiseSaveState } from './PlayerSaveState.ts'
 
 const SAVE_KEY = 'player_save'
@@ -10,7 +10,7 @@ const SAVE_KEY = 'player_save'
  * Migration functions for each save version.
  * When a new version is added, add a migration function here.
  */
-const MIGRATIONS: Record<number, (state: any) => any> = {
+const MIGRATIONS: Record<number, (state: Record<string, unknown>) => Record<string, unknown>> = {
   // No migrations yet for version 1
 }
 
@@ -23,7 +23,7 @@ export class PlayerSaveManager {
   private readonly logger = new Logger('PlayerSave')
   private state: PlayerSaveState
   private dirty = false
-  private autoSaveTimer: number | null = null
+  private autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(save: SaveManager) {
     this.save = save
@@ -96,7 +96,7 @@ export class PlayerSaveManager {
   /**
    * Update level progress and mark for save.
    */
-  updateLevelProgress(levelId: string, progress: any): void {
+  updateLevelProgress(levelId: string, progress: LevelProgress): void {
     this.state.levelProgress = { ...this.state.levelProgress, [levelId]: progress }
     this.markDirty()
   }
@@ -153,14 +153,14 @@ export class PlayerSaveManager {
    */
   private load(): PlayerSaveState {
     try {
-      const raw = this.save.load<any>(SAVE_KEY, null)
-      if (!raw) {
+      const raw = this.save.load<unknown>(SAVE_KEY, null)
+      if (typeof raw !== 'object' || raw === null) {
         this.logger.info('No save found, using defaults')
         return createDefaultSave()
       }
 
       // Run migrations if version is outdated
-      const migrated = this.runMigrations(raw)
+      const migrated = this.runMigrations(raw as Record<string, unknown>)
 
       // Sanitise the migrated data
       const sanitised = sanitiseSaveState(migrated)
@@ -176,7 +176,7 @@ export class PlayerSaveManager {
   /**
    * Run migrations to upgrade save state to current version.
    */
-  private runMigrations(state: any): any {
+  private runMigrations(state: Record<string, unknown>): Record<string, unknown> {
     const sourceVersion = typeof state.version === 'number' ? state.version : 0
 
     if (sourceVersion === CURRENT_SAVE_VERSION) {
@@ -195,7 +195,7 @@ export class PlayerSaveManager {
         } catch (error) {
           this.logger.error(`Migration ${version} -> ${version + 1} failed`, error)
           // On migration failure, use defaults
-          return createDefaultSave()
+          return { ...createDefaultSave() }
         }
       }
     }
@@ -219,7 +219,7 @@ export class PlayerSaveManager {
       clearTimeout(this.autoSaveTimer)
     }
 
-    this.autoSaveTimer = window.setTimeout(() => {
+    this.autoSaveTimer = setTimeout(() => {
       this.saveNow()
       this.autoSaveTimer = null
     }, 1000) // Save 1 second after last change

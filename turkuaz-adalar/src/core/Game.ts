@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { Capacitor } from '@capacitor/core'
 import { ASSET_REGISTRY } from '../assets/AssetRegistry.ts'
 import { ModelLoader } from '../assets/ModelLoader.ts'
 import { GAME_CONFIG } from '../config/GameConfig.ts'
@@ -6,41 +7,85 @@ import { PALETTE } from '../config/Palette.ts'
 import { DashAbility } from '../game/abilities/DashAbility.ts'
 import { VisualEffectsManager } from '../game/effects/VisualEffectsManager.ts'
 import type { CollectiblePickup } from '../game/collectibles/CollectibleKind.ts'
-import { resolveAppearance } from '../game/characters/CharacterAppearance.ts'
+import { ShowcaseCamera } from '../game/camera/ShowcaseCamera.ts'
+import { setLanguage, t, tc } from '../i18n/i18n.ts'
+import { MetaProgress } from '../systems/meta/MetaProgress.ts'
+import { TRIAL_CHARACTER, WelcomeGifts } from '../systems/meta/WelcomeGifts.ts'
+import { IslandAssist } from '../systems/meta/IslandAssist.ts'
+import { CHARACTERS } from '../game/characters/CharacterData.ts'
+import { MonetizationManager } from '../systems/monetization/MonetizationManager.ts'
+import { NativeBridge } from '../platform/NativeBridge.ts'
+import { Reminders } from '../platform/Reminders.ts'
 import {
-  CHARACTER_ACCESSORIES,
-  CHARACTER_COLORS,
-  CHARACTER_OUTFITS,
-  CHARACTER_SKINS,
-  CHARACTERS,
-  type CosmeticType,
-} from '../game/characters/CharacterData.ts'
+  copyShareText,
+  downloadShareImage,
+  shareScore,
+  type ShareCardData,
+} from '../platform/ShareCard.ts'
+import { ConsentManager } from '../systems/privacy/ConsentManager.ts'
+import { Telemetry } from '../systems/telemetry/Telemetry.ts'
 import { PowerUpSystem } from '../game/powerups/PowerUpSystem.ts'
 import { IsometricCameraRig } from '../game/camera/IsometricCameraRig.ts'
 import { LevelManager } from '../game/levels/LevelManager.ts'
+import { islandName } from '../game/levels/islandName.ts'
+import { EVENT_LEVEL_ID, EVENT_REWARD } from '../game/levels/WeeklyEvent.ts'
+import { LEVEL_CATALOG } from '../game/levels/LevelCatalog.ts'
+import type { LevelDefinition } from '../game/levels/LevelDefinition.ts'
+import { LevelProgressionManager, starsFor } from '../game/levels/LevelProgression.ts'
+import { Tutorial } from '../game/tutorial/Tutorial.ts'
 import { CharacterModel } from '../game/player/CharacterModel.ts'
 import { MovementEffects } from '../game/player/MovementEffects.ts'
 import { Player } from '../game/player/Player.ts'
 import { RunRecovery } from '../game/player/RunRecovery.ts'
+import { ChaseWave } from '../game/world/ChaseWave.ts'
 import { World } from '../game/world/World.ts'
+import type { Obstacle } from '../game/obstacles/Obstacle.ts'
 import { AudioManager } from '../systems/audio/AudioManager.ts'
-import { PerformanceMonitor, type PerformanceMetrics } from '../systems/performance/PerformanceMonitor.ts'
+import {
+  PerformanceMonitor,
+  type PerformanceMetrics,
+} from '../systems/performance/PerformanceMonitor.ts'
 import { Haptics } from '../systems/haptics/Haptics.ts'
+import { ISLAND_STYLES, MENU_STYLE } from '../systems/audio/MusicSequencer.ts'
+import { AdaptiveQuality, type RenderQuality } from '../systems/performance/AdaptiveQuality.ts'
+import { detectQualityLevel, type QualitySettings } from '../config/QualitySettings.ts'
 import { InputManager } from '../systems/input/InputManager.ts'
 import { PhysicsWorld } from '../systems/physics/PhysicsWorld.ts'
 import { ProgressionManager } from '../systems/progression/ProgressionManager.ts'
 import { SaveManager } from '../systems/save/SaveManager.ts'
 import { PlayerSaveManager } from '../systems/save/PlayerSaveManager.ts'
+import { ContinueController } from './controllers/ContinueController.ts'
+import { ChaseController } from './controllers/ChaseController.ts'
+import { DoubleCoinsController } from './controllers/DoubleCoinsController.ts'
+import { IslandMechanicsController } from './controllers/IslandMechanicsController.ts'
+import type { GameServices } from './controllers/GameServices.ts'
+import { MetaController } from './controllers/MetaController.ts'
+import { migrateLegacyAudioSettings, SettingsController } from './controllers/SettingsController.ts'
+import { ShopController } from './controllers/ShopController.ts'
+import { TutorialController } from './controllers/TutorialController.ts'
 import { Renderer } from './Renderer.ts'
 import { SceneManager } from './SceneManager.ts'
 import { Time } from './Time.ts'
 import { UIManager } from '../ui/UIManager.ts'
 import type { HUDState } from '../ui/hud/GameHud.ts'
+import { formatDistance } from '../ui/format.ts'
 import type { GameOverSummary } from '../ui/screens/GameOverScreen.ts'
 import { GameError, toError } from '../utils/errors.ts'
 import { Logger } from '../utils/logger.ts'
+import { createSeed, Rng } from '../utils/random.ts'
 
-type GameState = 'loading' | 'menu' | 'playing' | 'paused' | 'gameover' | 'error'
+type GameState = 'loading' | 'menu' | 'playing' | 'paused' | 'offer' | 'gameover' | 'error'
+
+const CONTINUE_INVULNERABILITY = 3
+/** Metres cleared ahead of the runner after a continue or a fall recovery. */
+const RESPAWN_RUNWAY = 25
+/** A respawn this close to the end of the live track is not trusted. */
+const RESPAWN_TRACK_MARGIN = 2
+/** A respawn without a usable checkpoint lands this far behind where the run stopped. */
+const RESPAWN_BACKSTEP = 3
+/** Lateral clearance (beyond the obstacle's radius) that still counts as a near miss. */
+const NEAR_MISS_GAP = 0.85
+const NEAR_MISS_COINS = 5
 
 /**
  * Central orchestrator. Owns every subsystem, the fixed-step simulation and
@@ -54,6 +99,7 @@ export class Game {
   private readonly playerSave: PlayerSaveManager
   private readonly progression: ProgressionManager
   private readonly haptics: Haptics
+  private readonly reminders: Reminders
   private readonly level = new LevelManager()
   private readonly dash = new DashAbility()
   private readonly effects = new MovementEffects()
@@ -62,6 +108,50 @@ export class Game {
   private readonly ui: UIManager
   private readonly assets = new ModelLoader(ASSET_REGISTRY)
   private readonly performanceMonitor = new PerformanceMonitor()
+  private readonly meta: MetaProgress
+  private readonly consent: ConsentManager
+  private readonly levels: LevelProgressionManager
+  private readonly tutorialFlow: TutorialController
+  private readonly shop: ShopController
+  /** Island selection, daily rewards, missions and achievements. */
+  private readonly menus: MetaController
+  private readonly welcome: WelcomeGifts
+  private readonly assist: IslandAssist
+  /** Near misses: brushing past a hazard pays a few coins (with a cooldown). */
+  private nearMissCooldown = 0
+  private nearMisses = 0
+  private readonly nearMissSeen = new Set<string>()
+  /** The last run, for the summary's Share button. */
+  private lastShare: ShareCardData | null = null
+  private readonly settingsFlow: SettingsController
+  private readonly continueOffer: ContinueController
+  private readonly doubleCoins: DoubleCoinsController
+  /** The island's own rule: ice, wind or ember rain. */
+  private readonly mechanics: IslandMechanicsController
+  private readonly chase: ChaseController
+  private chaseWave: ChaseWave | null = null
+  /** The level being played, or null for the endless run. */
+  private currentLevel: LevelDefinition | null = null
+  /** What ended the runner last ("crate", "wave", "fall", ...), for analytics. */
+  private crashCause = 'unknown'
+  /** When the app came to the foreground, for session length. */
+  private sessionStartedAt = Date.now()
+  private runTime = 0
+  private adaptiveQuality: AdaptiveQuality | null = null
+  private lastFpsSample = 0
+  readonly telemetry: Telemetry
+  private readonly monetization = new MonetizationManager({
+    // AdMob on Android/iOS; a simulated provider in the browser.
+    provider: NativeBridge.isNative ? 'admob' : 'test',
+    testMode: !NativeBridge.isNative,
+    testConfig: { minDelay: 1500 },
+  })
+  private readonly showcase = new ShowcaseCamera()
+  private readonly native = new NativeBridge()
+  private readonly reducedMotion =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   private renderer!: Renderer
   private scene!: SceneManager
@@ -79,7 +169,6 @@ export class Game {
   private distance = 0
   private crystals = 0
   private coins = 0
-  private coinBalance = 0
   private pickupScore = 0
   private score = 0
   private queuedJump = false
@@ -93,6 +182,7 @@ export class Game {
   private disposed = false
   private readonly scratchFeet = new THREE.Vector3()
   /** Dash trail particles stream backwards, against the -Z run direction. */
+  private static readonly LAUNCH_COUNT_KEY = 'launch_count'
   private static readonly TRAIL_DIRECTION = new THREE.Vector3(0, 0.15, 1).normalize()
 
   private readonly tick = (timestamp: number): void => {
@@ -103,6 +193,15 @@ export class Game {
 
     this.time.update(timestamp)
     this.performanceMonitor.tick()
+    // Auto quality: one FPS sample per second, only while running.
+    if (this.state === 'playing' && timestamp - this.lastFpsSample >= 1000) {
+      this.lastFpsSample = timestamp
+      const lower = this.adaptiveQuality?.sample(this.performanceMonitor.getFPS())
+      if (lower) {
+        this.renderer.setQualityLevel(lower)
+        this.telemetry.track('quality_auto_down', { level: lower })
+      }
+    }
     const delta = this.time.delta
 
     switch (this.state) {
@@ -113,6 +212,7 @@ export class Game {
         this.updatePlaying()
         break
       case 'gameover':
+      case 'offer':
         this.updateGameOver(delta)
         break
       case 'paused':
@@ -121,17 +221,34 @@ export class Game {
         break
     }
 
-    if (this.state === 'menu' || this.state === 'playing' || this.state === 'gameover') {
+    if (
+      this.state === 'menu' ||
+      this.state === 'playing' ||
+      this.state === 'gameover' ||
+      this.state === 'offer'
+    ) {
       this.fx.update(delta)
-      const mode = this.state === 'menu' ? 'menu' : 'follow'
-      this.camera.update(
-        delta,
-        this.player.position,
-        mode,
+      this.chaseWave?.update(
+        this.chase.active && this.state !== 'menu',
+        this.player.position.z,
+        this.chase.gap ?? 0,
         this.time.elapsed,
-        this.distance,
       )
-      this.renderer.render(this.scene.scene, this.camera.camera)
+      const mode = this.state === 'menu' ? 'menu' : 'follow'
+      this.camera.update(delta, this.player.position, mode, this.time.elapsed, this.distance)
+      if (this.state === 'menu' && this.shop.isShowcaseActive) {
+        const canvas = this.renderer.canvas
+        this.showcase.update(
+          delta,
+          this.player.position,
+          canvas.clientWidth,
+          canvas.clientHeight,
+          this.reducedMotion,
+        )
+        this.renderer.render(this.scene.scene, this.showcase.camera)
+      } else {
+        this.renderer.render(this.scene.scene, this.camera.camera)
+      }
     }
 
     if (!this.disposed && this.state !== 'error') {
@@ -141,13 +258,108 @@ export class Game {
 
   private readonly handleVisibility = (): void => {
     if (document.hidden) {
-      if (this.state === 'playing') {
-        this.pause()
-      }
-      this.haptics.stop()
-      this.audio?.suspend()
+      this.telemetry.track('session_end', {
+        seconds: Math.round((Date.now() - this.sessionStartedAt) / 1000),
+        state: this.state,
+      })
+      this.telemetry.flush()
+      this.scheduleReminders()
+      this.enterBackground()
     } else {
+      void this.reminders.clear()
+      this.sessionStartedAt = Date.now()
+      this.telemetry.track('session_start')
       this.audio?.resume()
+    }
+  }
+
+  private scheduleReminders(): void {
+    const daily = this.meta.daily.status()
+    void this.reminders.schedule({
+      dailyClaimedToday: !daily.canClaim,
+      streak: daily.canClaim ? daily.streak : 0,
+      eventClaimed: this.menus.eventClaimedThisWeek,
+    })
+  }
+
+  /** first_open once per install, then app_open with the launch count. */
+  private trackAppOpen(): void {
+    const launches = this.save.load<number>(Game.LAUNCH_COUNT_KEY, 0) + 1
+    this.save.save(Game.LAUNCH_COUNT_KEY, launches)
+    if (launches === 1) {
+      this.telemetry.track('first_open')
+    }
+    this.telemetry.track('app_open', { launches })
+    this.telemetry.track('session_start')
+  }
+
+  /** Where in the run the player is, attached to start/crash/fail/complete events. */
+  private runContext(): Record<string, string | number> {
+    const level = this.currentLevel
+    return {
+      level: level
+        ? level.id === EVENT_LEVEL_ID
+          ? `event:${level.eventOf ?? ''}`
+          : level.id
+        : 'endless',
+      distance: Math.floor(this.distance),
+      progress: Math.round(this.level.completion * 100),
+      seconds: Math.round(this.runTime),
+    }
+  }
+
+  private enterBackground(): void {
+    if (this.state === 'playing') {
+      this.pause()
+    }
+    // The app may be killed in the background: write everything now.
+    this.playerSave.saveNow()
+    this.meta.flush()
+    this.haptics.stop()
+    this.audio?.suspend()
+  }
+
+  /**
+   * Android back: step back one level instead of closing the app mid-run.
+   * Returns false only on the title screen, which lets the app exit.
+   */
+  private handleBack(): boolean {
+    if (this.ui.isPolicyOpen) {
+      this.ui.hidePolicy()
+      return true
+    }
+    if (this.ui.isGiftOpen) {
+      this.ui.hideGift()
+      return true
+    }
+    if (this.ui.isConsentOpen) {
+      // A choice is required; back does nothing here.
+      return true
+    }
+    switch (this.state) {
+      case 'playing':
+        this.pause()
+        return true
+      case 'paused':
+        this.resume()
+        return true
+      case 'offer':
+        this.declineContinue()
+        return true
+      case 'gameover':
+        // The summary appears after a short beat; ignore back until it does.
+        if (this.ui.isGameOverVisible || this.ui.isLevelCompletedVisible) {
+          this.returnToMenu()
+        }
+        return true
+      case 'menu':
+        if (this.ui.isMenuVisible) {
+          return false
+        }
+        this.showMenuScreen()
+        return true
+      default:
+        return false
     }
   }
 
@@ -166,7 +378,7 @@ export class Game {
       if (contact.kind === 'safe') {
         return
       }
-      this.handleHazard()
+      this.handleHazard(obstacle)
       return
     }
 
@@ -183,6 +395,10 @@ export class Game {
   }
 
   private readonly handlePlayerJump = (): void => {
+    if (this.state === 'playing') {
+      this.tutorialFlow.action('jump')
+      this.menus.notify(this.meta.record({ kind: 'jump', amount: 1 }))
+    }
     this.audio?.play('jump')
     this.camera.jump()
     this.fx?.emitJumpDust(this.feetPosition())
@@ -203,6 +419,9 @@ export class Game {
   }
 
   private readonly handlePlayerSlide = (): void => {
+    if (this.state === 'playing') {
+      this.tutorialFlow.action('slide')
+    }
     this.audio?.play('slide')
   }
 
@@ -210,51 +429,189 @@ export class Game {
     this.container = container
     this.save = new SaveManager()
     this.playerSave = new PlayerSaveManager(this.save)
-    this.progression = new ProgressionManager(this.save)
+    // Installed first so errors during the rest of start-up are recorded.
+    this.telemetry = new Telemetry(this.save, {
+      version: typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev',
+      sentryDsn: import.meta.env.VITE_SENTRY_DSN,
+      crashReportsAllowed: this.playerSave.settings.crashReports,
+      environment: import.meta.env.MODE,
+      analytics: {
+        apiKey: import.meta.env.VITE_ANALYTICS_KEY ?? '',
+        host: import.meta.env.VITE_ANALYTICS_HOST || 'https://eu.i.posthog.com',
+        platform: Capacitor.getPlatform(),
+      },
+    })
+    this.telemetry.install()
+    this.telemetry.breadcrumb('app', 'boot')
+    this.trackAppOpen()
+    if (import.meta.env.DEV) {
+      this.telemetry.addAnalyticsSink({
+        send: (event) => this.logger.info(`[event] ${event.name}`, event.props),
+      })
+    }
+    this.progression = new ProgressionManager(this.playerSave, this.save)
+    migrateLegacyAudioSettings(this.save, this.playerSave)
+    this.levels = new LevelProgressionManager(this.playerSave, LEVEL_CATALOG)
+    this.meta = new MetaProgress(
+      this.save,
+      this.progression,
+      undefined,
+      () => ({
+        islandsCompleted: this.levels.completedCount(),
+        totalStars: this.levels.totalStars(),
+        charactersOwned: this.playerSave.characterCollection.ownedCharacters.length,
+      }),
+      (type, id) => this.playerSave.purchaseCosmetic(type, id),
+    )
+    this.consent = new ConsentManager(this.save)
+    this.monetization.setPersonalizedAds(this.consent.personalizedAds)
+    this.monetization.onEvent = (event) => this.telemetry.track(event.type)
     this.haptics = new Haptics(this.playerSave.settings.vibration)
-    this.coinBalance = this.progression.snapshot.coins
+    this.reminders = new Reminders(this.save, this.playerSave.settings.reminders)
+    this.welcome = new WelcomeGifts(this.save)
+    this.assist = new IslandAssist(this.save)
+    // Nothing should buzz while the game is open.
+    void this.reminders.clear()
+    // Language must be set before any screen is built.
+    setLanguage(this.playerSave.settings.language)
     this.ui = new UIManager(container, {
-      onPlay: () => this.startRun(),
-      onRestart: () => this.startRun(),
+      onPlay: () => this.menus.showLevelSelection(),
+      onRestart: () => this.startRun(this.currentLevel),
       onResume: () => this.resume(),
       onQuit: () => this.quit(),
       onPause: () => this.pause(),
-      onToggleMute: () => this.toggleMute(),
+      onToggleMute: () => this.settingsFlow.toggleMute(),
       onReload: () => window.location.reload(),
       onJump: () => this.input?.queueJump(),
       onSlide: () => this.input?.queueSlide(),
       onDash: () => this.input?.queueDash(),
-      onCharacter: () => this.showCharacterSelection(),
-      onSettings: () =>
-        this.ui.showSettings({
-          ...this.playerSave.settings,
-          muted: this.audio?.isMuted ?? this.playerSave.settings.muted,
-        }),
-      onSelectLevel: () => this.startRun(),
-      onEquipCosmetic: (type, id) => this.equipCosmetic(type, id),
-      onNextLevel: () => this.startRun(),
-      onPurchase: (type, id) => this.purchaseCosmetic(type, id),
-      onChangeSettings: (settings) => this.handleSettingsChange(settings),
+      onSkipTutorial: () => this.tutorialFlow.end('skip'),
+      onReplayTutorial: () => this.tutorialFlow.replay(),
+      onCharacter: () => this.shop.open(),
+      onCloseCharacter: () => this.showMenuScreen(),
+      onBackToMenu: () => this.showMenuScreen(),
+      onProgress: () => this.menus.showProgress(),
+      onDaily: () => this.menus.showDaily(),
+      onClaimDaily: () => this.menus.claimDaily(),
+      onClaimMission: (id) => this.menus.claimMission(id),
+      onClaimAchievement: (id) => this.menus.claimAchievement(id),
+      onClaimSeason: (tier) => this.menus.claimSeason(tier),
+      onSettings: () => this.settingsFlow.show(),
+      onSelectLevel: (id) => this.startRun(this.menus.findLevel(id)),
+      onUnlockLevel: (id) => this.menus.unlockLevel(id),
+      onLevelSelect: () => {
+        this.returnToMenu()
+        this.menus.showLevelSelection()
+      },
+      onEquipCosmetic: (type, id) => this.shop.equip(type, id),
+      onNextLevel: () => {
+        const next = this.currentLevel ? this.levels.getNextLevel(this.currentLevel.id) : null
+        this.startRun(next && this.levels.isUnlocked(next.id) ? next : this.currentLevel)
+      },
+      onPurchase: (type, id) => this.shop.purchase(type, id),
+      onExchangeCrystals: () => this.shop.exchangeCrystals(),
+      onRotatePreview: (deltaX) => this.shop.rotatePreview(deltaX),
+      onPreviewCosmetic: (type, id) => this.shop.preview(type, id),
+      onChangeSettings: (settings) => this.settingsFlow.change(settings),
+      onResetProgress: () => this.settingsFlow.resetProgress(),
+      onContinueCoins: () => this.continueOffer.payWithCoins(),
+      onContinueAd: () => void this.continueOffer.watchAd(),
+      onContinueSkip: () => this.declineContinue(),
+      onDoubleCoins: () => void this.doubleCoins.watch(),
+      onShare: () => void this.shareRun(),
+      onConsent: (personalized) => this.settingsFlow.recordConsent(personalized),
+      onOpenPolicy: () => this.ui.showPolicy(),
+      onClosePolicy: () => this.ui.hidePolicy(),
+      onAdPrivacyOptions: () => this.settingsFlow.showAdPrivacyOptions(),
+    })
+
+    // Controllers share the long-lived systems; audio appears after init().
+    const currentAudio = (): AudioManager | undefined => this.audio
+    const services: GameServices = {
+      ui: this.ui,
+      save: this.save,
+      playerSave: this.playerSave,
+      progression: this.progression,
+      meta: this.meta,
+      levels: this.levels,
+      consent: this.consent,
+      monetization: this.monetization,
+      telemetry: this.telemetry,
+      haptics: this.haptics,
+      reminders: this.reminders,
+      get audio() {
+        return currentAudio()
+      },
+    }
+    this.tutorialFlow = new TutorialController(services, new Tutorial(this.playerSave), (enabled) =>
+      this.world.setObstaclesEnabled(enabled),
+    )
+    this.shop = new ShopController(services, this.showcase, {
+      characterModel: () => this.characterModel,
+      setCollectiblesVisible: (visible) => this.world?.setCollectiblesVisible(visible),
+    })
+    this.menus = new MetaController(services, () => this.state === 'playing')
+    this.settingsFlow = new SettingsController(services, {
+      setQuality: (level, auto) => {
+        this.renderer.setQualityLevel(level)
+        this.adaptiveQuality?.setEnabled(auto, level)
+      },
+      afterConsent: () => this.showMenuScreen(),
+      isDisposed: () => this.disposed,
+    })
+    this.doubleCoins = new DoubleCoinsController(services)
+    this.chase = new ChaseController(services)
+    this.mechanics = new IslandMechanicsController(
+      services,
+      {
+        laneIndex: () => this.player.laneIndex,
+        laneCount: () => this.player.laneCount,
+        laneClear: (lane, seconds) => {
+          const x = GAME_CONFIG.track.lanePositions[lane]
+          const z = this.player.position.z
+          const reach = this.level.speed * seconds
+          for (let ahead = 0; ahead <= reach; ahead += 2) {
+            if (this.world.obstacles.isBlocked(x, z - ahead, 0.6)) {
+              return false
+            }
+          }
+          return true
+        },
+        push: (direction) => this.input.queueLaneChange(direction),
+      },
+      new Rng(createSeed()),
+    )
+    this.continueOffer = new ContinueController(services, {
+      isOffering: () => this.state === 'offer',
+      isDisposed: () => this.disposed,
+      revive: () => this.revive(),
     })
 
     this.ui.setHintsVisible(this.playerSave.settings.controlHints)
-    this.ui.setLoadingProgress(0.06, 'Waking the tide')
+    this.ui.setLoadingProgress(0.06, t('loading.waking'))
   }
 
   async init(): Promise<void> {
     try {
-      this.ui.setLoadingProgress(0.18, 'Raising the islands')
-      this.physics = await PhysicsWorld.create()
-      this.ui.setLoadingProgress(0.46, 'Lighting the horizon')
+      this.ui.setLoadingProgress(0.18, t('loading.raising'))
+      // The physics chunk downloads and compiles while the renderer starts.
+      const physicsReady = PhysicsWorld.create()
+      physicsReady.catch(() => undefined) // Awaited below; avoids an unhandled-rejection warning.
 
-      this.renderer = new Renderer(this.container, this.playerSave.settings.quality)
+      const quality = this.playerSave.settings.quality
+      const startLevel = (quality === 'auto' ? detectQualityLevel() : quality) as RenderQuality
+      this.renderer = new Renderer(this.container, startLevel)
+      this.adaptiveQuality = new AdaptiveQuality(startLevel, quality === 'auto')
       this.scene = new SceneManager()
       this.camera = new IsometricCameraRig(this.resolveAspect())
       this.unsubscribeResize = this.renderer.events.on('resize', (size) => {
         this.camera?.setAspect(size.aspect)
       })
 
-      this.ui.setLoadingProgress(0.56, 'Summoning the runner')
+      this.physics = await physicsReady
+      this.ui.setLoadingProgress(0.46, t('loading.lighting'))
+
+      this.ui.setLoadingProgress(0.56, t('loading.summoning'))
       const qualitySettings = this.renderer.getQualitySettings()
       // Props are optional: a failed download logs a warning and the
       // procedural fallback is used, so they load in parallel and never block.
@@ -262,29 +619,40 @@ export class Game {
         this.assets.loadSafe('obstacle.crate'),
         this.assets.loadSafe('obstacle.spire'),
         this.assets.loadSafe('collectible.crystal'),
+        this.assets.loadSafe('environment.tide_beacon'),
       ])
       const character = await this.loadCharacterModel(qualitySettings)
-      const [crate, spire, crystal] = await propsPromise
+      const [crate, spire, crystal, beacon] = await propsPromise
 
-      this.ui.setLoadingProgress(0.78, 'Tuning the current')
-      this.audio = new AudioManager(this.save)
-      this.audio.setMusicVolume(this.playerSave.settings.musicVolume)
-      this.audio.setSfxVolume(this.playerSave.settings.sfxVolume)
+      this.ui.setLoadingProgress(0.78, t('loading.tuning'))
+      const settings = this.playerSave.settings
+      this.audio = new AudioManager({
+        muted: settings.muted,
+        musicVolume: settings.musicVolume,
+        sfxVolume: settings.sfxVolume,
+      })
       this.input = new InputManager(this.renderer.canvas, {
-        onPause: () => this.pause(),
-        onToggleMute: () => this.toggleMute(),
+        // Esc / P: pause during a run, otherwise step back one screen (like Android back).
+        onPause: () => void this.handleBack(),
+        onToggleMute: () => this.settingsFlow.toggleMute(),
       })
 
-      this.ui.setLoadingProgress(0.86, 'Painting the shallows')
-      this.world = new World(this.scene.scene, this.physics, this.level, { crate, spire, crystal })
+      this.ui.setLoadingProgress(0.86, t('loading.painting'))
+      this.world = new World(this.scene.scene, this.physics, this.level, {
+        crate,
+        spire,
+        crystal,
+        beacon,
+      })
       this.fx = new VisualEffectsManager(this.scene.scene, 256, qualitySettings.particleMultiplier)
+      this.chaseWave = new ChaseWave(this.scene.scene)
       this.player = new Player(this.scene.scene, this.physics)
       this.player.platformMotionProvider = (handle) =>
         this.world.platformVelocity(handle) ?? this.world.obstaclePlatformVelocity(handle)
       this.camera.setOccluders(() => this.world.cameraOccluders())
       if (character) {
         this.characterModel = character
-        this.applyAppearance()
+        this.shop.applyAppearance()
         this.player.attachCharacter(character)
       }
       this.player.onCollision = this.handlePlayerCollision
@@ -293,17 +661,26 @@ export class Game {
       this.player.onBounce = this.handlePlayerBounce
       this.player.onSlide = this.handlePlayerSlide
 
-      this.ui.setLoadingProgress(0.92, 'Lifting the tide')
+      this.ui.setLoadingProgress(0.92, t('loading.lifting'))
       this.time = new Time()
       this.world.init()
       this.player.reset(this.spawnPosition())
       this.camera.snapTo(this.player.position, 'menu')
 
       document.addEventListener('visibilitychange', this.handleVisibility)
+      // Browsers only allow audio after a user gesture: start the music on the first one.
+      window.addEventListener('pointerdown', this.unlockAudioOnce, { once: true })
+      window.addEventListener('keydown', this.unlockAudioOnce, { once: true })
+      void this.native.attach({
+        onBack: () => this.handleBack(),
+        onBackground: () => this.enterBackground(),
+        onForeground: () => this.audio?.resume(),
+      })
 
-      this.ui.setLoadingProgress(1, 'Ready')
+      this.ui.setLoadingProgress(1, t('loading.ready'))
       this.state = 'menu'
-      this.ui.showMenu(this.progression.snapshot, this.audio.isMuted)
+      this.showMenuScreen()
+      void this.settingsFlow.runConsentFlow()
       this.frameHandle = window.requestAnimationFrame(this.tick)
       this.logger.info('Game ready.')
     } catch (error) {
@@ -329,6 +706,13 @@ export class Game {
     }
     this.clearSummaryTimer()
     document.removeEventListener('visibilitychange', this.handleVisibility)
+    window.removeEventListener('pointerdown', this.unlockAudioOnce)
+    window.removeEventListener('keydown', this.unlockAudioOnce)
+    this.meta.flush()
+    this.playerSave.dispose()
+    this.monetization.dispose()
+    this.native.dispose()
+    this.telemetry.dispose()
     this.unsubscribeResize?.()
     this.unsubscribeResize = null
 
@@ -337,6 +721,7 @@ export class Game {
     this.audio?.dispose()
     this.player?.dispose()
     this.fx?.dispose()
+    this.chaseWave?.dispose()
     this.world?.dispose()
     this.scene?.dispose()
     this.assets.dispose()
@@ -345,7 +730,9 @@ export class Game {
     this.ui.dispose()
   }
 
-  private async loadCharacterModel(qualitySettings: any): Promise<CharacterModel | null> {
+  private async loadCharacterModel(
+    qualitySettings: QualitySettings,
+  ): Promise<CharacterModel | null> {
     const definition = ASSET_REGISTRY.get('character.turkuaz')
     if (!definition) {
       this.logger.warn(
@@ -362,12 +749,13 @@ export class Game {
           const percent = Math.round(progress.ratio * 100)
           this.ui.setLoadingProgress(
             0.56 + progress.ratio * 0.2,
-            progress.ratio >= 1 ? 'Dressing the runner' : `Summoning the runner ${percent}%`,
+            progress.ratio >= 1
+              ? t('loading.dressing')
+              : t('loading.summoningPercent', { percent }),
           )
         },
       })
-      const targetHeight =
-        (GAME_CONFIG.player.halfHeight + GAME_CONFIG.player.radius) * 2
+      const targetHeight = (GAME_CONFIG.player.halfHeight + GAME_CONFIG.player.radius) * 2
       const character = new CharacterModel(asset, { targetHeight })
       this.logger.info(
         `Character "${definition.id}" ready with states: ${character.availableStates.join(', ')}.`,
@@ -382,14 +770,30 @@ export class Game {
     }
   }
 
-  private startRun(): void {
+  private startRun(level: LevelDefinition | null = this.currentLevel): void {
     if (this.disposed || !this.time) {
       return
     }
 
     this.clearSummaryTimer()
     const difficulty = this.playerSave.settings.difficulty
+    // The weekly event island is open to everyone and outside the unlock chain.
+    if (level && level.id !== EVENT_LEVEL_ID && !this.levels.isUnlocked(level.id)) {
+      level = null
+    }
+    this.currentLevel = level
+    // Must be set before world.reset(): segments read the level as they spawn.
+    this.level.setLevel(level)
+    const tutorialRun = this.tutorialFlow.beginRun()
     this.level.reset(difficulty)
+    // Silent help after several failed tries in a row on this island.
+    this.level.setAssist(
+      level && level.id !== EVENT_LEVEL_ID && !tutorialRun ? this.assist.levelFor(level.id) : 0,
+    )
+    this.nearMisses = 0
+    this.nearMissCooldown = 0
+    this.nearMissSeen.clear()
+    this.runTime = 0
     this.dash.reset()
     this.effects.reset()
     this.powerUps.reset()
@@ -401,13 +805,21 @@ export class Game {
     this.crystals = 0
     this.coins = 0
     this.pickupScore = 0
-    this.coinBalance = this.progression.snapshot.coins
     this.score = 0
     this.hudTimer = 0
     this.checkpointDistance = 0
     this.invulnerabilityTimer = 0
+    this.continueOffer.reset()
+    this.doubleCoins.reset()
+    this.menus.beginRun()
+    this.shop.close()
+    // The welcome trial character (if one is running) or the player's own.
+    this.shop.setTrial(this.welcome.trialCharacter)
 
     this.world.reset()
+    this.world.applyTheme(level?.theme ?? null)
+    // The runner travels along -Z, so the line sits at -targetDistance.
+    this.world.setFinishLine(level ? GAME_CONFIG.player.startZ - level.targetDistance : null)
     this.fx.clear()
     this.player.setShieldActive(false)
     this.player.reset(this.spawnPosition())
@@ -418,7 +830,21 @@ export class Game {
     this.state = 'playing'
     this.ui.showHud()
     this.updateHud()
+    this.tutorialFlow.runStarted(this.player.laneIndex, tutorialRun)
+    this.mechanics.begin(level?.mechanic)
+    this.chase.begin(!tutorialRun && level?.chase)
 
+    this.crashCause = 'unknown'
+    this.telemetry.track('run_start', {
+      ...this.runContext(),
+      difficulty,
+      mechanic: level?.mechanic ?? 'none',
+      chase: level?.chase === true,
+      tutorial: tutorialRun,
+      assist: this.level.assist,
+    })
+    this.audio.setMusicStyle(ISLAND_STYLES[level?.theme.id ?? 'shallows'] ?? ISLAND_STYLES.shallows)
+    this.audio.setMusicIntensity('run')
     void this.audio.unlock().then(() => {
       this.audio.play('start')
     })
@@ -430,6 +856,7 @@ export class Game {
     }
 
     this.state = 'paused'
+    this.meta.flush()
     this.queuedJump = false
     this.input.reset()
     this.ui.showPause(this.audio.isMuted)
@@ -458,86 +885,20 @@ export class Game {
     }
   }
 
-  private showCharacterSelection(): void {
-    this.ui.showCharacterSelection({
-      collection: this.playerSave.characterCollection,
-      currentCoins: this.progression.snapshot.coins,
-    })
+  /** Every route back to the title screen, with a fresh wallet and badges. */
+  private showMenuScreen(): void {
+    this.shop.close()
+    this.shop.setTrial(this.welcome.trialCharacter)
+    // Floating coins behind the title only add clutter; a run re-places them.
+    this.world?.setCollectiblesVisible(false)
+    this.audio?.setMusicStyle(MENU_STYLE)
+    this.audio?.setMusicIntensity('menu')
+    this.menus.refreshBadges()
+    this.ui.showMenu(this.progression.snapshot, this.audio?.isMuted ?? false)
   }
 
-  private applyAppearance(): void {
-    this.characterModel?.applyAppearance(
-      resolveAppearance(this.playerSave.characterCollection.equipped),
-    )
-  }
-
-  private equipCosmetic(type: CosmeticType, id: string): void {
-    if (!this.playerSave.equip(type, id)) {
-      this.logger.warn(`Cannot equip ${type} "${id}": not owned.`)
-      return
-    }
-    this.applyAppearance()
-    this.audio?.play('ui')
-    this.showCharacterSelection()
-  }
-
-  /**
-   * Buys an item at its catalogue price (never a price sent by the UI), then
-   * equips it so the purchase is immediately visible on the runner.
-   */
-  private purchaseCosmetic(type: CosmeticType, id: string): void {
-    const cost = cosmeticCost(type, id)
-    if (cost === null || this.playerSave.isOwned(type, id)) {
-      return
-    }
-
-    const currentCoins = this.progression.snapshot.coins
-    if (currentCoins < cost) {
-      this.logger.info(`Not enough coins for ${type} "${id}" (${currentCoins}/${cost}).`)
-      return
-    }
-
-    this.coinBalance = this.progression.debitCoins(cost)
-    this.playerSave.purchaseCosmetic(type, id)
-    this.audio?.play('reward')
-    this.haptics.pulse('reward')
-    this.equipCosmetic(type, id)
-  }
-
-  private handleSettingsChange(settings: any): void {
-    const currentSettings = this.playerSave.settings
-    const updatedSettings = {
-      ...currentSettings,
-      musicVolume: settings.musicVolume ?? currentSettings.musicVolume,
-      sfxVolume: settings.sfxVolume ?? currentSettings.sfxVolume,
-      quality: settings.graphicsQuality ?? currentSettings.quality,
-      controlHints: settings.showHints ?? currentSettings.controlHints,
-      vibration: settings.vibrationEnabled ?? currentSettings.vibration,
-      muted: settings.muted ?? currentSettings.muted,
-      difficulty: settings.difficulty ?? currentSettings.difficulty,
-    }
-    this.playerSave.updateSettings(updatedSettings)
-
-    if (settings.graphicsQuality) {
-      this.renderer.setQualityLevel(settings.graphicsQuality)
-    }
-    if (typeof settings.musicVolume === 'number') {
-      this.audio?.setMusicVolume(updatedSettings.musicVolume)
-    }
-    if (typeof settings.sfxVolume === 'number') {
-      this.audio?.setSfxVolume(updatedSettings.sfxVolume)
-    }
-    if (typeof settings.muted === 'boolean' && this.audio && settings.muted !== this.audio.isMuted) {
-      this.toggleMute()
-    }
-    if (typeof settings.vibrationEnabled === 'boolean') {
-      this.haptics.setEnabled(updatedSettings.vibration)
-      // A short buzz confirms the toggle on devices that support it.
-      this.haptics.pulse('ui')
-    }
-    if (typeof settings.showHints === 'boolean') {
-      this.ui.setHintsVisible(updatedSettings.controlHints)
-    }
+  private readonly unlockAudioOnce = (): void => {
+    void this.audio?.unlock()
   }
 
   private returnToMenu(): void {
@@ -547,6 +908,10 @@ export class Game {
 
     this.clearSummaryTimer()
     this.input.reset()
+    this.tutorialFlow.end('suspend')
+    this.mechanics.end()
+    this.chase.end()
+    this.level.setLevel(null)
     this.level.reset()
     this.dash.reset()
     this.effects.reset()
@@ -562,28 +927,16 @@ export class Game {
     this.checkpointDistance = 0
     this.invulnerabilityTimer = 0
     this.world.reset()
+    this.world.applyTheme(null)
+    this.world.setFinishLine(null)
     this.fx.clear()
     this.player.setShieldActive(false)
     this.player.reset(this.spawnPosition())
     // The menu framing blends back in instead of cutting.
     this.camera.recenter(this.player.position, 0)
     this.state = 'menu'
-    this.ui.showMenu(this.progression.snapshot, this.audio.isMuted)
+    this.showMenuScreen()
     this.audio.play('ui')
-  }
-
-  private toggleMute(): void {
-    if (!this.audio) {
-      return
-    }
-
-    const muted = this.audio.toggleMute()
-    this.ui.setMuted(muted)
-    if (!muted) {
-      void this.audio.unlock().then(() => {
-        this.audio.play('ui')
-      })
-    }
   }
 
   private updateMenu(delta: number): void {
@@ -600,6 +953,8 @@ export class Game {
     }
 
     if (this.input.consumeDash() && this.dash.tryActivate()) {
+      this.tutorialFlow.action('dash')
+      this.menus.notify(this.meta.record({ kind: 'dash', amount: 1 }))
       this.audio.play('dash')
       this.haptics.pulse('dash')
       this.camera.shake(0.16, 0.22)
@@ -615,21 +970,26 @@ export class Game {
         break
       }
 
-      this.world.fixedUpdate(fixedDelta)
+      // Moving obstacles keep pace with slow time.
+      this.world.fixedUpdate(fixedDelta * this.powerUps.timeScale)
+      // Slow time scales the whole run: speed, moving obstacles and the wave.
+      const timeScale = this.powerUps.timeScale
+      const forwardSpeed =
+        this.level.speed *
+        this.dash.speedMultiplier *
+        speedScale *
+        this.powerUps.speedMultiplier *
+        timeScale
       this.player.fixedUpdate(fixedDelta, {
         laneChange: this.input.consumeLaneChange(),
         jump: this.queuedJump,
         jumpHeld,
         slide: this.queuedSlide,
-        forwardSpeed:
-          this.level.speed *
-          this.dash.speedMultiplier *
-          speedScale *
-          this.powerUps.speedMultiplier,
+        forwardSpeed,
         airJumps: this.powerUps.airJumps,
-        gravityScale: this.effects.gravityScale,
+        gravityScale: this.effects.gravityScale * this.powerUps.gravityScale,
         jumpScale: this.effects.jumpScale,
-        laneControl: this.effects.laneControl,
+        laneControl: this.effects.laneControl * this.mechanics.laneControl,
       })
       this.queuedJump = false
       this.queuedSlide = false
@@ -638,13 +998,34 @@ export class Game {
       this.player.syncTransform()
       this.effects.update(fixedDelta)
       this.powerUps.update(fixedDelta)
+      this.mechanics.update(fixedDelta)
+      this.checkNearMisses(fixedDelta)
 
       this.updateRunProgress(fixedDelta)
+      if (
+        this.state === 'playing' &&
+        this.chase.update(
+          fixedDelta,
+          forwardSpeed * (this.player.isSliding ? 0.9 : 1),
+          this.level.speed * timeScale,
+          this.level.completion,
+        )
+      ) {
+        // The wave caught up: a crash, so a continue can still save the run.
+        this.crashCause = 'wave'
+        this.finishRun(true)
+      }
     }
 
     if (this.state !== 'playing') {
       return
     }
+
+    if (this.tutorialFlow.isActive) {
+      // Nothing can end a run while the player is still learning the moves.
+      this.invulnerabilityTimer = Math.max(this.invulnerabilityTimer, 0.5)
+    }
+    this.tutorialFlow.trackLane(this.player.laneIndex)
 
     this.player.setShieldActive(this.powerUps.shieldActive)
     if (this.dash.isActive) {
@@ -672,6 +1053,11 @@ export class Game {
   private updateRunProgress(delta: number): void {
     this.distance = Math.max(this.distance, this.player.position.z * -1)
     this.level.update(this.distance)
+    this.runTime += delta
+    if (this.level.reachedTarget) {
+      this.finishRun(false, false, false, true)
+      return
+    }
     this.recovery.update(delta)
     if (this.invulnerabilityTimer > 0) {
       this.invulnerabilityTimer = Math.max(0, this.invulnerabilityTimer - delta)
@@ -695,6 +1081,7 @@ export class Game {
       return
     }
     if (this.player.position.y < GAME_CONFIG.player.killY) {
+      this.crashCause = 'fall'
       this.finishRun(true)
       return
     }
@@ -706,17 +1093,13 @@ export class Game {
       this.powerUps.magnetPullSpeed,
     )
 
-    const pickups = this.world.collectAt(
-      this.player.position,
-      GAME_CONFIG.player.radius,
-    )
+    const pickups = this.world.collectAt(this.player.position, GAME_CONFIG.player.radius)
     if (pickups.length > 0) {
       this.handlePickups(pickups)
     }
 
     this.score =
-      Math.floor(this.distance * GAME_CONFIG.scoring.distanceMultiplier) +
-      this.pickupScore
+      Math.floor(this.distance * GAME_CONFIG.scoring.distanceMultiplier) + this.pickupScore
   }
 
   /**
@@ -727,21 +1110,17 @@ export class Game {
   private handlePickups(pickups: readonly CollectiblePickup[]): void {
     for (const pickup of pickups) {
       const isReward = pickup.kind === 'reward'
-      this.world.burstAt(
-        pickup.x,
-        pickup.y,
-        pickup.z,
-        pickup.color,
-        isReward ? 22 : 12,
-      )
+      this.world.burstAt(pickup.x, pickup.y, pickup.z, pickup.color, isReward ? 22 : 12)
       this.pickupScore += pickup.score
 
       if (pickup.coins > 0) {
         this.coins += pickup.coins
-        this.coinBalance = this.progression.creditCoins(pickup.coins)
+        this.progression.creditCoins(pickup.coins)
+        this.menus.notify(this.meta.record({ kind: 'coins', amount: pickup.coins }))
       }
 
       if (pickup.powerUp) {
+        this.menus.notify(this.meta.record({ kind: 'powerups', amount: 1 }))
         this.fx.emitPowerUp(this.player.position, pickup.powerUp)
         this.powerUps.apply(pickup.powerUp)
         this.player.setShieldActive(this.powerUps.shieldActive)
@@ -751,32 +1130,38 @@ export class Game {
       switch (pickup.kind) {
         case 'coin':
           this.audio.play('coin')
-          this.ui.pushFeedback(`+${pickup.coins} coin`, 'coin')
+          this.ui.bumpCoins()
           break
         case 'token':
           this.crystals += 1
+          this.progression.creditCrystals(1)
+          this.menus.notify(this.meta.record({ kind: 'crystals', amount: 1 }))
           this.audio.play('token')
-          this.ui.pushFeedback(`+${pickup.coins} · ${pickup.label}`, 'coin')
+          this.ui.pushFeedback(
+            `+${pickup.coins} ● +1 💎 · ${tc('pickup.token', pickup.label)}`,
+            'coin',
+          )
           break
         case 'reward': {
           const bonus = pickup.powerUp
-            ? ` · ${GAME_CONFIG.powerUps[pickup.powerUp].label}`
+            ? ` · ${tc(`powerup.${pickup.powerUp}`, GAME_CONFIG.powerUps[pickup.powerUp].label)}`
             : ''
           this.audio.play('reward')
           this.haptics.pulse('reward')
-          this.ui.pushFeedback(`+${pickup.coins} · ${pickup.label}${bonus}`, 'reward')
+          this.ui.pushFeedback(
+            `+${pickup.coins} · ${tc(`pickup.${pickup.kind}`, pickup.label)}${bonus}`,
+            'reward',
+          )
           break
         }
         default: {
-          const duration = pickup.powerUp
-            ? GAME_CONFIG.powerUps[pickup.powerUp].duration
-            : 0
+          const duration = pickup.powerUp ? GAME_CONFIG.powerUps[pickup.powerUp].duration : 0
           this.audio.play('powerup')
           this.haptics.pulse('powerup')
-          this.ui.pushFeedback(
-            duration > 0 ? `${pickup.label} · ${duration}s` : pickup.label,
-            'powerup',
-          )
+          const label = pickup.powerUp
+            ? tc(`powerup.${pickup.powerUp}`, pickup.label)
+            : pickup.label
+          this.ui.pushFeedback(duration > 0 ? `${label} · ${duration}s` : label, 'powerup')
           break
         }
       }
@@ -786,10 +1171,7 @@ export class Game {
   }
 
   private handlePadTriggers(): void {
-    const triggers = this.world.triggerPads(
-      this.player.position,
-      GAME_CONFIG.player.radius,
-    )
+    const triggers = this.world.triggerPads(this.player.position, GAME_CONFIG.player.radius)
     if (triggers.bounce) {
       this.player.bounce(triggers.bounce.height)
     }
@@ -816,25 +1198,29 @@ export class Game {
       return
     }
 
-    this.player.teleport(new THREE.Vector3(respawn.x, respawn.y, respawn.z))
+    this.player.teleport(this.safeRespawn(respawn))
+    this.world.obstacles.clearAhead(this.player.position.z, RESPAWN_RUNWAY)
     this.camera.recenter(this.player.position, this.distance)
     this.effects.apply('recovery')
-    this.invulnerabilityTimer = Math.max(
-      this.invulnerabilityTimer,
-      this.recovery.invulnerability,
-    )
+    this.invulnerabilityTimer = Math.max(this.invulnerabilityTimer, this.recovery.invulnerability)
     this.audio.play('recover')
     this.camera.shake(0.22, 0.28)
     this.updateHud()
   }
 
-  private handleHazard(): void {
+  private handleHazard(obstacle?: Obstacle): void {
     if (this.effects.invulnerable || this.invulnerabilityTimer > 0) {
       return
     }
 
     if (this.powerUps.absorbHit()) {
       this.player.setShieldActive(this.powerUps.shieldActive)
+      this.player.playHit()
+      // The shield smashes the obstacle; otherwise the runner would stay pressed
+      // against it and crash as soon as the short grace period ends.
+      if (obstacle) {
+        this.world.obstacles.remove(obstacle)
+      }
       this.invulnerabilityTimer = Math.max(
         this.invulnerabilityTimer,
         GAME_CONFIG.powerUps.shield.invulnerability,
@@ -850,11 +1236,12 @@ export class Game {
         24,
       )
       this.fx.emitShieldBreak(this.player.position)
-      this.ui.pushFeedback('Shield absorbed the hit', 'shield')
+      this.ui.pushFeedback(t('feedback.shield'), 'shield')
       this.updateHud()
       return
     }
 
+    this.crashCause = obstacle?.prefabId ?? 'hazard'
     this.finishRun(true)
   }
 
@@ -863,18 +1250,36 @@ export class Game {
     this.player.updateVisual(delta, this.time.elapsed, false, true)
   }
 
-  private finishRun(crashed: boolean, immediate = false): void {
-    if (this.state !== 'playing' && this.state !== 'paused') {
+  private finishRun(
+    crashed: boolean,
+    immediate = false,
+    afterOffer = false,
+    levelComplete = false,
+  ): void {
+    if (this.state !== 'playing' && this.state !== 'paused' && this.state !== 'offer') {
+      return
+    }
+
+    this.tutorialFlow.end('suspend')
+    if (crashed && this.state === 'playing') {
+      // Every crash, including ones a continue later saves.
+      this.telemetry.track('crash', { ...this.runContext(), cause: this.crashCause })
+    }
+
+    // A crash mid-run first offers a second chance (coins or a rewarded ad).
+    if (crashed && !immediate && this.state === 'playing' && this.continueOffer.canOffer) {
+      this.beginContinueOffer()
       return
     }
 
     this.player.syncTransform()
-    this.player.playOutcome(crashed ? 'lose' : 'win')
+    if (!afterOffer) {
+      this.player.playOutcome(crashed ? 'lose' : 'win')
+    }
     this.distance = Math.max(this.distance, this.player.position.z * -1)
     this.level.update(this.distance)
     this.score =
-      Math.floor(this.distance * GAME_CONFIG.scoring.distanceMultiplier) +
-      this.pickupScore
+      Math.floor(this.distance * GAME_CONFIG.scoring.distanceMultiplier) + this.pickupScore
 
     const update = this.progression.recordRun({
       score: this.score,
@@ -890,7 +1295,116 @@ export class Game {
       bestDistance: update.snapshot.bestDistance,
       isBestScore: update.isBestScore,
       isBestDistance: update.isBestDistance,
+      notices: [],
+      doubleCoins: this.doubleCoins.offerFor(this.coins),
     }
+
+    // Level bookkeeping: stars, personal best and the next unlock.
+    const level = this.currentLevel
+    const runResult = {
+      distance: this.distance,
+      score: this.score,
+      coins: this.coins,
+      crystals: this.crystals,
+      completed: levelComplete,
+    }
+    const isEvent = level?.id === EVENT_LEVEL_ID
+    // The event island keeps no progress of its own; it pays a weekly reward.
+    const levelOutcome =
+      level && !isEvent
+        ? this.levels.recordRun(level, runResult)
+        : level
+          ? { stars: starsFor(level, runResult), isPersonalBest: false, unlockedNext: null }
+          : null
+    if (isEvent && levelComplete && this.menus.claimEventReward()) {
+      this.menus.addNotice(
+        t('event.reward', { coins: EVENT_REWARD.coins, crystals: EVENT_REWARD.crystals }),
+      )
+    }
+    if (!level) {
+      this.menus.recordEndlessBest(this.distance)
+    }
+    if (levelOutcome?.unlockedNext) {
+      const next = levelOutcome.unlockedNext
+      this.menus.addNotice(
+        t('levels.unlockedNext', { level: tc(`level.${next.id}.name`, next.name) }),
+      )
+    }
+    if (level && levelComplete) {
+      if (this.coins < level.completionCoins) {
+        this.menus.addNotice(t('levels.starCoins', { coins: level.completionCoins }))
+      }
+      if (this.crystals < level.completionCrystals) {
+        this.menus.addNotice(t('levels.starCrystals', { crystals: level.completionCrystals }))
+      }
+      this.telemetry.track('level_complete', {
+        ...this.runContext(),
+        stars: levelOutcome?.stars ?? 0,
+        continues: this.continueOffer.continuesUsed,
+        assist: this.level.assist,
+      })
+    } else if (level) {
+      // Where players give up: the final crash, or quitting from pause.
+      this.telemetry.track('level_fail', {
+        ...this.runContext(),
+        cause: crashed ? this.crashCause : 'quit',
+        continues: this.continueOffer.continuesUsed,
+        assist: this.level.assist,
+        tries: this.assist.failsOn(level.id) + (crashed ? 1 : 0),
+      })
+    }
+    // Quitting from pause is not a failed try; a crash or the finish line is.
+    if (level && !isEvent && (levelComplete || crashed)) {
+      this.assist.recordResult(level.id, levelComplete)
+    }
+
+    if (level && levelComplete) {
+      // Island missions: one island finished, and the stars it earned.
+      this.menus.notify(this.meta.record({ kind: 'islands', amount: 1 }))
+      this.menus.notify(this.meta.record({ kind: 'stars', amount: levelOutcome?.stars ?? 0 }))
+      // First island done: ask (once) whether reminders are welcome.
+      void this.reminders.askOnce()
+    }
+    this.menus.notify(
+      this.meta.recordSeason({
+        distance: this.distance,
+        completed: levelComplete,
+        stars: levelOutcome?.stars ?? 0,
+      }),
+    )
+    this.menus.notify(this.meta.finishRun(this.score, this.distance))
+    this.telemetry.track('run_end', {
+      ...this.runContext(),
+      completed: levelComplete,
+      score: Math.floor(this.score),
+      distance: Math.floor(this.distance),
+      coins: this.coins,
+      crystals: this.crystals,
+      continues: this.continueOffer.continuesUsed,
+      crashed,
+      nearMisses: this.nearMisses,
+    })
+    this.lastShare = {
+      score: this.score,
+      distance: this.distance,
+      island: level ? islandName(level) : null,
+      stars: levelComplete ? (levelOutcome?.stars ?? 0) : 0,
+      isBest: update.isBestScore,
+    }
+    const tried = this.welcome.endTrial()
+    if (tried) {
+      const character = CHARACTERS.find((entry) => entry.id === tried)
+      this.telemetry.track('trial_end', { character: tried, distance: Math.floor(this.distance) })
+      if (character) {
+        this.menus.addNotice(
+          t('gift.trialEnded', {
+            name: tc(`character.${character.id}.name`, character.name),
+            cost: character.unlockCost,
+          }),
+        )
+      }
+    }
+    summary.notices = [...this.menus.runNotices]
     this.player.setShieldActive(false)
 
     this.state = 'gameover'
@@ -898,7 +1412,13 @@ export class Game {
     this.input.reset()
     this.ui.hideAll()
 
-    if (crashed) {
+    if (afterOffer) {
+      // The crash beat already played when the offer opened.
+    } else if (levelComplete) {
+      this.audio.play('reward')
+      this.haptics.pulse('reward')
+      this.fx.emitLevelComplete(this.player.position)
+    } else if (crashed) {
       this.audio.play('hit')
       this.haptics.pulse('crash')
       this.camera.shake(0.55, 0.5)
@@ -906,14 +1426,238 @@ export class Game {
       this.audio.play('ui')
     }
 
-    const delay = crashed && !immediate ? GAME_CONFIG.timing.gameOverDelay * 1000 : 0
+    // Let the crash or the victory pose read for a moment before the summary.
+    const delay =
+      (crashed || levelComplete) && !immediate && !afterOffer
+        ? GAME_CONFIG.timing.gameOverDelay * 1000
+        : 0
     this.clearSummaryTimer()
     this.summaryTimer = window.setTimeout(() => {
       this.summaryTimer = null
-      if (this.state === 'gameover' && !this.disposed) {
+      if (this.state !== 'gameover' || this.disposed) {
+        return
+      }
+      if (level && levelComplete) {
+        const next = this.levels.getNextLevel(level.id)
+        this.ui.showLevelCompleted({
+          levelName: islandName(level),
+          score: this.score,
+          distance: this.distance,
+          coins: this.coins,
+          crystals: this.crystals,
+          stars: levelOutcome?.stars ?? 1,
+          timeElapsed: this.runTime,
+          isPersonalBest: levelOutcome?.isPersonalBest ?? false,
+          nextLevelAvailable: next !== null && this.levels.isUnlocked(next.id),
+          notes: summary.notices,
+          doubleCoins: summary.doubleCoins,
+        })
+      } else {
         this.ui.showGameOver(summary)
       }
+      this.offerWelcomeChest()
     }, delay)
+  }
+
+  /**
+   * A hazard that just slipped past within a hand's width of the runner (not
+   * jumped over, not hit) is a near miss: a toast and a few coins.
+   */
+  private checkNearMisses(delta: number): void {
+    this.nearMissCooldown = Math.max(0, this.nearMissCooldown - delta)
+    if (
+      this.state !== 'playing' ||
+      this.tutorialFlow.isActive ||
+      this.invulnerabilityTimer > 0 ||
+      this.effects.invulnerable
+    ) {
+      return
+    }
+    const position = this.player.position
+    this.world.obstacles.forEachActive((obstacle) => {
+      // The runner travels along -Z: a positive gap means it is now behind.
+      const behind = obstacle.z - position.z
+      if (obstacle.standable || behind < 0.2 || behind > 1.4) {
+        return
+      }
+      const key = `${obstacle.id}:${Math.round(obstacle.z)}`
+      if (this.nearMissSeen.has(key)) {
+        return
+      }
+      this.nearMissSeen.add(key)
+      const gap = Math.abs(obstacle.x - position.x) - obstacle.radius
+      if (gap < 0.25 || gap > NEAR_MISS_GAP || obstacle.contact().kind !== 'hazard') {
+        return
+      }
+      if (this.nearMissCooldown > 0) {
+        return
+      }
+      this.nearMissCooldown = 1.2
+      this.nearMisses += 1
+      this.coins += NEAR_MISS_COINS
+      this.progression.creditCoins(NEAR_MISS_COINS)
+      this.ui.pushFeedback(t('feedback.nearMiss', { coins: NEAR_MISS_COINS }), 'reward')
+      this.audio.play('coin')
+      this.haptics.pulse('ui')
+    })
+    if (this.nearMissSeen.size > 400) {
+      this.nearMissSeen.clear()
+    }
+  }
+
+  private async shareRun(): Promise<void> {
+    if (!this.lastShare) {
+      return
+    }
+    const result = await shareScore(this.lastShare)
+    this.telemetry.track('share', { result: result.kind, best: this.lastShare.isBest })
+    if (result.kind === 'failed') {
+      this.ui.toast(t('share.failed'))
+    } else if (result.kind === 'preview') {
+      this.showSharePreview(result.image, result.text)
+    }
+  }
+
+  /** Browsers without a share sheet: show the card with download/copy. */
+  private showSharePreview(image: string, text: string): void {
+    this.ui.showGift({
+      eyebrow: t('share.previewEyebrow'),
+      title: t('share.challenge'),
+      image: { src: image, alt: text },
+      onClose: () => this.ui.hideGift(),
+      primary: {
+        label: t('share.download'),
+        onClick: () => {
+          downloadShareImage(image)
+          this.telemetry.track('share', {
+            result: 'downloaded',
+            best: this.lastShare?.isBest === true,
+          })
+          this.ui.hideGift()
+          this.ui.toast(t('share.downloaded'))
+        },
+      },
+      secondary: {
+        label: t('share.copy'),
+        onClick: () => {
+          void copyShareText(text).then((copied) => {
+            this.ui.hideGift()
+            this.ui.toast(t(copied ? 'share.copied' : 'share.copyFailed'))
+          })
+        },
+      },
+    })
+  }
+
+  /** After the very first run: a sealed chest on top of the summary. */
+  private offerWelcomeChest(): void {
+    if (!this.welcome.chestReady(this.progression.snapshot.totalRuns)) {
+      return
+    }
+    this.audio.play('reward')
+    this.ui.showGift({
+      eyebrow: t('gift.welcomeEyebrow'),
+      title: t('gift.welcomeTitle'),
+      icon: '🎁',
+      sealed: true,
+      text: t('gift.welcomeTap'),
+      primary: { label: t('gift.open'), onClick: () => this.openWelcomeChest() },
+    })
+  }
+
+  private openWelcomeChest(): void {
+    const reward = this.welcome.openChest()
+    if (!reward) {
+      this.ui.hideGift()
+      return
+    }
+    this.progression.creditCoins(reward.coins)
+    this.progression.creditCrystals(reward.crystals)
+    this.audio.play('reward')
+    this.haptics.pulse('reward')
+    this.telemetry.track('welcome_chest', { coins: reward.coins, crystals: reward.crystals })
+    const character = CHARACTERS.find((entry) => entry.id === TRIAL_CHARACTER)
+    const offerTrial =
+      character !== undefined &&
+      this.welcome.canTry(this.playerSave.characterCollection.ownedCharacters)
+    const name = character ? tc(`character.${character.id}.name`, character.name) : ''
+    this.ui.showGift({
+      eyebrow: t('gift.welcomeEyebrow'),
+      title: t('gift.welcomeOpened'),
+      icon: '✨',
+      rewards: [`+${reward.coins} ●`, `+${reward.crystals} 💎`],
+      offer: offerTrial
+        ? { title: t('gift.trialTitle', { name }), text: t('gift.trialText') }
+        : undefined,
+      primary: offerTrial
+        ? { label: t('gift.trialPlay'), onClick: () => this.startTrialRun() }
+        : { label: t('common.close'), onClick: () => this.ui.hideGift() },
+      secondary: offerTrial
+        ? { label: t('gift.later'), onClick: () => this.ui.hideGift() }
+        : undefined,
+    })
+  }
+
+  /** The welcome trial: the next run in a character the player does not own. */
+  private startTrialRun(): void {
+    this.ui.hideGift()
+    const id = this.welcome.startTrial()
+    if (!id) {
+      return
+    }
+    this.telemetry.track('trial_start', { character: id })
+    const current = this.currentLevel
+    const next = current ? this.levels.getNextLevel(current.id) : null
+    this.startRun(next && this.levels.isUnlocked(next.id) ? next : current)
+  }
+
+  private beginContinueOffer(): void {
+    this.state = 'offer'
+    this.player.syncTransform()
+    this.player.playOutcome('lose')
+    this.player.setShieldActive(false)
+    this.queuedJump = false
+    this.input.reset()
+    this.meta.flush()
+    this.ui.hideAll()
+    this.audio.play('hit')
+    this.haptics.pulse('crash')
+    this.camera.shake(0.55, 0.5)
+
+    this.clearSummaryTimer()
+    // Let the crash read for a beat before asking.
+    this.summaryTimer = window.setTimeout(() => {
+      this.summaryTimer = null
+      if (this.state !== 'offer' || this.disposed) {
+        return
+      }
+      this.continueOffer.showOffer()
+    }, GAME_CONFIG.timing.gameOverDelay * 1000)
+  }
+
+  private declineContinue(): void {
+    if (this.state !== 'offer') {
+      return
+    }
+    this.finishRun(true, false, true)
+  }
+
+  /** Puts the runner back on the track with a short invulnerability window. */
+  private revive(): void {
+    this.chase.recover()
+    this.player.reset(this.safeRespawn(this.recovery.lastCheckpoint))
+    // A clear runway, so the continue never restarts in front of the obstacle it hit.
+    this.world.obstacles.clearAhead(this.player.position.z, RESPAWN_RUNWAY)
+    this.camera.recenter(this.player.position, this.distance)
+    this.effects.apply('recovery')
+    this.invulnerabilityTimer = CONTINUE_INVULNERABILITY
+    this.time.resetAccumulator()
+    this.fx.emitPowerUp(this.player.position, 'shield')
+    this.state = 'playing'
+    this.ui.showHud()
+    this.updateHud()
+    this.audio.play('recover')
+    this.haptics.pulse('powerup')
   }
 
   private updateHud(): void {
@@ -923,20 +1667,28 @@ export class Game {
       distance: this.distance,
       crystals: this.crystals,
       coins: this.coins,
-      coinBalance: this.coinBalance,
+      coinBalance: this.progression.balance('coins'),
       powerUps: this.powerUps.active,
       dashCharge: this.dash.charge,
       dashCooldown: this.dash.cooldownRemainingSeconds,
       dashReady: this.dash.isReady,
       dashActive: this.dash.isActive,
-      effectLabel: effect?.label ?? '',
+      effectLabel: effect ? tc(`effect.${effect.kind}`, effect.label) : '',
       effectRemaining: effect?.remaining ?? 0,
       effectDuration: effect?.duration ?? 0,
       slideActive: this.player.isSliding,
       slideCooldown: this.player.slideCooldownRemaining,
-      levelName: this.level.definition.name,
-      levelProgress: this.level.progress,
+      levelName: this.level.isEndless
+        ? t('levels.endless')
+        : `${islandName(this.level.definition)} · ${t('levels.toGo', {
+            distance: formatDistance(
+              Math.max(0, this.level.definition.targetDistance - this.distance),
+            ),
+          })}`,
+      // Levels show progress to the finish line; the endless run shows its difficulty ramp.
+      levelProgress: this.level.isEndless ? this.level.progress : this.level.completion,
       targetDistance: this.level.definition.targetDistance,
+      chaseGap: this.chase.gap,
     }
     this.ui.updateHud(state)
   }
@@ -946,6 +1698,32 @@ export class Game {
     return this.scratchFeet
       .copy(this.player.position)
       .setY(this.player.position.y - player.halfHeight - player.radius + 0.05)
+  }
+
+  /**
+   * Where the runner comes back after a continue or a fall: the checkpoint
+   * when there is still track under it, otherwise just behind where the run
+   * stopped, on the nearest lane. A checkpoint passed long ago can sit on a
+   * segment that has since been recycled ahead, and respawning there drops
+   * the runner straight into the sea.
+   */
+  private safeRespawn(checkpoint: { x: number; y: number; z: number } | null): THREE.Vector3 {
+    const spawn = this.spawnPosition()
+    if (checkpoint && this.world.hasTrackAt(checkpoint.z, RESPAWN_TRACK_MARGIN)) {
+      return new THREE.Vector3(checkpoint.x, Math.max(checkpoint.y, spawn.y), checkpoint.z)
+    }
+    const lanes = GAME_CONFIG.track.lanePositions
+    const x = lanes.reduce((best, lane) =>
+      Math.abs(lane - this.player.position.x) < Math.abs(best - this.player.position.x)
+        ? lane
+        : best,
+    )
+    let z = this.player.position.z + RESPAWN_BACKSTEP
+    // Step forward until there is solid track (the run may have stopped at the rear edge).
+    for (let tries = 0; tries < 20 && !this.world.hasTrackAt(z, RESPAWN_TRACK_MARGIN); tries += 1) {
+      z -= 2
+    }
+    return new THREE.Vector3(x, spawn.y, z)
   }
 
   private spawnPosition(): THREE.Vector3 {
@@ -973,6 +1751,7 @@ export class Game {
   private fail(error: unknown): void {
     const resolved = toError(error)
     this.logger.error('Fatal error.', resolved)
+    this.telemetry.captureException(resolved, `fatal in state ${this.state}`)
     this.state = 'error'
 
     if (this.frameHandle !== null) {
@@ -980,24 +1759,7 @@ export class Game {
       this.frameHandle = null
     }
 
-    const message =
-      resolved instanceof GameError
-        ? resolved.message
-        : 'An unexpected error interrupted the run. Reload to try again.'
+    const message = resolved instanceof GameError ? resolved.message : t('error.unexpected')
     this.ui.showError(message)
   }
-}
-
-function cosmeticCost(type: CosmeticType, id: string): number | null {
-  const catalog: readonly { id: string; unlockCost: number }[] =
-    type === 'character'
-      ? CHARACTERS
-      : type === 'skin'
-        ? CHARACTER_SKINS
-        : type === 'outfit'
-          ? CHARACTER_OUTFITS
-          : type === 'accessory'
-            ? CHARACTER_ACCESSORIES
-            : CHARACTER_COLORS
-  return catalog.find((item) => item.id === id)?.unlockCost ?? null
 }

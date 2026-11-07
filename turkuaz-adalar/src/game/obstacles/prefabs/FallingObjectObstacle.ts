@@ -24,12 +24,7 @@ export class FallingObjectObstacle extends ObstacleBase {
   private phase = 0
   private falling = false
 
-  constructor(
-    id: number,
-    scene: THREE.Scene,
-    physics: PhysicsWorld,
-    assets: ObstacleAssets,
-  ) {
+  constructor(id: number, scene: THREE.Scene, physics: PhysicsWorld, assets: ObstacleAssets) {
     const config = GAME_CONFIG.obstacles.fallingObject
     const group = new THREE.Group()
     group.name = 'FallingObject'
@@ -136,10 +131,7 @@ export class FallingObjectObstacle extends ObstacleBase {
     this.root.position.set(x, GAME_CONFIG.track.topY, z)
     this.crate.position.y = this.raisedY - this.floorY
     this.falling = false
-    this.body.setTranslation(
-      { x, y: this.raisedY + config.size / 2, z },
-      true,
-    )
+    this.body.setTranslation({ x, y: this.raisedY + config.size / 2, z }, true)
     this.collider.setEnabled(false)
     this.body.setEnabled(false)
     const mat = this.shadow.material as THREE.MeshBasicMaterial
@@ -155,6 +147,5 @@ export const FALLING_OBJECT_PREFAB: ObstaclePrefab = {
   standable: false,
   weight: GAME_CONFIG.obstacles.fallingObject.weight,
   unlockAt: GAME_CONFIG.obstacles.fallingObject.unlockAt,
-  create: (scene, physics, assets, id) =>
-    new FallingObjectObstacle(id, scene, physics, assets),
+  create: (scene, physics, assets, id) => new FallingObjectObstacle(id, scene, physics, assets),
 }

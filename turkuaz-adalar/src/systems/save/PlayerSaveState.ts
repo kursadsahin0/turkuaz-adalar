@@ -1,3 +1,4 @@
+import { detectLanguage, isLanguage, type Language } from '../../i18n/i18n.ts'
 /**
  * Unified player save state combining all persistent data.
  * Versioned for migration compatibility across updates.
@@ -9,6 +10,10 @@ export interface PlayerProgression {
   totalRuns: number
   totalCrystals: number
   coins: number
+  /** Spendable crystals (totalCrystals is the lifetime count). */
+  crystalBalance: number
+  /** Lifetime coins earned from any source; never decreases. */
+  totalCoinsEarned: number
 }
 
 export interface LevelProgress {
@@ -19,6 +24,8 @@ export interface LevelProgress {
   totalCoins: number
   totalCrystals: number
   unlockedAt: number
+  /** 0-3: completion, coin target, crystal target. */
+  bestStars: number
 }
 
 export interface CharacterCollection {
@@ -39,11 +46,17 @@ export interface CharacterCollection {
 export interface GameSettings {
   musicVolume: number
   sfxVolume: number
-  quality: 'low' | 'medium' | 'high'
+  /** 'auto' picks a level per device and steps down if FPS stays low. */
+  quality: 'auto' | 'low' | 'medium' | 'high'
   controlHints: boolean
   vibration: boolean
   muted: boolean
   difficulty: 'easy' | 'medium' | 'hard'
+  language: Language
+  /** Send anonymous crash reports (only when a crash service is configured). */
+  crashReports: boolean
+  /** Local reminders (daily reward, streak, weekly event). */
+  reminders: boolean
 }
 
 export interface TutorialState {
@@ -74,6 +87,8 @@ export const DEFAULT_PLAYER_SAVE: PlayerSaveState = {
     totalRuns: 0,
     totalCrystals: 0,
     coins: 0,
+    crystalBalance: 0,
+    totalCoinsEarned: 0,
   },
   unlockedLevels: ['turkuaz-shallows'],
   levelProgress: {},
@@ -94,11 +109,14 @@ export const DEFAULT_PLAYER_SAVE: PlayerSaveState = {
   settings: {
     musicVolume: 0.5,
     sfxVolume: 0.5,
-    quality: 'medium',
+    quality: 'auto',
     controlHints: true,
     vibration: true,
     muted: false,
     difficulty: 'medium',
+    language: 'en',
+    crashReports: true,
+    reminders: true,
   },
   tutorial: {
     completed: false,
@@ -115,7 +133,9 @@ export const DEFAULT_PLAYER_SAVE: PlayerSaveState = {
  */
 export function createDefaultSave(): PlayerSaveState {
   const now = Date.now()
-  return { ...structuredClone(DEFAULT_PLAYER_SAVE), createdAt: now, lastSavedAt: now }
+  const save = { ...structuredClone(DEFAULT_PLAYER_SAVE), createdAt: now, lastSavedAt: now }
+  save.settings.language = detectLanguage()
+  return save
 }
 
 /**
@@ -133,6 +153,15 @@ export function sanitiseProgression(value: unknown): PlayerProgression {
     totalRuns: sanitiseNumber(record.totalRuns),
     totalCrystals: sanitiseNumber(record.totalCrystals),
     coins: sanitiseNumber(record.coins),
+    // Older saves had no spendable balance: start from every crystal earned.
+    crystalBalance:
+      'crystalBalance' in record
+        ? sanitiseNumber(record.crystalBalance)
+        : sanitiseNumber(record.totalCrystals),
+    totalCoinsEarned:
+      'totalCoinsEarned' in record
+        ? sanitiseNumber(record.totalCoinsEarned)
+        : sanitiseNumber(record.coins),
   }
 }
 
@@ -149,6 +178,7 @@ export function sanitiseLevelProgress(value: unknown): LevelProgress {
       totalCoins: 0,
       totalCrystals: 0,
       unlockedAt: 0,
+      bestStars: 0,
     }
   }
 
@@ -161,6 +191,7 @@ export function sanitiseLevelProgress(value: unknown): LevelProgress {
     totalCoins: sanitiseNumber(record.totalCoins),
     totalCrystals: sanitiseNumber(record.totalCrystals),
     unlockedAt: typeof record.unlockedAt === 'number' ? record.unlockedAt : 0,
+    bestStars: Math.min(3, sanitiseNumber(record.bestStars)),
   }
 }
 
@@ -225,11 +256,23 @@ export function sanitiseSettings(value: unknown): GameSettings {
   return {
     musicVolume: clampNumber(record.musicVolume, 0, 1),
     sfxVolume: clampNumber(record.sfxVolume, 0, 1),
-    quality: record.quality === 'low' || record.quality === 'medium' || record.quality === 'high' ? record.quality : 'medium',
+    quality:
+      record.quality === 'auto' ||
+      record.quality === 'low' ||
+      record.quality === 'medium' ||
+      record.quality === 'high'
+        ? record.quality
+        : 'auto',
     controlHints: typeof record.controlHints === 'boolean' ? record.controlHints : true,
     vibration: typeof record.vibration === 'boolean' ? record.vibration : true,
     muted: typeof record.muted === 'boolean' ? record.muted : false,
-    difficulty: record.difficulty === 'easy' || record.difficulty === 'medium' || record.difficulty === 'hard' ? record.difficulty : 'medium',
+    difficulty:
+      record.difficulty === 'easy' || record.difficulty === 'medium' || record.difficulty === 'hard'
+        ? record.difficulty
+        : 'medium',
+    language: isLanguage(record.language) ? record.language : detectLanguage(),
+    crashReports: typeof record.crashReports === 'boolean' ? record.crashReports : true,
+    reminders: typeof record.reminders === 'boolean' ? record.reminders : true,
   }
 }
 
@@ -245,7 +288,9 @@ export function sanitiseTutorial(value: unknown): TutorialState {
   return {
     completed: typeof record.completed === 'boolean' ? record.completed : false,
     completedAt: typeof record.completedAt === 'number' ? record.completedAt : 0,
-    stepsCompleted: Array.isArray(record.stepsCompleted) ? record.stepsCompleted.filter(isString) : [],
+    stepsCompleted: Array.isArray(record.stepsCompleted)
+      ? record.stepsCompleted.filter(isString)
+      : [],
   }
 }
 
@@ -261,12 +306,19 @@ export function sanitiseSaveState(value: unknown): PlayerSaveState {
   return {
     version: typeof record.version === 'number' ? record.version : CURRENT_SAVE_VERSION,
     progression: sanitiseProgression(record.progression),
-    unlockedLevels: Array.isArray(record.unlockedLevels) ? record.unlockedLevels.filter(isString) : ['turkuaz-shallows'],
-    levelProgress: typeof record.levelProgress === 'object' && record.levelProgress !== null
-      ? Object.fromEntries(
-          Object.entries(record.levelProgress).map(([k, v]) => [k, sanitiseLevelProgress(v)])
-        )
-      : {},
+    // The first level is always playable, whatever the save says.
+    unlockedLevels: [
+      ...new Set([
+        'turkuaz-shallows',
+        ...(Array.isArray(record.unlockedLevels) ? record.unlockedLevels.filter(isString) : []),
+      ]),
+    ],
+    levelProgress:
+      typeof record.levelProgress === 'object' && record.levelProgress !== null
+        ? Object.fromEntries(
+            Object.entries(record.levelProgress).map(([k, v]) => [k, sanitiseLevelProgress(v)]),
+          )
+        : {},
     characterCollection: sanitiseCharacterCollection(record.characterCollection),
     settings: sanitiseSettings(record.settings),
     tutorial: sanitiseTutorial(record.tutorial),
@@ -276,9 +328,7 @@ export function sanitiseSaveState(value: unknown): PlayerSaveState {
 }
 
 function sanitiseNumber(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0
-    ? Math.floor(value)
-    : 0
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? Math.floor(value) : 0
 }
 
 function clampNumber(value: unknown, min: number, max: number): number {

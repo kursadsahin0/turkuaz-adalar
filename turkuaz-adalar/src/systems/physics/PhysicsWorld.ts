@@ -1,4 +1,3 @@
-import RAPIER from '@dimforge/rapier3d-compat'
 import type {
   Collider,
   KinematicCharacterController,
@@ -7,6 +6,25 @@ import type {
 } from '@dimforge/rapier3d-compat'
 import { GameError, toError } from '../../utils/errors.ts'
 import { degToRad } from '../../utils/math.ts'
+
+type RapierModule = (typeof import('@dimforge/rapier3d-compat'))['default']
+
+/**
+ * Rapier (with its ~2 MB inlined WASM) is loaded on demand into its own
+ * chunk, so the browser fetches it in parallel with the renderer instead of
+ * parsing it as part of the main bundle.
+ */
+let RAPIER: RapierModule
+let rapierLoading: Promise<RapierModule> | null = null
+
+function loadRapier(): Promise<RapierModule> {
+  rapierLoading ??= import('@dimforge/rapier3d-compat').then(async (module) => {
+    await module.default.init()
+    RAPIER = module.default
+    return RAPIER
+  })
+  return rapierLoading
+}
 
 export interface StaticBodyHandle {
   body: RigidBody
@@ -40,7 +58,7 @@ export class PhysicsWorld {
 
   static async create(): Promise<PhysicsWorld> {
     try {
-      await RAPIER.init()
+      await loadRapier()
       const world = new RAPIER.World({ x: 0, y: -34, z: 0 })
       world.timestep = 1 / 60
       return new PhysicsWorld(world)
@@ -92,11 +110,7 @@ export class PhysicsWorld {
    */
   addKinematicBox(center: Vector3Like, halfExtents: Vector3Like): StaticBodyHandle {
     const body = this.world.createRigidBody(
-      RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(
-        center.x,
-        center.y,
-        center.z,
-      ),
+      RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(center.x, center.y, center.z),
     )
     const collider = this.world.createCollider(
       RAPIER.ColliderDesc.cuboid(halfExtents.x, halfExtents.y, halfExtents.z)
@@ -127,14 +141,7 @@ export class PhysicsWorld {
       { x: position.x, y: currentTopY, z: position.z },
       { x: 0, y: 1, z: 0 },
     )
-    const hit = this.world.castRay(
-      ray,
-      maxToi,
-      true,
-      undefined,
-      undefined,
-      exclude ?? undefined,
-    )
+    const hit = this.world.castRay(ray, maxToi, true, undefined, undefined, exclude ?? undefined)
     return hit === null
   }
 
@@ -148,9 +155,7 @@ export class PhysicsWorld {
     )
 
     const collider = this.world.createCollider(
-      RAPIER.ColliderDesc.capsule(halfHeight, radius)
-        .setFriction(0.7)
-        .setRestitution(0),
+      RAPIER.ColliderDesc.capsule(halfHeight, radius).setFriction(0.7).setRestitution(0),
       body,
     )
 

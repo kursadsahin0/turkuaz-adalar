@@ -35,11 +35,14 @@ export class CharacterModel {
     this.root.name = `Character:${asset.definition.id}`
     this.instance = asset.createInstance({ castShadow: true, receiveShadow: true })
 
-    const size = asset.bounds.getSize(new THREE.Vector3())
+    // Sized by the bodies alone: a wizard's hat or a helmet must not shrink
+    // every runner to make room for it.
+    const bounds = bodyBounds(this.instance.root) ?? asset.bounds
+    const size = bounds.getSize(new THREE.Vector3())
     this.scale = size.y > 0.0001 ? options.targetHeight / size.y : 1
 
-    const center = asset.bounds.getCenter(new THREE.Vector3())
-    const min = asset.bounds.min
+    const center = bounds.getCenter(new THREE.Vector3())
+    const min = bounds.min
     const model = this.instance.root
     model.scale.setScalar(this.scale)
     model.position.set(-center.x * this.scale, -min.y * this.scale, -center.z * this.scale)
@@ -75,10 +78,28 @@ export class CharacterModel {
     this.animator.playOutcome(outcome)
   }
 
+  playHit(): void {
+    this.animator.playHit()
+  }
+
+  /** The runner's own celebration, once, then back to idle. */
+  celebrate(): void {
+    this.animator.celebrate()
+  }
+
+  /** True when the model animates slides itself (no squash needed). */
+  get animatesSlide(): boolean {
+    return this.animator.hasSlide
+  }
+
   /** Recolours materials and toggles accessories. Purely visual. */
   applyAppearance(appearance: CharacterAppearance): void {
     if (!this.disposed) {
       this.dresser.apply(appearance)
+      this.animator.setWinVariant(appearance.model)
+      // Scales around the feet (the root's origin), so the runner stays
+      // planted on the capsule's base whatever its build.
+      this.root.scale.set(appearance.build.width, appearance.build.height, appearance.build.width)
     }
   }
 
@@ -97,4 +118,22 @@ export class CharacterModel {
     this.root.removeFromParent()
     this.root.clear()
   }
+}
+
+/**
+ * Bind-pose bounds of the skinned bodies only (bone-attached props such as
+ * hats, helmets and capes are left out), or null when there are none.
+ */
+function bodyBounds(root: THREE.Object3D): THREE.Box3 | null {
+  root.updateMatrixWorld(true)
+  const bounds = new THREE.Box3()
+  root.traverse((object) => {
+    if (object instanceof THREE.SkinnedMesh) {
+      object.computeBoundingBox()
+      if (object.boundingBox) {
+        bounds.union(object.boundingBox.clone().applyMatrix4(object.matrixWorld))
+      }
+    }
+  })
+  return bounds.isEmpty() ? null : bounds
 }

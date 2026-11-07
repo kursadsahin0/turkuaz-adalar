@@ -124,22 +124,14 @@ const server = await createServer({
 try {
   const { GAME_CONFIG } = await server.ssrLoadModule('/src/config/GameConfig.ts')
   const { InputManager } = await server.ssrLoadModule('/src/systems/input/InputManager.ts')
-  const { PhysicsWorld } = await server.ssrLoadModule(
-    '/src/systems/physics/PhysicsWorld.ts',
-  )
+  const { PhysicsWorld } = await server.ssrLoadModule('/src/systems/physics/PhysicsWorld.ts')
   const { Player } = await server.ssrLoadModule('/src/game/player/Player.ts')
-  const { MovementEffects } = await server.ssrLoadModule(
-    '/src/game/player/MovementEffects.ts',
-  )
-  const { RunRecovery } = await server.ssrLoadModule(
-    '/src/game/player/RunRecovery.ts',
-  )
+  const { MovementEffects } = await server.ssrLoadModule('/src/game/player/MovementEffects.ts')
+  const { RunRecovery } = await server.ssrLoadModule('/src/game/player/RunRecovery.ts')
   const { InteractionManager } = await server.ssrLoadModule(
     '/src/game/interactions/InteractionManager.ts',
   )
-  const { ObstacleAssets } = await server.ssrLoadModule(
-    '/src/game/obstacles/ObstacleAssets.ts',
-  )
+  const { ObstacleAssets } = await server.ssrLoadModule('/src/game/obstacles/ObstacleAssets.ts')
   const { Rng } = await server.ssrLoadModule('/src/utils/random.ts')
 
   const playerConfig = GAME_CONFIG.player
@@ -163,8 +155,7 @@ try {
     onPause: () => {},
     onToggleMute: () => {},
   })
-  const keyDown = (code, repeat = false) =>
-    fakeWindow.emit('keydown', keyboardEvent(code, repeat))
+  const keyDown = (code, repeat = false) => fakeWindow.emit('keydown', keyboardEvent(code, repeat))
   const keyUp = (code) => fakeWindow.emit('keyup', keyboardEvent(code))
   const pointerDown = (id, x, y) => canvas.emit('pointerdown', pointerEvent(id, x, y))
   const pointerMove = (id, x, y) => canvas.emit('pointermove', pointerEvent(id, x, y))
@@ -178,22 +169,16 @@ try {
     },
     'S queues exactly one slide',
   )
-  check(
-    'input.arrow_down_slide',
-    () => {
-      keyDown('ArrowDown')
-      return input.consumeSlide() === true
-    },
-  )
-  check(
-    'input.slide_repeat_ignored',
-    () => {
-      keyDown('KeyS', false)
-      keyDown('KeyS', true)
-      input.consumeSlide()
-      return input.consumeSlide() === false
-    },
-  )
+  check('input.arrow_down_slide', () => {
+    keyDown('ArrowDown')
+    return input.consumeSlide() === true
+  })
+  check('input.slide_repeat_ignored', () => {
+    keyDown('KeyS', false)
+    keyDown('KeyS', true)
+    input.consumeSlide()
+    return input.consumeSlide() === false
+  })
   check(
     'input.swipe_down_slides',
     () => {
@@ -208,13 +193,10 @@ try {
     },
     'swipe down no longer dashes',
   )
-  check(
-    'input.hud_slide_queue',
-    () => {
-      input.queueSlide()
-      return input.consumeSlide() === true
-    },
-  )
+  check('input.hud_slide_queue', () => {
+    input.queueSlide()
+    return input.consumeSlide() === true
+  })
   check(
     'input.jump_hold_key',
     () => {
@@ -237,19 +219,16 @@ try {
     },
     'pointer hold counts as held jump',
   )
-  check(
-    'input.reset_clears_slide',
-    () => {
-      input.queueSlide()
-      input.queueJump()
-      input.reset()
-      return (
-        input.consumeSlide() === false &&
-        input.consumeJump() === false &&
-        input.isJumpHeld() === false
-      )
-    },
-  )
+  check('input.reset_clears_slide', () => {
+    input.queueSlide()
+    input.queueJump()
+    input.reset()
+    return (
+      input.consumeSlide() === false &&
+      input.consumeJump() === false &&
+      input.isJumpHeld() === false
+    )
+  })
   input.dispose()
 
   // ---------------------------------------------------------------- effects
@@ -295,22 +274,16 @@ try {
     },
     'recovery adds invulnerability without changing movement',
   )
-  check(
-    'effects.reapply_refreshes_timer',
-    () => {
-      effects.update(3)
-      const before = effects.active.find((entry) => entry.kind === 'surge')?.remaining ?? 0
-      effects.apply('surge')
-      const after = effects.active.find((entry) => entry.kind === 'surge')?.remaining ?? 0
-      return before < 2 && approx(after, GAME_CONFIG.effects.surge.duration, 1e-9)
-    },
-  )
+  check('effects.reapply_refreshes_timer', () => {
+    effects.update(3)
+    const before = effects.active.find((entry) => entry.kind === 'surge')?.remaining ?? 0
+    effects.apply('surge')
+    const after = effects.active.find((entry) => entry.kind === 'surge')?.remaining ?? 0
+    return before < 2 && approx(after, GAME_CONFIG.effects.surge.duration, 1e-9)
+  })
   check('effects.unknown_rejected', () => effects.apply('unknown') === false)
   effects.reset()
-  check(
-    'effects.reset_clears',
-    () => effects.active.length === 0 && effects.speedMultiplier === 1,
-  )
+  check('effects.reset_clears', () => effects.active.length === 0 && effects.speedMultiplier === 1)
 
   // --------------------------------------------------------------- recovery
   console.log('\nFall recovery')
@@ -434,10 +407,7 @@ try {
 
   const createRig = async ({ beam = false } = {}) => {
     const physics = await PhysicsWorld.create()
-    physics.addStaticBox(
-      { x: 0, y: track.topY - 1, z: -150 },
-      { x: 10, y: 1, z: 160 },
-    )
+    physics.addStaticBox({ x: 0, y: track.topY - 1, z: -150 }, { x: 10, y: 1, z: 160 })
     let beamHandle = null
     if (beam) {
       const visual = beamAssets.create('beam')
@@ -550,10 +520,7 @@ try {
   const tapJump = await measureJump({ hold: 0 })
   check(
     'jump.tap_is_short',
-    () =>
-      tapJump.rise < fullJump.rise - 0.25 &&
-      tapJump.rise > 0.9 &&
-      tapJump.landCount === 1,
+    () => tapJump.rise < fullJump.rise - 0.25 && tapJump.rise > 0.9 && tapJump.landCount === 1,
     `${tapJump.rise.toFixed(2)} m vs ${fullJump.rise.toFixed(2)} m`,
   )
   check(
@@ -580,8 +547,7 @@ try {
 
   const slideRig = await createRig()
   settle(slideRig)
-  const restBottom =
-    slideRig.player.position.y - HALF - RADIUS
+  const restBottom = slideRig.player.position.y - HALF - RADIUS
   stepPlayer(slideRig, { slide: true, forwardSpeed: 0 })
   check(
     'slide.starts_grounded',
@@ -593,8 +559,7 @@ try {
   check(
     'slide.feet_stay_planted',
     () => {
-      const slidingBottom =
-        slideRig.player.position.y - slideRig.player.capsuleHalfHeight - RADIUS
+      const slidingBottom = slideRig.player.position.y - slideRig.player.capsuleHalfHeight - RADIUS
       return approx(slidingBottom, restBottom, 0.08)
     },
     `feet ${restBottom.toFixed(2)} → ${(
@@ -621,10 +586,7 @@ try {
     stepPlayer(slideRig, { forwardSpeed: 0 })
   }
   stepPlayer(slideRig, { slide: true, forwardSpeed: 0 })
-  check(
-    'slide.available_after_cooldown',
-    () => slideRig.player.isSliding === true,
-  )
+  check('slide.available_after_cooldown', () => slideRig.player.isSliding === true)
   disposeRig(slideRig)
 
   const slideSpeedRig = await createRig()
@@ -704,12 +666,10 @@ try {
     'beam.slide_passes_under',
     () =>
       slideStarted &&
-      (slidingBeamRig.beamHandle === null ||
-        !slidingBeamHits.has(slidingBeamRig.beamHandle)) &&
+      (slidingBeamRig.beamHandle === null || !slidingBeamHits.has(slidingBeamRig.beamHandle)) &&
       slidingBeamRig.player.position.z < -6.5,
     `z ${slidingBeamRig.player.position.z.toFixed(2)}, beam contacts ${
-      slidingBeamRig.beamHandle !== null &&
-      slidingBeamHits.has(slidingBeamRig.beamHandle)
+      slidingBeamRig.beamHandle !== null && slidingBeamHits.has(slidingBeamRig.beamHandle)
         ? 'yes'
         : 'none'
     }`,
@@ -733,48 +693,39 @@ try {
       bouncePad.height === GAME_CONFIG.interactions.bouncePad.height,
     `top ${bouncePad.topY.toFixed(2)}`,
   )
-  check(
-    'pads.bounce_cooldown',
-    () => {
-      const first = padManager.consumeBounce(bouncePad.collider.handle)
-      const second = padManager.consumeBounce(bouncePad.collider.handle)
-      padManager.fixedUpdate(GAME_CONFIG.interactions.padCooldown * 0.5)
-      const stillCooling = padManager.consumeBounce(bouncePad.collider.handle)
-      padManager.fixedUpdate(GAME_CONFIG.interactions.padCooldown * 0.6)
-      const ready = padManager.consumeBounce(bouncePad.collider.handle)
-      return first === bouncePad && second === null && stillCooling === null && ready === bouncePad
-    },
-  )
-  check(
-    'pads.proximity_miss',
-    () => {
-      padManager.fixedUpdate(GAME_CONFIG.interactions.padCooldown)
-      const far = padManager.triggerPads(
-        { x: bouncePad.x + 5, y: bounceTop + 0.5, z: bouncePad.z },
-        RADIUS,
-      )
-      const high = padManager.triggerPads(
-        {
-          x: bouncePad.x,
-          y: bounceTop + GAME_CONFIG.interactions.padTriggerHeight + 0.5,
-          z: bouncePad.z,
-        },
-        RADIUS,
-      )
-      return far.bounce === null && high.bounce === null
-    },
-  )
-  check(
-    'pads.proximity_hit',
-    () => {
-      padManager.fixedUpdate(GAME_CONFIG.interactions.padCooldown)
-      const trigger = padManager.triggerPads(
-        { x: bouncePad.x, y: bounceTop + 0.5, z: bouncePad.z },
-        RADIUS,
-      )
-      return trigger.bounce === bouncePad
-    },
-  )
+  check('pads.bounce_cooldown', () => {
+    const first = padManager.consumeBounce(bouncePad.collider.handle)
+    const second = padManager.consumeBounce(bouncePad.collider.handle)
+    padManager.fixedUpdate(GAME_CONFIG.interactions.padCooldown * 0.5)
+    const stillCooling = padManager.consumeBounce(bouncePad.collider.handle)
+    padManager.fixedUpdate(GAME_CONFIG.interactions.padCooldown * 0.6)
+    const ready = padManager.consumeBounce(bouncePad.collider.handle)
+    return first === bouncePad && second === null && stillCooling === null && ready === bouncePad
+  })
+  check('pads.proximity_miss', () => {
+    padManager.fixedUpdate(GAME_CONFIG.interactions.padCooldown)
+    const far = padManager.triggerPads(
+      { x: bouncePad.x + 5, y: bounceTop + 0.5, z: bouncePad.z },
+      RADIUS,
+    )
+    const high = padManager.triggerPads(
+      {
+        x: bouncePad.x,
+        y: bounceTop + GAME_CONFIG.interactions.padTriggerHeight + 0.5,
+        z: bouncePad.z,
+      },
+      RADIUS,
+    )
+    return far.bounce === null && high.bounce === null
+  })
+  check('pads.proximity_hit', () => {
+    padManager.fixedUpdate(GAME_CONFIG.interactions.padCooldown)
+    const trigger = padManager.triggerPads(
+      { x: bouncePad.x, y: bounceTop + 0.5, z: bouncePad.z },
+      RADIUS,
+    )
+    return trigger.bounce === bouncePad
+  })
 
   padManager.fixedUpdate(GAME_CONFIG.interactions.padCooldown)
   const speedPad = padManager.spawnSpeed(0, 0, -14)
@@ -820,10 +771,7 @@ try {
   check(
     'pads.bounce_launches',
     () =>
-      bounceEvents >= 1 &&
-      firstBounceZ !== null &&
-      firstBounceZ > bouncePad2.z &&
-      bounceRise > 2.5,
+      bounceEvents >= 1 && firstBounceZ !== null && firstBounceZ > bouncePad2.z && bounceRise > 2.5,
     `${bounceEvents} launch(es), peak rise ${bounceRise.toFixed(2)} m`,
   )
   padManager.dispose()
@@ -834,15 +782,11 @@ try {
 
   const platformRig = await createRig()
   settle(platformRig)
-  const platformManager = new InteractionManager(
-    platformRig.scene,
-    platformRig.physics,
-  )
+  const platformManager = new InteractionManager(platformRig.scene, platformRig.physics)
   platformRig.manager = platformManager
   const platformConfig = GAME_CONFIG.interactions.movingPlatform
   const platform = platformManager.spawnPlatform(0, 0, -4, new Rng(4242))
-  platformRig.player.platformMotionProvider = (handle) =>
-    platformManager.platformVelocity(handle)
+  platformRig.player.platformMotionProvider = (handle) => platformManager.platformVelocity(handle)
 
   let minTop = Number.POSITIVE_INFINITY
   let maxTop = Number.NEGATIVE_INFINITY
@@ -859,39 +803,26 @@ try {
     'platform.oscillates',
     () =>
       approx(minTop, track.topY + platformConfig.baseLift, 0.02) &&
-      approx(
-        maxTop,
-        track.topY + platformConfig.baseLift + platformConfig.amplitude,
-        0.02,
-      ) &&
+      approx(maxTop, track.topY + platformConfig.baseLift + platformConfig.amplitude, 0.02) &&
       maxVerticalSpeed > 0.1,
     `${(minTop - track.topY).toFixed(2)}–${(maxTop - track.topY).toFixed(2)} m above deck`,
   )
   check(
     'platform.kinematic_body_tracks_visual',
     () =>
-      approx(
-        platform.body.translation().y,
-        platform.centerY,
-        1e-6,
-      ) &&
+      approx(platform.body.translation().y, platform.centerY, 1e-6) &&
       approx(platform.root.position.y, platform.centerY, 1e-6),
   )
   check(
     'platform.velocity_lookup',
     () =>
-      platformManager.platformVelocity(platform.collider.handle) ===
-        platform.velocity &&
+      platformManager.platformVelocity(platform.collider.handle) === platform.velocity &&
       platformManager.platformVelocity(999999) === null,
   )
 
   const platformTop = platform.centerY + platformConfig.thickness / 2
   platformRig.player.reset(
-    new THREE.Vector3(
-      platform.x,
-      platformTop + HALF + RADIUS + 0.03,
-      platform.z,
-    ),
+    new THREE.Vector3(platform.x, platformTop + HALF + RADIUS + 0.03, platform.z),
   )
   let riderGrounded = 0
   let riderMinY = Number.POSITIVE_INFINITY
@@ -926,10 +857,7 @@ try {
 
   const interactionPhysics = await PhysicsWorld.create()
   const interactionScene = new THREE.Scene()
-  const interactionManager = new InteractionManager(
-    interactionScene,
-    interactionPhysics,
-  )
+  const interactionManager = new InteractionManager(interactionScene, interactionPhysics)
 
   const firstCheckpoint = interactionManager.spawnCheckpoint(1, 0, -50)
   const secondCheckpoint = interactionManager.spawnCheckpoint(2, 2.7, -80)
@@ -951,10 +879,7 @@ try {
       interactionManager.latestCheckpoint(1000) === secondCheckpoint,
   )
   interactionManager.clearAll()
-  check(
-    'checkpoint.clear',
-    () => interactionManager.latestCheckpoint(1000) === null,
-  )
+  check('checkpoint.clear', () => interactionManager.latestCheckpoint(1000) === null)
 
   const snapshot = (manager, segmentId) =>
     manager
@@ -965,11 +890,7 @@ try {
         z: Number(entry.z.toFixed(6)),
         radius: Number(entry.radius.toFixed(6)),
       }))
-      .sort((a, b) =>
-        a.kind === b.kind
-          ? a.z - b.z
-          : a.kind.localeCompare(b.kind),
-      )
+      .sort((a, b) => (a.kind === b.kind ? a.z - b.z : a.kind.localeCompare(b.kind)))
 
   interactionManager.populateSegment(5, -150, new Rng(123456), 0.8, () => false)
   const firstPopulation = snapshot(interactionManager, 5)
@@ -991,9 +912,7 @@ try {
   const hasCheckpoint = (centerZ, seed = 777) => {
     interactionManager.clearAll()
     interactionManager.populateSegment(7, centerZ, new Rng(seed), 0.4, () => false)
-    return interactionManager
-      .interactionsIn(7)
-      .some((entry) => entry.kind === 'checkpoint')
+    return interactionManager.interactionsIn(7).some((entry) => entry.kind === 'checkpoint')
   }
   check(
     'population.checkpoint_cadence',
@@ -1019,10 +938,7 @@ try {
       interactionManager.isBlocked(blockPad.x + 6, blockPad.z, 0.3) === false,
   )
   interactionManager.clearSegment(9)
-  check(
-    'population.clear_removes_bodies',
-    () => interactionManager.interactionsIn(9).length === 0,
-  )
+  check('population.clear_removes_bodies', () => interactionManager.interactionsIn(9).length === 0)
 
   interactionManager.dispose()
   interactionPhysics.dispose()

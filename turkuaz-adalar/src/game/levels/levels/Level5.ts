@@ -23,17 +23,6 @@ export const LEVEL_5: LevelDefinition = {
   unlockCost: 300,
   completionCoins: 150,
   completionCrystals: 10,
-  minRowsPerSegment: 2,
-  maxRowsPerSegment: 4,
-  obstacleDensity: 0.6,
-  crystalDensity: 0.5,
-  platforms: {
-    width: 4.5,
-    gapRange: [2, 3.5],
-    heightVariation: 1.2,
-    segmentLength: 30,
-    floating: true,
-  },
   obstacles: {
     enabledObstacles: [
       'static-barrier',
@@ -45,13 +34,12 @@ export const LEVEL_5: LevelDefinition = {
     ],
     maxDensity: 0.55,
     minObstacleSpacing: 5,
-    threeLane: true,
     safeZoneLength: 12,
   },
   collectibles: {
     coinDensity: 0.6,
-    tokenChance: 0.3,
-    powerUpChance: 0.15,
+    tokenChance: 0.16,
+    powerUpChance: 0.32,
     rewardInterval: 3,
     clusterSize: 5,
   },

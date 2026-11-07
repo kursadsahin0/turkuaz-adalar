@@ -1,191 +1,130 @@
+import type { PlayerSaveManager } from '../../systems/save/PlayerSaveManager.ts'
+import type { LevelProgress } from '../../systems/save/PlayerSaveState.ts'
 import type { LevelDefinition } from './LevelDefinition.ts'
 
-export interface LevelProgress {
-  /** Number of times the level has been attempted. */
-  attempts: number
-  /** Whether the level has been completed. */
-  completed: boolean
-  /** Best distance achieved in this level. */
-  bestDistance: number
-  /** Best score achieved in this level. */
-  bestScore: number
-  /** Total coins collected across all runs. */
-  totalCoins: number
-  /** Total crystals collected across all runs. */
-  totalCrystals: number
-  /** Timestamp when the level was unlocked (0 if never unlocked). */
-  unlockedAt: number
+export type { LevelProgress }
+
+/** Result of finishing (or failing) a level run. */
+export interface LevelRunResult {
+  readonly distance: number
+  readonly score: number
+  readonly coins: number
+  readonly crystals: number
+  readonly completed: boolean
 }
 
-export interface LevelProgressState {
-  readonly unlockedLevels: string[]
-  progress: Record<string, LevelProgress>
+export interface LevelRunOutcome {
+  /** Stars earned by this run (0 when not completed). */
+  readonly stars: number
+  readonly isPersonalBest: boolean
+  /** The level this completion unlocked, if any. */
+  readonly unlockedNext: LevelDefinition | null
 }
 
+const EMPTY_PROGRESS: LevelProgress = {
+  attempts: 0,
+  completed: false,
+  bestDistance: 0,
+  bestScore: 0,
+  totalCoins: 0,
+  totalCrystals: 0,
+  unlockedAt: 0,
+  bestStars: 0,
+}
+
+/**
+ * ★ for finishing, ★ for the level's coin target, ★ for its crystal target.
+ */
+export function starsFor(level: LevelDefinition, result: LevelRunResult): number {
+  if (!result.completed) {
+    return 0
+  }
+  return (
+    1 +
+    (result.coins >= level.completionCoins ? 1 : 0) +
+    (result.crystals >= level.completionCrystals ? 1 : 0)
+  )
+}
+
+/**
+ * Level unlocks and per-level records, stored in the unified player save.
+ *
+ * Finishing a level unlocks the next one for free. Any locked level can also
+ * be opened early by paying its `unlockCost` in coins.
+ */
 export class LevelProgressionManager {
-  private static readonly SAVE_KEY = 'level_progression'
-  
-  private state: LevelProgressState = {
-    unlockedLevels: ['turkuaz-shallows'], // First level always unlocked
-    progress: {},
+  private readonly save: PlayerSaveManager
+  private readonly levels: readonly LevelDefinition[]
+
+  constructor(save: PlayerSaveManager, levels: readonly LevelDefinition[]) {
+    this.save = save
+    this.levels = levels
   }
 
-  constructor() {
-    this.load()
+  get unlockedLevels(): readonly string[] {
+    return this.save.unlockedLevels
   }
 
-  /**
-   * Check if a level is unlocked.
-   */
+  get allProgress(): Readonly<Record<string, LevelProgress>> {
+    return this.save.levelProgress
+  }
+
   isUnlocked(levelId: string): boolean {
-    return this.state.unlockedLevels.includes(levelId)
+    return levelId === this.levels[0]?.id || this.save.unlockedLevels.includes(levelId)
   }
 
-  /**
-   * Get the progress for a specific level.
-   */
   getProgress(levelId: string): LevelProgress {
-    return this.state.progress[levelId] ?? {
-      attempts: 0,
-      completed: false,
-      bestDistance: 0,
-      bestScore: 0,
-      totalCoins: 0,
-      totalCrystals: 0,
-      unlockedAt: 0,
-    }
+    return this.save.levelProgress[levelId] ?? { ...EMPTY_PROGRESS }
   }
 
-  /**
-   * Unlock a level (requires sufficient coins).
-   */
-  unlockLevel(levelId: string, cost: number, currentCoins: number): boolean {
+  /** Marks a level playable. The caller handles any coin payment first. */
+  unlock(levelId: string): boolean {
+    if (!this.levels.some((level) => level.id === levelId)) {
+      return false
+    }
     if (this.isUnlocked(levelId)) {
       return true
     }
-    if (currentCoins < cost) {
-      return false
-    }
-    this.state.unlockedLevels.push(levelId)
-    this.state.progress[levelId] = {
-      attempts: 0,
-      completed: false,
-      bestDistance: 0,
-      bestScore: 0,
-      totalCoins: 0,
-      totalCrystals: 0,
-      unlockedAt: Date.now(),
-    }
-    this.save()
+    this.save.updateUnlockedLevels([...this.save.unlockedLevels, levelId])
+    this.save.updateLevelProgress(levelId, { ...this.getProgress(levelId), unlockedAt: Date.now() })
     return true
   }
 
-  /**
-   * Record a run result for a level.
-   */
-  recordRun(
-    levelId: string,
-    distance: number,
-    score: number,
-    coins: number,
-    crystals: number,
-    completed: boolean,
-  ): void {
-    const existing = this.getProgress(levelId)
-    const updated = {
+  recordRun(level: LevelDefinition, result: LevelRunResult): LevelRunOutcome {
+    const existing = this.getProgress(level.id)
+    const stars = starsFor(level, result)
+    const isPersonalBest = result.score > existing.bestScore
+    this.save.updateLevelProgress(level.id, {
       attempts: existing.attempts + 1,
-      bestDistance: Math.max(existing.bestDistance, distance),
-      bestScore: Math.max(existing.bestScore, score),
-      totalCoins: existing.totalCoins + coins,
-      totalCrystals: existing.totalCrystals + crystals,
-      completed: completed || existing.completed,
+      completed: existing.completed || result.completed,
+      bestDistance: Math.max(existing.bestDistance, Math.floor(result.distance)),
+      bestScore: Math.max(existing.bestScore, Math.floor(result.score)),
+      totalCoins: existing.totalCoins + result.coins,
+      totalCrystals: existing.totalCrystals + result.crystals,
       unlockedAt: existing.unlockedAt,
+      bestStars: Math.max(existing.bestStars, stars),
+    })
+
+    let unlockedNext: LevelDefinition | null = null
+    const next = this.getNextLevel(level.id)
+    if (result.completed && next && !this.isUnlocked(next.id)) {
+      this.unlock(next.id)
+      unlockedNext = next
     }
-    this.state = {
-      ...this.state,
-      progress: { ...this.state.progress, [levelId]: updated },
-    }
-    this.save()
+    return { stars, isPersonalBest, unlockedNext }
   }
 
-  /**
-   * Check if a level can be unlocked with the current coin balance.
-   */
-  canUnlock(level: LevelDefinition, currentCoins: number): boolean {
-    if (this.isUnlocked(level.id)) {
-      return true
-    }
-    return currentCoins >= level.unlockCost
+  getNextLevel(levelId: string): LevelDefinition | null {
+    const index = this.levels.findIndex((level) => level.id === levelId)
+    return index >= 0 && index < this.levels.length - 1 ? this.levels[index + 1] : null
   }
 
-  /**
-   * Get the next level after the given one.
-   */
-  getNextLevel(currentLevelId: string, allLevels: readonly LevelDefinition[]): LevelDefinition | null {
-    const currentIndex = allLevels.findIndex(l => l.id === currentLevelId)
-    if (currentIndex === -1 || currentIndex >= allLevels.length - 1) {
-      return null
-    }
-    return allLevels[currentIndex + 1]
+  /** Islands finished at least once. */
+  completedCount(): number {
+    return this.levels.filter((level) => this.getProgress(level.id).completed).length
   }
 
-  /**
-   * Get the first unlocked level.
-   */
-  getFirstUnlockedLevel(allLevels: readonly LevelDefinition[]): LevelDefinition {
-    for (const level of allLevels) {
-      if (this.isUnlocked(level.id)) {
-        return level
-      }
-    }
-    return allLevels[0]
-  }
-
-  /**
-   * Calculate completion percentage across all levels.
-   */
-  getCompletionPercentage(allLevels: readonly LevelDefinition[]): number {
-    let completed = 0
-    for (const level of allLevels) {
-      const progress = this.getProgress(level.id)
-      if (progress.completed) {
-        completed += 1
-      }
-    }
-    return (completed / allLevels.length) * 100
-  }
-
-  private load(): void {
-    try {
-      const saved = localStorage.getItem(LevelProgressionManager.SAVE_KEY)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        this.state = {
-          unlockedLevels: parsed.unlockedLevels ?? ['turkuaz-shallows'],
-          progress: parsed.progress ?? {},
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load level progression:', error)
-    }
-  }
-
-  private save(): void {
-    try {
-      localStorage.setItem(
-        LevelProgressionManager.SAVE_KEY,
-        JSON.stringify(this.state),
-      )
-    } catch (error) {
-      console.error('Failed to save level progression:', error)
-    }
-  }
-
-  reset(): void {
-    this.state = {
-      unlockedLevels: ['turkuaz-shallows'],
-      progress: {},
-    }
-    this.save()
+  totalStars(): number {
+    return this.levels.reduce((sum, level) => sum + this.getProgress(level.id).bestStars, 0)
   }
 }

@@ -18,10 +18,5 @@ export interface ObstaclePrefab {
   readonly weight: number
   /** Level difficulty (0..1) at which this prefab starts spawning. */
   readonly unlockAt: number
-  create(
-    scene: THREE.Scene,
-    physics: PhysicsWorld,
-    assets: ObstacleAssets,
-    id: number,
-  ): Obstacle
+  create(scene: THREE.Scene, physics: PhysicsWorld, assets: ObstacleAssets, id: number): Obstacle
 }

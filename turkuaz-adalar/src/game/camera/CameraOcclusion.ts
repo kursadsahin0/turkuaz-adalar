@@ -69,10 +69,7 @@ export class CameraOcclusion {
       return false
     }
 
-    const safeDistance = Math.max(
-      this.options.minimumDistance,
-      nearest - this.options.clearance,
-    )
+    const safeDistance = Math.max(this.options.minimumDistance, nearest - this.options.clearance)
     out.copy(origin).addScaledVector(this.direction, safeDistance)
     return true
   }
