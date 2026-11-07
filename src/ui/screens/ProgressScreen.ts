@@ -1,4 +1,11 @@
-import { t, type StringKey, localeOf } from '../../i18n/i18n.ts'
+import { t, tc, type StringKey, localeOf } from '../../i18n/i18n.ts'
+import { CHARACTER_ACCESSORIES, CHARACTER_COLORS } from '../../game/characters/CharacterData.ts'
+import {
+  SEASON_TIER_XP,
+  SEASON_TIERS,
+  type SeasonReward,
+  type SeasonView,
+} from '../../systems/meta/SeasonRoad.ts'
 import type { AchievementDefinition, AchievementId } from '../../systems/meta/Achievements.ts'
 import type { RunRecord } from '../../systems/meta/Leaderboard.ts'
 import type { Mission } from '../../systems/meta/Missions.ts'
@@ -12,6 +19,7 @@ export interface ProgressScreenOptions {
   onBack: () => void
   onClaimMission: (id: string) => void
   onClaimAchievement: (id: AchievementId) => void
+  onClaimSeason: (tier: number) => void
 }
 
 export interface AchievementView {
@@ -26,9 +34,10 @@ export interface ProgressData {
   readonly hoursLeft: number
   readonly achievements: readonly AchievementView[]
   readonly records: readonly RunRecord[]
+  readonly season: SeasonView
 }
 
-type Tab = 'missions' | 'achievements' | 'records'
+type Tab = 'missions' | 'season' | 'achievements' | 'records'
 
 /** Daily missions, lifetime achievements and the local top-10, in tabs. */
 export class ProgressScreen extends Screen {
@@ -41,6 +50,7 @@ export class ProgressScreen extends Screen {
 
   constructor(options: ProgressScreenOptions) {
     super('screen--overlay')
+    this.root.classList.add('screen--sheet')
     this.options = options
 
     const panel = createPanel('progress-panel')
@@ -72,6 +82,8 @@ export class ProgressScreen extends Screen {
       const id = button.dataset.claim ?? ''
       if (button.dataset.kind === 'mission') {
         this.options.onClaimMission(id)
+      } else if (button.dataset.kind === 'season') {
+        this.options.onClaimSeason(Number(id))
       } else {
         this.options.onClaimAchievement(id as AchievementId)
       }
@@ -105,6 +117,11 @@ export class ProgressScreen extends Screen {
     const achievementBadge = data.achievements.filter((a) => a.unlocked && !a.claimed).length
     this.tabs.replaceChildren(
       this.tabButton('missions', t('progress.tab.missions'), missionBadge),
+      this.tabButton(
+        'season',
+        t('progress.tab.season'),
+        data.season.tiers.filter((tier) => tier.reached && !tier.claimed).length,
+      ),
       this.tabButton('achievements', t('progress.tab.achievements'), achievementBadge),
       this.tabButton('records', t('progress.tab.records'), 0),
     )
@@ -112,6 +129,8 @@ export class ProgressScreen extends Screen {
     this.list.replaceChildren()
     if (this.tab === 'missions') {
       this.renderMissions(data)
+    } else if (this.tab === 'season') {
+      this.renderSeason(data.season)
     } else if (this.tab === 'achievements') {
       this.renderAchievements(data)
     } else {
@@ -158,6 +177,75 @@ export class ProgressScreen extends Screen {
         done ? t('progress.allDone') : t('progress.missionsReset', { hours: data.hoursLeft }),
       ),
     )
+  }
+
+  private renderSeason(season: SeasonView): void {
+    const head = createEl('div', 'season-head')
+    const level = createEl(
+      'strong',
+      'season-head__tier',
+      t('season.tier', { tier: season.tier, total: SEASON_TIERS }),
+    )
+    const meta = createEl(
+      'span',
+      'season-head__meta',
+      t('season.daysLeft', { days: season.daysLeft }),
+    )
+    const track = createEl('div', 'goal-row__track season-head__track')
+    const fill = createEl('div', 'goal-row__fill')
+    fill.style.transform = `scaleX(${season.tierXp / SEASON_TIER_XP})`
+    track.append(fill)
+    const xp = createEl(
+      'span',
+      'season-head__xp',
+      season.tier >= SEASON_TIERS
+        ? t('season.complete')
+        : t('season.xp', { xp: season.tierXp, total: SEASON_TIER_XP }),
+    )
+    head.append(level, meta, track, xp)
+    this.list.append(head, createEl('p', 'progress__note season-head__how', t('season.how')))
+
+    // Claimable tiers first, then the next few to aim for.
+    const next = season.tiers.filter((tier) => !tier.reached).slice(0, 5)
+    const ready = season.tiers.filter((tier) => tier.reached && !tier.claimed)
+    const claimed = season.tiers.filter((tier) => tier.claimed).slice(-3)
+    for (const entry of [...ready, ...next, ...claimed]) {
+      const progressXp = Math.max(
+        0,
+        Math.min(SEASON_TIER_XP, season.xp - (entry.tier - 1) * SEASON_TIER_XP),
+      )
+      this.list.append(
+        this.row({
+          title: t('season.tierName', { tier: entry.tier }),
+          subtitle: this.seasonRewardName(entry.reward),
+          ratio: entry.reached ? 1 : progressXp / SEASON_TIER_XP,
+          reward: this.seasonRewardShort(entry.reward),
+          claimId: String(entry.tier),
+          kind: 'season',
+          state: entry.claimed ? 'claimed' : entry.reached ? 'ready' : 'progress',
+        }),
+      )
+    }
+  }
+
+  private seasonRewardShort(reward: SeasonReward): string {
+    if (reward.cosmetic) {
+      return '🎁'
+    }
+    return reward.crystals > 0
+      ? `${formatInteger(reward.crystals)} 💎`
+      : `${formatInteger(reward.coins)} ●`
+  }
+
+  private seasonRewardName(reward: SeasonReward): string {
+    if (reward.cosmetic) {
+      const { type, id } = reward.cosmetic
+      const item = [...CHARACTER_COLORS, ...CHARACTER_ACCESSORIES].find((entry) => entry.id === id)
+      return t('season.cosmetic', { name: tc(`${type}.${id}.name`, item?.name ?? id) })
+    }
+    return reward.crystals > 0
+      ? t('season.crystals', { crystals: reward.crystals })
+      : t('season.coins', { coins: formatInteger(reward.coins) })
   }
 
   private renderAchievements(data: ProgressData): void {
@@ -210,7 +298,7 @@ export class ProgressScreen extends Screen {
     ratio: number
     reward: string
     claimId: string
-    kind: 'mission' | 'achievement'
+    kind: 'mission' | 'achievement' | 'season'
     state: 'progress' | 'ready' | 'claimed'
   }): HTMLDivElement {
     const row = createEl('div', `goal-row goal-row--${view.state}`)

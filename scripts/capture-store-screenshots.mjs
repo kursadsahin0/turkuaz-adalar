@@ -1,6 +1,6 @@
 /**
  * Captures store screenshots of the real game in the locally installed
- * Google Chrome (no browser download), in Turkish and English.
+ * Google Chrome (no browser download), in Turkish, English, German and Spanish.
  *
  *   npm run store:screenshots            # Play: 1080x1920 (360x640 @3x)
  *   npm run store:screenshots -- --ios   # App Store 6.7": 1290x2796 (430x932 @3x)
@@ -10,7 +10,7 @@
  * Uses the Vite dev server because the dev build exposes `window.__turkuaz`,
  * which the script uses to stage each scene deterministically.
  */
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readdirSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright-core'
@@ -20,11 +20,12 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const ios = process.argv.includes('--ios')
 const viewport = ios ? { width: 430, height: 932 } : { width: 360, height: 640 }
 const platform = ios ? 'ios' : 'play'
-const languages = ['tr', 'en']
+const languages = ['tr', 'en', 'de', 'es']
+const LOCALES = { tr: 'tr-TR', en: 'en-US', de: 'de-DE', es: 'es-ES' }
 
 const server = await createServer({
   root,
-  server: { port: 5199, strictPort: false },
+  server: { port: 5199, strictPort: false, hmr: false, watch: null },
   logLevel: 'error',
 })
 await server.listen()
@@ -43,12 +44,16 @@ try {
   for (const lang of languages) {
     const outDir = join(root, 'store', 'screenshots', platform, lang)
     mkdirSync(outDir, { recursive: true })
+    // Generated files only: a renamed scene must not leave a stale shot behind.
+    for (const file of readdirSync(outDir).filter((name) => name.endsWith('.png'))) {
+      rmSync(join(outDir, file))
+    }
     const context = await browser.newContext({
       viewport,
       deviceScaleFactor: 3,
       isMobile: true,
       hasTouch: true,
-      locale: lang === 'tr' ? 'tr-TR' : 'en-US',
+      locale: LOCALES[lang],
     })
     const page = await context.newPage()
     page.on('pageerror', (error) => console.error(`[${lang}] page error:`, error.message))
@@ -107,8 +112,30 @@ try {
       g.powerUps.reset()
       g.effects.reset()
       g.dash.reset()
+      // The newer power-ups, shown in the HUD; neither hides the runner.
+      g.powerUps.apply('slowMo')
+      g.powerUps.apply('magnet')
     })
     await shot('02-run')
+
+    // A chase island with the giant wave right behind the runner.
+    await page.evaluate(async () => {
+      const g = window.__turkuaz
+      const { LEVEL_CATALOG } = await import('/src/game/levels/LevelCatalog.ts')
+      const island = LEVEL_CATALOG.find((level) => level.chase) ?? null
+      if (island) g.levels.unlock(island.id)
+      g.returnToMenu()
+      g.startRun(island)
+      clearInterval(window.__keepAlive)
+      window.__keepAlive = setInterval(() => {
+        g.invulnerabilityTimer = 999
+        g.chase.currentGap = 9
+        if (g.state === 'paused') g.resume()
+      }, 50)
+    })
+    await wait(2600)
+    await page.evaluate(() => window.__turkuaz.powerUps.reset())
+    await shot('03-chase')
 
     await page.evaluate(() => {
       clearInterval(window.__keepAlive)
@@ -116,7 +143,7 @@ try {
       g.returnToMenu()
       g.menus.showLevelSelection()
     })
-    await shot('03-islands')
+    await shot('04-islands')
 
     // One of the newer runners, as a returning player might wear it.
     await page.evaluate(() => {
@@ -124,6 +151,7 @@ try {
       for (const [type, id] of [
         ['character', 'tide-mage'],
         ['color', 'color-sunset'],
+        ['skin', 'skin-autumn'],
       ]) {
         g.playerSave.purchaseCosmetic(type, id)
         g.playerSave.equip(type, id)
@@ -132,7 +160,7 @@ try {
       g.shop.open()
     })
     await wait(1500)
-    await shot('04-characters')
+    await shot('05-characters')
 
     await page.evaluate(async () => {
       const g = window.__turkuaz
@@ -146,7 +174,7 @@ try {
       g.finishRun(false, false, false, true)
     })
     await wait(2200)
-    await shot('05-level-complete')
+    await shot('06-level-complete')
 
     await page.evaluate(() => {
       const g = window.__turkuaz
@@ -162,7 +190,7 @@ try {
       }
       g.menus.showProgress()
     })
-    await shot('06-missions')
+    await shot('07-missions')
 
     await context.close()
   }

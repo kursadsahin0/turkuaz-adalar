@@ -45,6 +45,10 @@ export class MetaController {
     return id ? (LEVEL_CATALOG.find((level) => level.id === id) ?? null) : null
   }
 
+  get eventClaimedThisWeek(): boolean {
+    return this.eventTracker.isClaimed(weeklyEvent(new Date(), LEVEL_CATALOG).week)
+  }
+
   /** Pays this week's event reward once; returns false if it was already paid. */
   claimEventReward(): boolean {
     const event = weeklyEvent(new Date(), LEVEL_CATALOG)
@@ -111,6 +115,8 @@ export class MetaController {
     if (meta.claimDaily()) {
       telemetry.track('daily_claim', { streak: meta.daily.status().streak })
       this.rewarded()
+      // A good moment to offer "tell me when tomorrow's reward is ready".
+      void this.services.reminders.askOnce()
     }
     this.showDaily()
   }
@@ -126,6 +132,19 @@ export class MetaController {
   claimAchievement(id: AchievementId): void {
     if (this.services.meta.claimAchievement(id) > 0) {
       this.services.telemetry.track('achievement_claim', { id })
+      this.rewarded()
+    }
+    this.showProgress()
+  }
+
+  claimSeason(tier: number): void {
+    const payout = this.services.meta.claimSeason(tier)
+    if (payout) {
+      this.services.telemetry.track('season_claim', {
+        tier,
+        season: this.services.meta.season.view().season,
+        cosmetic: payout.cosmetic ?? '',
+      })
       this.rewarded()
     }
     this.showProgress()

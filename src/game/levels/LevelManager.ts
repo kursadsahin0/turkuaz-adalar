@@ -3,6 +3,10 @@ import type { LevelDefinition } from './LevelDefinition.ts'
 import { LEVEL_CATALOG } from './LevelCatalog.ts'
 import { DEFAULT_SPAWN_RULES, spawnRulesFor, type SpawnRules } from './SpawnRules.ts'
 
+/** Speed and obstacle-density factors per assist level (0 = off). */
+const ASSIST_SPEED = [1, 0.95, 0.9] as const
+const ASSIST_DENSITY = [1, 0.88, 0.78] as const
+
 /**
  * Turns a level definition plus travelled distance into live difficulty
  * parameters (speed, obstacle density, crystal density).
@@ -13,6 +17,8 @@ export class LevelManager {
   private endless = true
   private currentDistance = 0
   private difficultyMultiplier = 1.0
+  /** Struggle assist: 0 off, 1-2 gently slower and sparser (see IslandAssist). */
+  private assistLevel = 0
 
   constructor(definition: LevelDefinition = LEVEL_CATALOG[0]) {
     this.current = definition
@@ -24,6 +30,15 @@ export class LevelManager {
 
   get isEndless(): boolean {
     return this.endless
+  }
+
+  /** Applies the struggle assist for this run (0 = none). */
+  setAssist(level: number): void {
+    this.assistLevel = Math.max(0, Math.min(ASSIST_SPEED.length - 1, Math.floor(level)))
+  }
+
+  get assist(): number {
+    return this.assistLevel
   }
 
   /** Selects a catalogue level, or `null` for the endless run. */
@@ -63,7 +78,7 @@ export class LevelManager {
     const baseSpeed =
       this.definition.baseSpeed +
       (this.definition.maxSpeed - this.definition.baseSpeed) * easeOutCubic(this.progress)
-    return baseSpeed * this.difficultyMultiplier
+    return baseSpeed * this.difficultyMultiplier * ASSIST_SPEED[this.assistLevel]
   }
 
   get difficulty(): number {
@@ -72,7 +87,10 @@ export class LevelManager {
 
   get obstacleDensity(): number {
     return (
-      this.definition.obstacles.maxDensity * (0.7 + this.progress * 0.3) * this.difficultyMultiplier
+      this.definition.obstacles.maxDensity *
+      (0.7 + this.progress * 0.3) *
+      this.difficultyMultiplier *
+      ASSIST_DENSITY[this.assistLevel]
     )
   }
 

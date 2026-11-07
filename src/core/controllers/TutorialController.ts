@@ -61,6 +61,7 @@ export class TutorialController {
   action(action: TutorialAction): void {
     const result = this.tutorial.notify(action)
     if (result === 'advanced') {
+      this.services.telemetry.track('tutorial_step', { step: action })
       this.services.audio?.play('ui')
       this.services.haptics.pulse('ui')
       this.refresh()

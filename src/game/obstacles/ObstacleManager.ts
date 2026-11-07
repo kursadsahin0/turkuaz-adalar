@@ -183,6 +183,17 @@ export class ObstacleManager {
     return obstacle?.platformVelocity() ?? null
   }
 
+  /** Calls `visit` for every active obstacle. */
+  forEachActive(visit: (obstacle: Obstacle) => void): void {
+    for (const obstacles of this.bySegment.values()) {
+      for (const obstacle of obstacles) {
+        if (obstacle.active) {
+          visit(obstacle)
+        }
+      }
+    }
+  }
+
   isBlocked(x: number, z: number, radius: number): boolean {
     for (const obstacles of this.bySegment.values()) {
       for (const obstacle of obstacles) {

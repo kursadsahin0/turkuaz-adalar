@@ -944,6 +944,173 @@ kbd {
   transition: transform 0.08s linear;
 }
 
+/* Active power-ups: one chip each, with the time left as a draining bar. */
+.hud__powerups {
+  position: absolute;
+  top: calc(118px + var(--safe-top));
+  left: calc(14px + var(--safe-left));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.hud-power {
+  --power: var(--mint);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 132px;
+  max-width: 46vw;
+  padding: 6px 10px;
+  background: rgba(4, 26, 32, 0.6);
+  border: 1px solid color-mix(in srgb, var(--power) 40%, transparent);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(2, 16, 20, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: hud-in 0.24s var(--ease-out) both;
+}
+
+.hud-power--shield {
+  --power: #7cc8ff;
+}
+.hud-power--magnet {
+  --power: #5ce8f5;
+}
+.hud-power--speed {
+  --power: #ff9a62;
+}
+.hud-power--doubleJump {
+  --power: #8fe07a;
+}
+.hud-power--glide {
+  --power: #b5f6ff;
+}
+.hud-power--slowMo {
+  --power: #ffaee0;
+}
+
+.hud-power__glyph {
+  flex: none;
+  width: 20px;
+  color: var(--power);
+  font-size: 0.95rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.hud-power__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hud-power__label {
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hud-power__track {
+  height: 3px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 2px;
+}
+
+.hud-power__fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--power);
+  border-radius: inherit;
+  transform-origin: left center;
+  transition: transform 0.08s linear;
+}
+
+.hud-power__time {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 0.58rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pickup feedback ("+1 coin", "Shield!"): small pills that rise and fade. */
+.hud__toasts {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.hud-toast {
+  padding: 4px 12px;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  background: rgba(4, 26, 32, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  text-shadow: 0 1px 2px rgba(2, 16, 20, 0.5);
+  animation: hud-toast 0.9s var(--ease-out) both;
+}
+
+.hud-toast--coin {
+  color: #ffe08a;
+}
+.hud-toast--powerup {
+  color: var(--mint);
+  border-color: rgba(97, 245, 227, 0.4);
+}
+.hud-toast--reward {
+  color: #ffe08a;
+  border-color: rgba(255, 214, 102, 0.5);
+}
+.hud-toast--shield {
+  color: #a9dcff;
+  border-color: rgba(124, 200, 255, 0.5);
+}
+
+@keyframes hud-toast {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-toast {
+    animation-duration: 0.01s;
+    animation-fill-mode: none;
+  }
+}
+
 .hud__hint {
   position: absolute;
   bottom: calc(16px + var(--safe-bottom));
@@ -3375,4 +3542,1391 @@ kbd {
   .level-card--endless .level-card__stats {
     margin-top: 0;
   }
+}
+
+/* Gift card: welcome chest, season rewards. */
+.screen--gift {
+  z-index: 6;
+}
+
+.gift-panel {
+  width: min(400px, 100%);
+  text-align: center;
+}
+
+.gift__title {
+  margin-bottom: 4px;
+}
+
+.gift__icon {
+  margin: 10px auto 6px;
+  font-size: 4.4rem;
+  line-height: 1.1;
+  filter: drop-shadow(0 10px 22px rgba(255, 214, 102, 0.35));
+  animation: gift-pop 0.5s var(--ease-out) both;
+}
+
+.gift__icon--sealed {
+  animation:
+    gift-pop 0.5s var(--ease-out) both,
+    gift-shake 1.4s 0.5s ease-in-out infinite;
+}
+
+.gift__rewards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0 4px;
+}
+
+.gift__reward {
+  padding: 6px 14px;
+  color: #ffe08a;
+  font-size: 1rem;
+  font-weight: 800;
+  background: rgba(255, 214, 102, 0.12);
+  border: 1px solid rgba(255, 214, 102, 0.4);
+  border-radius: 999px;
+  animation: gift-pop 0.4s 0.15s var(--ease-out) both;
+}
+
+.gift__text {
+  margin: 8px 0 0;
+}
+
+.gift__offer {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 14px 0 2px;
+  padding: 12px 14px;
+  text-align: left;
+  background: linear-gradient(150deg, rgba(97, 245, 227, 0.16), rgba(4, 26, 32, 0.4));
+  border: 1px solid rgba(97, 245, 227, 0.38);
+  border-radius: 14px;
+}
+
+.gift__offer-title {
+  color: var(--mint);
+  font-size: 0.92rem;
+}
+
+.gift__offer-text {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+@keyframes gift-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes gift-shake {
+  0%,
+  70%,
+  100% {
+    transform: rotate(0deg);
+  }
+  76% {
+    transform: rotate(-9deg);
+  }
+  84% {
+    transform: rotate(8deg);
+  }
+  92% {
+    transform: rotate(-5deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gift__icon,
+  .gift__icon--sealed,
+  .gift__reward {
+    animation: none;
+  }
+}
+
+/* Season road header (Missions → Season). */
+.season-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 10px;
+  align-items: baseline;
+  padding: 12px 14px;
+  background: linear-gradient(150deg, rgba(255, 214, 102, 0.14), rgba(4, 26, 32, 0.4));
+  border: 1px solid rgba(255, 214, 102, 0.34);
+  border-radius: 14px;
+}
+
+.season-head__tier {
+  color: #ffe08a;
+  font-size: 1.05rem;
+}
+
+.season-head__meta,
+.season-head__xp {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.season-head__track {
+  grid-column: 1 / -1;
+}
+
+.season-head__how {
+  margin: 4px 0 6px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Modal system v2: one surface, sticky actions, phone bottom sheets
+ * ------------------------------------------------------------------ */
+.screen--overlay:not(.screen--showcase) > .panel,
+.screen--gameover > .panel {
+  --panel-pad: 24px;
+  --panel-bg: rgba(6, 33, 40, 0.97);
+  padding: var(--panel-pad);
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(97, 245, 227, 0.1), transparent 60%),
+    linear-gradient(180deg, rgba(13, 55, 64, 0.94) 0%, var(--panel-bg) 55%);
+  border: 1px solid rgba(170, 255, 240, 0.13);
+  border-radius: 24px;
+  box-shadow:
+    0 24px 64px rgba(1, 12, 16, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overscroll-behavior: contain;
+}
+
+/* The primary choice stays on screen however long the content is. */
+.screen--overlay:not(.screen--showcase) > .panel > .screen-actions,
+.screen--gameover > .panel > .screen-actions {
+  position: sticky;
+  bottom: calc(-1 * var(--panel-pad));
+  z-index: 2;
+  margin: 20px calc(-1 * var(--panel-pad)) 0;
+  padding: 16px var(--panel-pad) var(--panel-pad);
+  background: linear-gradient(180deg, transparent 0, var(--panel-bg) 18px);
+}
+
+.screen--overlay:not(.screen--showcase) > .panel > .screen-actions:last-child,
+.screen--gameover > .panel > .screen-actions:last-child {
+  margin-bottom: calc(-1 * var(--panel-pad));
+}
+
+/* Headers: eyebrow over title, round back button on the right. */
+.progress__top,
+.settings__top,
+.level-selection__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: center;
+}
+
+.progress__top > .eyebrow,
+.settings__top > .eyebrow,
+.level-selection__top > .eyebrow {
+  grid-column: 1;
+  grid-row: 1;
+  flex-basis: auto;
+}
+
+.progress__top > .screen-title,
+.settings__top > .screen-title,
+.level-selection__top > .screen-title {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress__top > .icon-btn,
+.settings__top > .icon-btn,
+.level-selection__top > .icon-btn {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  margin: 0;
+}
+
+.level-selection__top > .level-selection__wallet {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin-top: 10px;
+}
+
+/* Calmer buttons: no glow halo, clear pressed state. */
+.btn--primary {
+  box-shadow:
+    0 8px 20px rgba(33, 214, 194, 0.22),
+    inset 0 -2px 0 rgba(2, 62, 68, 0.22);
+}
+
+.btn--text {
+  min-height: 44px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(97, 245, 227, 0.7);
+  outline-offset: 2px;
+}
+
+@media (pointer: coarse) {
+  /* Touch: focus moves programmatically; a ring there only looks like a bug. */
+  .btn:focus-visible,
+  .icon-btn:focus-visible {
+    outline: none;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    opacity: 0.4;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 540px) {
+  .screen--overlay:not(.screen--showcase) > .panel,
+  .screen--gameover > .panel {
+    --panel-pad: 18px;
+    border-radius: 22px;
+  }
+
+  .screen-title {
+    font-size: clamp(1.45rem, 6.6vw, 1.85rem);
+  }
+
+  .progress__top > .screen-title,
+  .settings__top > .screen-title,
+  .level-selection__top > .screen-title {
+    font-size: 1.45rem;
+  }
+
+  .screen-copy {
+    font-size: 0.86rem;
+  }
+
+  /* Stacked full-width buttons, primary first: easy to hit with a thumb. */
+  .screen-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .screen-actions .btn {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .btn {
+    min-height: 48px;
+  }
+
+  .btn--text {
+    min-height: 44px;
+  }
+
+  /* Utility screens become bottom sheets, close to the thumb. */
+  .screen--sheet {
+    align-items: flex-end;
+    padding: calc(16px + var(--safe-top)) 0 0;
+  }
+
+  .screen--sheet > .panel {
+    width: 100%;
+    max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 16px);
+    padding-top: 26px;
+    border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+    animation: sheet-up 0.36s var(--ease-out) both;
+  }
+
+  .screen--sheet > .panel::before {
+    position: absolute;
+    top: 9px;
+    left: 50%;
+    width: 38px;
+    height: 4px;
+    content: '';
+    background: rgba(220, 250, 244, 0.28);
+    border-radius: 2px;
+    transform: translateX(-50%);
+  }
+
+  /* Result cards stay centred but never taller than the screen. */
+  .screen--gameover,
+  .screen--completed,
+  .screen--continue,
+  .screen--gift {
+    padding-right: calc(14px + var(--safe-right));
+    padding-left: calc(14px + var(--safe-left));
+  }
+}
+
+@media (max-height: 680px) {
+  .screen--overlay:not(.screen--showcase) > .panel,
+  .screen--gameover > .panel {
+    --panel-pad: 16px;
+  }
+
+  .screen-actions {
+    margin-top: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen--sheet > .panel {
+    animation: none;
+  }
+}
+
+/* Text buttons: plain links, no capsule. */
+.btn--text {
+  background: transparent;
+  box-shadow: none;
+}
+
+.btn--text::after {
+  display: none;
+}
+
+/* Missions tabs: a segmented control that always fits. */
+.progress__tabs {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+  margin-bottom: 4px;
+  padding: 4px;
+  overflow: visible;
+  background: rgba(2, 18, 22, 0.45);
+  border: 1px solid rgba(170, 255, 240, 0.08);
+  border-radius: 14px;
+}
+
+.progress__tabs .character-selection__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 6px 4px;
+  overflow: hidden;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 10px;
+}
+
+.progress__tabs .character-selection__tab--active {
+  color: #032127;
+  background: linear-gradient(135deg, var(--turquoise), var(--mint));
+}
+
+.progress__tabs .character-selection__tab--active .menu__badge {
+  box-shadow: 0 0 0 2px rgba(3, 33, 39, 0.4);
+}
+
+@media (max-width: 540px) {
+  /* Main choices full width; quiet text actions share one row. */
+  .screen-actions {
+    flex-flow: row wrap;
+  }
+
+  .screen-actions .btn {
+    flex: 1 1 100%;
+  }
+
+  .screen-actions .btn--text {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    padding: 0 8px;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Modal system v3
+ *
+ * Two shapes only:
+ * - .screen--sheet  long lists (missions, settings, islands, privacy):
+ *   a fixed-height sheet with a pinned header, a scrolling body and
+ *   pinned footer actions. On phones it rises from the bottom edge.
+ * - .screen--dialog short decisions and results (pause, daily reward,
+ *   consent, continue, gift, game over, island complete): a centred
+ *   card, centred header, full-width stacked buttons.
+ * ------------------------------------------------------------------ */
+/* Not the character screen: the 3D runner behind it must stay sharp. */
+.screen--overlay:not(.screen--showcase),
+.screen--pause,
+.screen--gameover {
+  background: rgba(2, 14, 18, 0.64);
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+}
+
+.screen--sheet > .panel,
+.screen--dialog > .panel {
+  --panel-pad: 22px;
+  --panel-bg: #072830;
+  width: min(420px, 100%);
+  padding: var(--panel-pad);
+  background:
+    radial-gradient(140% 50% at 50% 0%, rgba(97, 245, 227, 0.09), transparent 70%),
+    linear-gradient(180deg, #0c3a44 0%, var(--panel-bg) 46%);
+  border: 1px solid rgba(170, 255, 240, 0.12);
+  border-radius: 24px;
+  box-shadow:
+    0 28px 70px rgba(0, 8, 11, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Shared header rhythm. */
+.screen--sheet .eyebrow,
+.screen--dialog .eyebrow {
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+}
+
+.screen--sheet .screen-title,
+.screen--dialog .screen-title {
+  margin-top: 6px;
+  font-size: 1.6rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.screen--sheet .screen-copy,
+.screen--dialog .screen-copy {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* ---------- Sheets ---------- */
+.screen--sheet > .panel {
+  display: flex;
+  flex-direction: column;
+  height: min(720px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 48px));
+  max-height: none;
+  overflow: hidden;
+}
+
+.screen--sheet > .panel > * {
+  flex: 0 0 auto;
+}
+
+/* The one scrolling region of each sheet. */
+.screen--sheet .progress__list,
+.screen--sheet .settings__sections,
+.screen--sheet .level-selection__levels,
+.screen--sheet .privacy__frame {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  margin-right: calc(-1 * var(--panel-pad));
+  margin-left: calc(-1 * var(--panel-pad));
+  padding: 4px var(--panel-pad) 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  /* Content fades out under the header and footer instead of being cut. */
+  mask-image: linear-gradient(
+    180deg,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 16px),
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 16px),
+    transparent
+  );
+}
+
+.screen--sheet .privacy__frame {
+  width: calc(100% + 2 * var(--panel-pad));
+  padding: 0;
+  border-radius: 0;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+.screen--sheet .progress__list::-webkit-scrollbar,
+.screen--sheet .settings__sections::-webkit-scrollbar,
+.screen--sheet .level-selection__levels::-webkit-scrollbar {
+  display: none;
+}
+
+/* Pinned header: eyebrow + title on the left, round close on the right. */
+.screen--sheet .progress__top,
+.screen--sheet .settings__top,
+.screen--sheet .level-selection__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  column-gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.screen--sheet .progress__top > .icon-btn,
+.screen--sheet .settings__top > .icon-btn,
+.screen--sheet .level-selection__top > .icon-btn {
+  width: 44px;
+  height: 44px;
+}
+
+.screen--sheet .progress__top > .screen-title:only-of-type {
+  grid-row: 1 / span 2;
+}
+
+.screen--sheet .progress__tabs,
+.screen--sheet .level-selection__chapters {
+  margin-bottom: 10px;
+}
+
+/* Settings: the reset button sits in the pinned footer. */
+.screen--sheet .settings-panel > .btn,
+.screen--sheet > .panel > .btn:last-child {
+  margin-top: 12px;
+}
+
+/* ---------- Dialogs ---------- */
+.screen--dialog > .panel {
+  max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 32px);
+  text-align: center;
+}
+
+.screen--dialog > .panel > .eyebrow,
+.screen--dialog > .panel > .screen-title,
+.screen--dialog > .panel > .screen-copy {
+  text-align: center;
+}
+
+/* Lists and grids inside a dialog keep their own alignment. */
+.screen--dialog .consent__list,
+.screen--dialog .gameover__notices,
+.screen--dialog .result-grid,
+.screen--dialog .gift__offer {
+  text-align: left;
+}
+
+.screen--dialog .screen-actions {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.screen--dialog .screen-actions .btn {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+/* ---------- Buttons ---------- */
+.screen--sheet .btn,
+.screen--dialog .btn {
+  min-height: 50px;
+  font-size: 0.92rem;
+  letter-spacing: 0.01em;
+  border-radius: 14px;
+}
+
+.screen--sheet .btn--text,
+.screen--dialog .btn--text {
+  min-height: 44px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.screen--sheet .btn--secondary,
+.screen--dialog .btn--secondary {
+  background: rgba(170, 255, 240, 0.07);
+  border: 1px solid rgba(170, 255, 240, 0.16);
+  box-shadow: none;
+}
+
+/* Readable small print: nothing in a modal goes under ~11px. */
+.screen--sheet .character-selection__tab,
+.screen--sheet .goal-row__subtitle,
+.screen--sheet .settings-control__label,
+.screen--sheet .level-card__meta,
+.screen--dialog .result__label,
+.screen--dialog .score-hero__label,
+.screen--dialog .daily-tile__day {
+  font-size: max(0.7rem, 11px);
+}
+
+/* ---------- Phones ---------- */
+@media (max-width: 540px) {
+  .screen--sheet {
+    align-items: flex-end;
+    padding: calc(12px + var(--safe-top)) 0 0;
+  }
+
+  .screen--sheet > .panel {
+    --panel-pad: 18px;
+    width: 100%;
+    height: calc(100dvh - var(--safe-top) - 40px);
+    padding-top: 24px;
+    padding-bottom: calc(var(--panel-pad) + var(--safe-bottom));
+    border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+    animation: sheet-up 0.32s var(--ease-out) both;
+  }
+
+  .screen--sheet > .panel::before {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 40px;
+    height: 4px;
+    content: '';
+    background: rgba(220, 250, 244, 0.26);
+    border-radius: 2px;
+    transform: translateX(-50%);
+  }
+
+  .screen--dialog {
+    padding: calc(16px + var(--safe-top)) calc(16px + var(--safe-right))
+      calc(16px + var(--safe-bottom)) calc(16px + var(--safe-left));
+  }
+
+  .screen--dialog > .panel {
+    --panel-pad: 20px;
+    width: 100%;
+    border-radius: 22px;
+    animation: dialog-in 0.28s var(--ease-out) both;
+  }
+
+  .screen--sheet .screen-title,
+  .screen--dialog .screen-title {
+    font-size: 1.45rem;
+  }
+}
+
+@media (max-height: 680px) {
+  .screen--dialog > .panel {
+    --panel-pad: 16px;
+  }
+
+  .screen--sheet .screen-title,
+  .screen--dialog .screen-title {
+    font-size: 1.3rem;
+  }
+
+  .screen--dialog .btn {
+    min-height: 46px;
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen--sheet > .panel,
+  .screen--dialog > .panel {
+    animation: none;
+  }
+}
+
+/* Island cards: compact, readable, no empty bands. */
+.screen--sheet .level-card {
+  gap: 6px;
+  padding: 14px 14px 12px;
+}
+
+.screen--sheet .level-card h3,
+.screen--sheet .level-card p {
+  margin: 0;
+}
+
+.screen--sheet .level-card__name {
+  font-size: 0.95rem;
+}
+
+.screen--sheet .level-card__tagline {
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.screen--sheet .level-card__stats {
+  margin-top: 4px;
+}
+
+/* Wide cards (endless, weekly event): icon beside the text. */
+.screen--sheet .level-card--endless,
+.screen--sheet .level-card--event {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 4px;
+  align-items: center;
+}
+
+.screen--sheet .level-card--endless > *,
+.screen--sheet .level-card--event > * {
+  grid-column: 2;
+  justify-self: start;
+}
+
+.screen--sheet .level-card--endless > .level-card__number,
+.screen--sheet .level-card--event > .level-card__number {
+  grid-row: 1 / span 2;
+  grid-column: 1;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+
+.screen--sheet .level-card--endless > .level-card__stats,
+.screen--sheet .level-card--event > .level-card__stats {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  padding-top: 8px;
+  border-top: 1px solid rgba(170, 255, 240, 0.08);
+}
+
+/* Menu tiles: Characters / Missions / Settings, icon over label. */
+.menu__secondary .btn.menu__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 68px;
+  padding: 10px 6px 9px;
+  overflow: visible;
+  color: var(--text);
+  background: rgba(170, 255, 240, 0.06);
+  border: 1px solid rgba(170, 255, 240, 0.14);
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.menu__secondary .btn.menu__tile::after {
+  display: none;
+}
+
+.menu__tile svg {
+  width: 24px;
+  height: 24px;
+  color: var(--turquoise);
+}
+
+.menu__tile-label {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: clamp(0.68rem, 3.1vw, 0.78rem);
+  font-weight: 700;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu__secondary .btn.menu__tile:active {
+  background: rgba(170, 255, 240, 0.12);
+  transform: scale(0.97);
+}
+
+/* Unclaimed rewards: a small counter in the tile's corner, never clipped. */
+.menu__secondary .menu__tile .menu__badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-grid;
+  place-items: center;
+  width: auto;
+  min-width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0 6px;
+  color: #3a0d05;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(180deg, #ffa58f, var(--coral));
+  border: 0;
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 2px rgba(6, 40, 48, 0.95),
+    0 4px 10px rgba(255, 129, 104, 0.35);
+}
+
+.menu__secondary .menu__tile .menu__badge[hidden] {
+  display: none;
+}
+
+@media (max-height: 700px) {
+  .menu__secondary .btn.menu__tile {
+    min-height: 56px;
+    gap: 3px;
+    padding: 7px 6px 6px;
+  }
+
+  .menu__tile svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Back / close buttons sit on the left of every modal header. */
+.screen--sheet .progress__top,
+.screen--sheet .settings__top,
+.screen--sheet .level-selection__top {
+  grid-template-columns: 44px minmax(0, 1fr);
+}
+
+.screen--sheet .progress__top > .icon-btn,
+.screen--sheet .settings__top > .icon-btn,
+.screen--sheet .level-selection__top > .icon-btn {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  margin: 0;
+}
+
+.screen--sheet .progress__top > .eyebrow,
+.screen--sheet .settings__top > .eyebrow,
+.screen--sheet .level-selection__top > .eyebrow,
+.screen--sheet .progress__top > .screen-title,
+.screen--sheet .settings__top > .screen-title,
+.screen--sheet .level-selection__top > .screen-title {
+  grid-column: 2;
+}
+
+/* A header with only a title (privacy): centre it against the button. */
+.screen--sheet .progress__top > .screen-title:only-of-type {
+  grid-row: 1 / span 2;
+}
+
+.character-selection__top > .character-selection__back {
+  order: -1;
+  margin: 0;
+}
+
+/* Characters header: back button left, eyebrow + title beside it, wallet right. */
+.character-selection__top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 2px;
+  align-items: center;
+}
+
+.character-selection__top > .character-selection__back {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.character-selection__top > .eyebrow {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+}
+
+.character-selection__top > .screen-title {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: start;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Without the eyebrow (phone showcase) the title centres on the button. */
+@media (orientation: portrait), (orientation: landscape) and (max-height: 560px) {
+  .screen--showcase .character-selection__top > .screen-title {
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+}
+
+.character-selection__top > .character-selection__wallet {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  flex-basis: auto;
+  justify-content: flex-end;
+}
+
+/* ------------------------------------------------------------------ *
+ * Character screen v3: solid panel, compact header, pill tabs and
+ * compact cards (picture left, name and price right).
+ * ------------------------------------------------------------------ */
+.screen--showcase .character-selection-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(420px, 46vw);
+  height: min(680px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 48px));
+  max-height: none;
+  padding: 16px;
+  overflow: hidden;
+  background:
+    radial-gradient(140% 50% at 50% 0%, rgba(97, 245, 227, 0.09), transparent 70%),
+    linear-gradient(180deg, #0c3a44 0%, #072830 46%);
+  border: 1px solid rgba(170, 255, 240, 0.12);
+  border-radius: 24px;
+  box-shadow:
+    0 28px 70px rgba(0, 8, 11, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.screen--showcase .character-selection-panel > * {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+/* Header: back + title, then wallet chips and the exchange chip. */
+.screen--showcase .character-selection__top {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 10px;
+  align-items: center;
+  margin: 0;
+}
+
+.screen--showcase .character-selection__top > .eyebrow {
+  display: none;
+}
+
+.screen--showcase .character-selection__top > .character-selection__back {
+  grid-column: 1;
+  grid-row: 1;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+}
+
+.screen--showcase .character-selection__top > .screen-title {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  margin: 0;
+  overflow: hidden;
+  font-size: 1.4rem;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.screen--showcase .character-selection__top > .character-selection__wallet {
+  display: flex;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.screen--showcase .character-selection__wallet .character-selection__coins {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: rgba(2, 18, 22, 0.5);
+  border: 1px solid rgba(170, 255, 240, 0.12);
+  border-radius: 999px;
+}
+
+.screen--showcase .character-selection__wallet .character-selection__exchange {
+  flex: 0 1 auto;
+  min-width: 0;
+  min-height: 32px;
+  height: 32px;
+  margin-left: auto;
+  padding: 0 12px;
+  overflow: hidden;
+  color: var(--mint);
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: rgba(97, 245, 227, 0.08);
+  border: 1px solid rgba(97, 245, 227, 0.3);
+  border-radius: 999px;
+}
+
+.screen--showcase .character-selection__wallet .character-selection__exchange:disabled {
+  color: var(--text-faint);
+  background: transparent;
+  border-color: rgba(170, 255, 240, 0.1);
+  opacity: 1;
+}
+
+/* Tabs: scrollable pills, the edge fades instead of cutting a label. */
+.screen--showcase .character-selection__tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 -16px;
+  padding: 0 16px 2px;
+  overflow-x: auto;
+  border: 0;
+  scrollbar-width: none;
+  scroll-padding-inline: 16px;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+
+.screen--showcase .character-selection__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.screen--showcase .character-selection__tab {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 14px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  background: rgba(170, 255, 240, 0.06);
+  border: 1px solid rgba(170, 255, 240, 0.1);
+  border-radius: 999px;
+}
+
+.screen--showcase .character-selection__tab::after {
+  display: none;
+}
+
+.screen--showcase .character-selection__tab--active {
+  color: #032127;
+  background: linear-gradient(135deg, var(--turquoise), var(--mint));
+  border-color: transparent;
+}
+
+/* Card list. */
+.screen--showcase .character-selection__cosmetics {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-content: start;
+  min-height: 0;
+  max-height: none;
+  margin: 0 -16px;
+  padding: 2px 16px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.screen--showcase .character-selection__cosmetics::-webkit-scrollbar {
+  display: none;
+}
+
+.screen--showcase .character-card,
+.screen--showcase .cosmetic-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 4px;
+  align-items: center;
+  min-height: 70px;
+  padding: 10px;
+  text-align: left;
+  background: rgba(2, 18, 22, 0.45);
+  border: 1px solid rgba(170, 255, 240, 0.1);
+  border-radius: 14px;
+  opacity: 1;
+  transform: none;
+  cursor: pointer;
+}
+
+.screen--showcase .character-card--locked,
+.screen--showcase .cosmetic-card--locked {
+  cursor: pointer;
+}
+
+.screen--showcase .character-card--selected,
+.screen--showcase .cosmetic-card--selected {
+  background: rgba(97, 245, 227, 0.1);
+  border-color: var(--turquoise);
+  box-shadow: 0 0 0 1px rgba(97, 245, 227, 0.35);
+}
+
+.screen--showcase .character-card__preview,
+.screen--showcase .cosmetic-card__preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  overflow: visible;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.screen--showcase .character-card__preview svg,
+.screen--showcase .cosmetic-card__preview svg {
+  width: 40px;
+  height: 40px;
+}
+
+.screen--showcase .character-card--locked .character-card__preview svg,
+.screen--showcase .cosmetic-card--locked .cosmetic-card__preview svg {
+  opacity: 0.7;
+}
+
+/* Corner marks on the picture: never on top of the text. */
+.screen--showcase .character-card__lock {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  top: auto;
+  left: auto;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  font-size: 0.6rem;
+  background: #0a2f37;
+  border: 1px solid rgba(170, 255, 240, 0.18);
+  border-radius: 50%;
+  transform: none;
+  opacity: 1;
+}
+
+.screen--showcase .card-equipped {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: #032127;
+  font-size: 0.7rem;
+  font-weight: 900;
+  background: var(--turquoise);
+  border: 2px solid #0a2f37;
+  border-radius: 50%;
+}
+
+.screen--showcase .character-card__info,
+.screen--showcase .cosmetic-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.screen--showcase .character-card__name,
+.screen--showcase .cosmetic-card__name {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.screen--showcase .character-card__description,
+.screen--showcase .cosmetic-card__description,
+.screen--showcase .character-card__stats {
+  display: none;
+}
+
+.screen--showcase .character-card__unlock-cost,
+.screen--showcase .cosmetic-card__cost {
+  margin: 0;
+  color: var(--sand-soft);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.screen--showcase .cosmetic-card__cost--owned {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.screen--showcase .cosmetic-card__cost--crystal {
+  color: #9fd8ff;
+}
+
+/* Seasonal skins: the "only this season" line spans the card. */
+.screen--showcase .cosmetic-card__season {
+  position: static;
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  padding: 0;
+  color: #ffb36b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: normal;
+  background: none;
+  transform: none;
+}
+
+/* Action: strong when it buys or equips, quiet when already equipped. */
+.screen--showcase .character-selection__select {
+  width: 100%;
+  min-height: 50px;
+  margin: 0;
+  font-size: 0.95rem;
+  border-radius: 14px;
+}
+
+.screen--showcase .character-selection__select:disabled {
+  color: var(--text-muted);
+  background: rgba(170, 255, 240, 0.08);
+  border: 1px solid rgba(170, 255, 240, 0.12);
+  box-shadow: none;
+  opacity: 1;
+}
+
+/* Phones (portrait, or short landscape): a sheet under the runner. */
+@media (orientation: portrait), (orientation: landscape) and (max-height: 560px) {
+  .screen--showcase .character-selection-panel {
+    width: 100%;
+    height: min(58dvh, 520px);
+  }
+}
+
+@media (orientation: portrait) {
+  .screen--showcase {
+    padding: 0;
+  }
+
+  .screen--showcase .character-selection-panel {
+    padding-bottom: calc(16px + var(--safe-bottom));
+    border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+  }
+
+  .screen--showcase .showcase__hint {
+    bottom: calc(min(58dvh, 520px) + 12px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .screen--showcase .character-selection-panel {
+    width: min(400px, 50vw);
+    height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px);
+  }
+}
+
+/* Short phones: a taller sheet so two rows of cards always show. */
+@media (orientation: portrait) and (max-height: 700px) {
+  .screen--showcase .character-selection-panel {
+    height: 66dvh;
+    gap: 10px;
+    padding-top: 14px;
+  }
+
+  .screen--showcase .showcase__hint {
+    bottom: calc(66dvh + 10px);
+  }
+
+  .screen--showcase .character-card,
+  .screen--showcase .cosmetic-card {
+    min-height: 62px;
+    padding: 8px;
+  }
+}
+
+/* Short landscape: wallet joins the title row, everything a step smaller. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .screen--showcase .character-selection-panel {
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .screen--showcase .character-selection__top {
+    grid-template-columns: 36px auto minmax(0, 1fr);
+  }
+
+  .screen--showcase .character-selection__top > .character-selection__back {
+    width: 36px;
+    height: 36px;
+  }
+
+  .screen--showcase .character-selection__top > .screen-title {
+    font-size: 1.15rem;
+  }
+
+  .screen--showcase .character-selection__top > .character-selection__wallet {
+    grid-column: 3;
+    grid-row: 1;
+    justify-content: flex-end;
+  }
+
+  .screen--showcase .character-selection__wallet .character-selection__exchange {
+    display: none;
+  }
+
+  .screen--showcase .character-selection__wallet .character-selection__coins {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 0.78rem;
+  }
+
+  .screen--showcase .character-selection__tab {
+    min-height: 30px;
+    font-size: 0.74rem;
+  }
+
+  .screen--showcase .character-card,
+  .screen--showcase .cosmetic-card {
+    min-height: 56px;
+    padding: 7px;
+  }
+
+  .screen--showcase .character-selection__select {
+    min-height: 42px;
+  }
+}
+
+/* The drag hint: a small pill that stays readable over the scene. */
+.screen--showcase .showcase__hint {
+  padding: 5px 12px;
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: rgba(2, 18, 22, 0.55);
+  border-radius: 999px;
+  transform: translateX(-50%);
 }

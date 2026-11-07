@@ -62,3 +62,15 @@ if (!sentry) {
       'Add your Sentry DSN to .env.production.local to receive crash reports.',
   )
 }
+
+const analytics = (
+  process.env.VITE_ANALYTICS_KEY ??
+  loadEnv('production', ROOT, '').VITE_ANALYTICS_KEY ??
+  ''
+).trim()
+if (!analytics) {
+  console.warn(
+    'Note: VITE_ANALYTICS_KEY is not set, so usage events (where players stop) stay on the device.\n' +
+      'Add a PostHog project key to .env.production.local to see funnels. See RELEASE.md.',
+  )
+}

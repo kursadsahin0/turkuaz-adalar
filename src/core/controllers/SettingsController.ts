@@ -46,6 +46,7 @@ export class SettingsController {
       language: settings.language,
       personalizedAds: this.services.consent.personalizedAds,
       crashReports: settings.crashReports,
+      reminders: settings.reminders,
       adPrivacyOptions: this.adPrivacyOptions,
     }
   }
@@ -68,9 +69,14 @@ export class SettingsController {
       difficulty: settings.difficulty ?? currentSettings.difficulty,
       language: settings.language ?? currentSettings.language,
       crashReports: settings.crashReports ?? currentSettings.crashReports,
+      reminders: settings.reminders ?? currentSettings.reminders,
     }
     playerSave.updateSettings(updatedSettings)
 
+    if (typeof settings.reminders === 'boolean') {
+      this.services.reminders.setEnabled(settings.reminders)
+      telemetry.track('reminders', { enabled: settings.reminders })
+    }
     if (typeof settings.crashReports === 'boolean') {
       telemetry.setCrashReportsAllowed(settings.crashReports)
     }

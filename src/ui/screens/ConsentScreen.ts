@@ -22,6 +22,7 @@ export class ConsentScreen extends Screen {
   constructor(options: ConsentScreenOptions) {
     super('screen--overlay')
     this.root.classList.add('screen--consent')
+    this.root.classList.add('screen--dialog')
 
     const panel = createPanel('consent-panel')
     const eyebrow = createEl('p', 'eyebrow', t('consent.eyebrow'))

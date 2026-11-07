@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { Capacitor } from '@capacitor/core'
 import { ASSET_REGISTRY } from '../assets/AssetRegistry.ts'
 import { ModelLoader } from '../assets/ModelLoader.ts'
 import { GAME_CONFIG } from '../config/GameConfig.ts'
@@ -9,8 +10,13 @@ import type { CollectiblePickup } from '../game/collectibles/CollectibleKind.ts'
 import { ShowcaseCamera } from '../game/camera/ShowcaseCamera.ts'
 import { setLanguage, t, tc } from '../i18n/i18n.ts'
 import { MetaProgress } from '../systems/meta/MetaProgress.ts'
+import { TRIAL_CHARACTER, WelcomeGifts } from '../systems/meta/WelcomeGifts.ts'
+import { IslandAssist } from '../systems/meta/IslandAssist.ts'
+import { CHARACTERS } from '../game/characters/CharacterData.ts'
 import { MonetizationManager } from '../systems/monetization/MonetizationManager.ts'
 import { NativeBridge } from '../platform/NativeBridge.ts'
+import { Reminders } from '../platform/Reminders.ts'
+import { shareScore, type ShareCardData } from '../platform/ShareCard.ts'
 import { ConsentManager } from '../systems/privacy/ConsentManager.ts'
 import { Telemetry } from '../systems/telemetry/Telemetry.ts'
 import { PowerUpSystem } from '../game/powerups/PowerUpSystem.ts'
@@ -68,6 +74,9 @@ type GameState = 'loading' | 'menu' | 'playing' | 'paused' | 'offer' | 'gameover
 const CONTINUE_INVULNERABILITY = 3
 /** Metres cleared ahead of the runner after a continue or a fall recovery. */
 const RESPAWN_RUNWAY = 25
+/** Lateral clearance (beyond the obstacle's radius) that still counts as a near miss. */
+const NEAR_MISS_GAP = 0.85
+const NEAR_MISS_COINS = 5
 
 /**
  * Central orchestrator. Owns every subsystem, the fixed-step simulation and
@@ -81,6 +90,7 @@ export class Game {
   private readonly playerSave: PlayerSaveManager
   private readonly progression: ProgressionManager
   private readonly haptics: Haptics
+  private readonly reminders: Reminders
   private readonly level = new LevelManager()
   private readonly dash = new DashAbility()
   private readonly effects = new MovementEffects()
@@ -96,6 +106,14 @@ export class Game {
   private readonly shop: ShopController
   /** Island selection, daily rewards, missions and achievements. */
   private readonly menus: MetaController
+  private readonly welcome: WelcomeGifts
+  private readonly assist: IslandAssist
+  /** Near misses: brushing past a hazard pays a few coins (with a cooldown). */
+  private nearMissCooldown = 0
+  private nearMisses = 0
+  private readonly nearMissSeen = new Set<string>()
+  /** The last run, for the summary's Share button. */
+  private lastShare: ShareCardData | null = null
   private readonly settingsFlow: SettingsController
   private readonly continueOffer: ContinueController
   private readonly doubleCoins: DoubleCoinsController
@@ -105,6 +123,10 @@ export class Game {
   private chaseWave: ChaseWave | null = null
   /** The level being played, or null for the endless run. */
   private currentLevel: LevelDefinition | null = null
+  /** What ended the runner last ("crate", "wave", "fall", ...), for analytics. */
+  private crashCause = 'unknown'
+  /** When the app came to the foreground, for session length. */
+  private sessionStartedAt = Date.now()
   private runTime = 0
   private adaptiveQuality: AdaptiveQuality | null = null
   private lastFpsSample = 0
@@ -151,6 +173,7 @@ export class Game {
   private disposed = false
   private readonly scratchFeet = new THREE.Vector3()
   /** Dash trail particles stream backwards, against the -Z run direction. */
+  private static readonly LAUNCH_COUNT_KEY = 'launch_count'
   private static readonly TRAIL_DIRECTION = new THREE.Vector3(0, 0.15, 1).normalize()
 
   private readonly tick = (timestamp: number): void => {
@@ -226,9 +249,53 @@ export class Game {
 
   private readonly handleVisibility = (): void => {
     if (document.hidden) {
+      this.telemetry.track('session_end', {
+        seconds: Math.round((Date.now() - this.sessionStartedAt) / 1000),
+        state: this.state,
+      })
+      this.telemetry.flush()
+      this.scheduleReminders()
       this.enterBackground()
     } else {
+      void this.reminders.clear()
+      this.sessionStartedAt = Date.now()
+      this.telemetry.track('session_start')
       this.audio?.resume()
+    }
+  }
+
+  private scheduleReminders(): void {
+    const daily = this.meta.daily.status()
+    void this.reminders.schedule({
+      dailyClaimedToday: !daily.canClaim,
+      streak: daily.canClaim ? daily.streak : 0,
+      eventClaimed: this.menus.eventClaimedThisWeek,
+    })
+  }
+
+  /** first_open once per install, then app_open with the launch count. */
+  private trackAppOpen(): void {
+    const launches = this.save.load<number>(Game.LAUNCH_COUNT_KEY, 0) + 1
+    this.save.save(Game.LAUNCH_COUNT_KEY, launches)
+    if (launches === 1) {
+      this.telemetry.track('first_open')
+    }
+    this.telemetry.track('app_open', { launches })
+    this.telemetry.track('session_start')
+  }
+
+  /** Where in the run the player is, attached to start/crash/fail/complete events. */
+  private runContext(): Record<string, string | number> {
+    const level = this.currentLevel
+    return {
+      level: level
+        ? level.id === EVENT_LEVEL_ID
+          ? `event:${level.eventOf ?? ''}`
+          : level.id
+        : 'endless',
+      distance: Math.floor(this.distance),
+      progress: Math.round(this.level.completion * 100),
+      seconds: Math.round(this.runTime),
     }
   }
 
@@ -250,6 +317,10 @@ export class Game {
   private handleBack(): boolean {
     if (this.ui.isPolicyOpen) {
       this.ui.hidePolicy()
+      return true
+    }
+    if (this.ui.isGiftOpen) {
+      this.ui.hideGift()
       return true
     }
     if (this.ui.isConsentOpen) {
@@ -355,9 +426,15 @@ export class Game {
       sentryDsn: import.meta.env.VITE_SENTRY_DSN,
       crashReportsAllowed: this.playerSave.settings.crashReports,
       environment: import.meta.env.MODE,
+      analytics: {
+        apiKey: import.meta.env.VITE_ANALYTICS_KEY ?? '',
+        host: import.meta.env.VITE_ANALYTICS_HOST || 'https://eu.i.posthog.com',
+        platform: Capacitor.getPlatform(),
+      },
     })
     this.telemetry.install()
     this.telemetry.breadcrumb('app', 'boot')
+    this.trackAppOpen()
     if (import.meta.env.DEV) {
       this.telemetry.addAnalyticsSink({
         send: (event) => this.logger.info(`[event] ${event.name}`, event.props),
@@ -366,15 +443,26 @@ export class Game {
     this.progression = new ProgressionManager(this.playerSave, this.save)
     migrateLegacyAudioSettings(this.save, this.playerSave)
     this.levels = new LevelProgressionManager(this.playerSave, LEVEL_CATALOG)
-    this.meta = new MetaProgress(this.save, this.progression, undefined, () => ({
-      islandsCompleted: this.levels.completedCount(),
-      totalStars: this.levels.totalStars(),
-      charactersOwned: this.playerSave.characterCollection.ownedCharacters.length,
-    }))
+    this.meta = new MetaProgress(
+      this.save,
+      this.progression,
+      undefined,
+      () => ({
+        islandsCompleted: this.levels.completedCount(),
+        totalStars: this.levels.totalStars(),
+        charactersOwned: this.playerSave.characterCollection.ownedCharacters.length,
+      }),
+      (type, id) => this.playerSave.purchaseCosmetic(type, id),
+    )
     this.consent = new ConsentManager(this.save)
     this.monetization.setPersonalizedAds(this.consent.personalizedAds)
     this.monetization.onEvent = (event) => this.telemetry.track(event.type)
     this.haptics = new Haptics(this.playerSave.settings.vibration)
+    this.reminders = new Reminders(this.save, this.playerSave.settings.reminders)
+    this.welcome = new WelcomeGifts(this.save)
+    this.assist = new IslandAssist(this.save)
+    // Nothing should buzz while the game is open.
+    void this.reminders.clear()
     // Language must be set before any screen is built.
     setLanguage(this.playerSave.settings.language)
     this.ui = new UIManager(container, {
@@ -398,6 +486,7 @@ export class Game {
       onClaimDaily: () => this.menus.claimDaily(),
       onClaimMission: (id) => this.menus.claimMission(id),
       onClaimAchievement: (id) => this.menus.claimAchievement(id),
+      onClaimSeason: (tier) => this.menus.claimSeason(tier),
       onSettings: () => this.settingsFlow.show(),
       onSelectLevel: (id) => this.startRun(this.menus.findLevel(id)),
       onUnlockLevel: (id) => this.menus.unlockLevel(id),
@@ -420,6 +509,7 @@ export class Game {
       onContinueAd: () => void this.continueOffer.watchAd(),
       onContinueSkip: () => this.declineContinue(),
       onDoubleCoins: () => void this.doubleCoins.watch(),
+      onShare: () => void this.shareRun(),
       onConsent: (personalized) => this.settingsFlow.recordConsent(personalized),
       onOpenPolicy: () => this.ui.showPolicy(),
       onClosePolicy: () => this.ui.hidePolicy(),
@@ -439,6 +529,7 @@ export class Game {
       monetization: this.monetization,
       telemetry: this.telemetry,
       haptics: this.haptics,
+      reminders: this.reminders,
       get audio() {
         return currentAudio()
       },
@@ -686,6 +777,13 @@ export class Game {
     this.level.setLevel(level)
     const tutorialRun = this.tutorialFlow.beginRun()
     this.level.reset(difficulty)
+    // Silent help after several failed tries in a row on this island.
+    this.level.setAssist(
+      level && level.id !== EVENT_LEVEL_ID && !tutorialRun ? this.assist.levelFor(level.id) : 0,
+    )
+    this.nearMisses = 0
+    this.nearMissCooldown = 0
+    this.nearMissSeen.clear()
     this.runTime = 0
     this.dash.reset()
     this.effects.reset()
@@ -706,6 +804,8 @@ export class Game {
     this.doubleCoins.reset()
     this.menus.beginRun()
     this.shop.close()
+    // The welcome trial character (if one is running) or the player's own.
+    this.shop.setTrial(this.welcome.trialCharacter)
 
     this.world.reset()
     this.world.applyTheme(level?.theme ?? null)
@@ -725,7 +825,15 @@ export class Game {
     this.mechanics.begin(level?.mechanic)
     this.chase.begin(!tutorialRun && level?.chase)
 
-    this.telemetry.track('run_start', { difficulty, level: level?.id ?? 'endless' })
+    this.crashCause = 'unknown'
+    this.telemetry.track('run_start', {
+      ...this.runContext(),
+      difficulty,
+      mechanic: level?.mechanic ?? 'none',
+      chase: level?.chase === true,
+      tutorial: tutorialRun,
+      assist: this.level.assist,
+    })
     this.audio.setMusicStyle(ISLAND_STYLES[level?.theme.id ?? 'shallows'] ?? ISLAND_STYLES.shallows)
     this.audio.setMusicIntensity('run')
     void this.audio.unlock().then(() => {
@@ -771,6 +879,7 @@ export class Game {
   /** Every route back to the title screen, with a fresh wallet and badges. */
   private showMenuScreen(): void {
     this.shop.close()
+    this.shop.setTrial(this.welcome.trialCharacter)
     // Floating coins behind the title only add clutter; a run re-places them.
     this.world?.setCollectiblesVisible(false)
     this.audio?.setMusicStyle(MENU_STYLE)
@@ -881,6 +990,7 @@ export class Game {
       this.effects.update(fixedDelta)
       this.powerUps.update(fixedDelta)
       this.mechanics.update(fixedDelta)
+      this.checkNearMisses(fixedDelta)
 
       this.updateRunProgress(fixedDelta)
       if (
@@ -893,6 +1003,7 @@ export class Game {
         )
       ) {
         // The wave caught up: a crash, so a continue can still save the run.
+        this.crashCause = 'wave'
         this.finishRun(true)
       }
     }
@@ -961,6 +1072,7 @@ export class Game {
       return
     }
     if (this.player.position.y < GAME_CONFIG.player.killY) {
+      this.crashCause = 'fall'
       this.finishRun(true)
       return
     }
@@ -1120,6 +1232,7 @@ export class Game {
       return
     }
 
+    this.crashCause = obstacle?.prefabId ?? 'hazard'
     this.finishRun(true)
   }
 
@@ -1139,6 +1252,10 @@ export class Game {
     }
 
     this.tutorialFlow.end('suspend')
+    if (crashed && this.state === 'playing') {
+      // Every crash, including ones a continue later saves.
+      this.telemetry.track('crash', { ...this.runContext(), cause: this.crashCause })
+    }
 
     // A crash mid-run first offers a second chance (coins or a rewarded ad).
     if (crashed && !immediate && this.state === 'playing' && this.continueOffer.canOffer) {
@@ -1212,26 +1329,72 @@ export class Game {
         this.menus.addNotice(t('levels.starCrystals', { crystals: level.completionCrystals }))
       }
       this.telemetry.track('level_complete', {
-        level: level.id,
+        ...this.runContext(),
         stars: levelOutcome?.stars ?? 0,
-        seconds: Math.round(this.runTime),
+        continues: this.continueOffer.continuesUsed,
+        assist: this.level.assist,
       })
+    } else if (level) {
+      // Where players give up: the final crash, or quitting from pause.
+      this.telemetry.track('level_fail', {
+        ...this.runContext(),
+        cause: crashed ? this.crashCause : 'quit',
+        continues: this.continueOffer.continuesUsed,
+        assist: this.level.assist,
+        tries: this.assist.failsOn(level.id) + (crashed ? 1 : 0),
+      })
+    }
+    // Quitting from pause is not a failed try; a crash or the finish line is.
+    if (level && !isEvent && (levelComplete || crashed)) {
+      this.assist.recordResult(level.id, levelComplete)
     }
 
     if (level && levelComplete) {
       // Island missions: one island finished, and the stars it earned.
       this.menus.notify(this.meta.record({ kind: 'islands', amount: 1 }))
       this.menus.notify(this.meta.record({ kind: 'stars', amount: levelOutcome?.stars ?? 0 }))
+      // First island done: ask (once) whether reminders are welcome.
+      void this.reminders.askOnce()
     }
+    this.menus.notify(
+      this.meta.recordSeason({
+        distance: this.distance,
+        completed: levelComplete,
+        stars: levelOutcome?.stars ?? 0,
+      }),
+    )
     this.menus.notify(this.meta.finishRun(this.score, this.distance))
     this.telemetry.track('run_end', {
+      ...this.runContext(),
+      completed: levelComplete,
       score: Math.floor(this.score),
       distance: Math.floor(this.distance),
       coins: this.coins,
       crystals: this.crystals,
       continues: this.continueOffer.continuesUsed,
       crashed,
+      nearMisses: this.nearMisses,
     })
+    this.lastShare = {
+      score: this.score,
+      distance: this.distance,
+      island: level ? islandName(level) : null,
+      stars: levelComplete ? (levelOutcome?.stars ?? 0) : 0,
+      isBest: update.isBestScore,
+    }
+    const tried = this.welcome.endTrial()
+    if (tried) {
+      const character = CHARACTERS.find((entry) => entry.id === tried)
+      this.telemetry.track('trial_end', { character: tried, distance: Math.floor(this.distance) })
+      if (character) {
+        this.menus.addNotice(
+          t('gift.trialEnded', {
+            name: tc(`character.${character.id}.name`, character.name),
+            cost: character.unlockCost,
+          }),
+        )
+      }
+    }
     summary.notices = [...this.menus.runNotices]
     this.player.setShieldActive(false)
 
@@ -1283,7 +1446,124 @@ export class Game {
       } else {
         this.ui.showGameOver(summary)
       }
+      this.offerWelcomeChest()
     }, delay)
+  }
+
+  /**
+   * A hazard that just slipped past within a hand's width of the runner (not
+   * jumped over, not hit) is a near miss: a toast and a few coins.
+   */
+  private checkNearMisses(delta: number): void {
+    this.nearMissCooldown = Math.max(0, this.nearMissCooldown - delta)
+    if (
+      this.state !== 'playing' ||
+      this.tutorialFlow.isActive ||
+      this.invulnerabilityTimer > 0 ||
+      this.effects.invulnerable
+    ) {
+      return
+    }
+    const position = this.player.position
+    this.world.obstacles.forEachActive((obstacle) => {
+      // The runner travels along -Z: a positive gap means it is now behind.
+      const behind = obstacle.z - position.z
+      if (obstacle.standable || behind < 0.2 || behind > 1.4) {
+        return
+      }
+      const key = `${obstacle.id}:${Math.round(obstacle.z)}`
+      if (this.nearMissSeen.has(key)) {
+        return
+      }
+      this.nearMissSeen.add(key)
+      const gap = Math.abs(obstacle.x - position.x) - obstacle.radius
+      if (gap < 0.25 || gap > NEAR_MISS_GAP || obstacle.contact().kind !== 'hazard') {
+        return
+      }
+      if (this.nearMissCooldown > 0) {
+        return
+      }
+      this.nearMissCooldown = 1.2
+      this.nearMisses += 1
+      this.coins += NEAR_MISS_COINS
+      this.progression.creditCoins(NEAR_MISS_COINS)
+      this.ui.pushFeedback(t('feedback.nearMiss', { coins: NEAR_MISS_COINS }), 'reward')
+      this.audio.play('coin')
+      this.haptics.pulse('ui')
+    })
+    if (this.nearMissSeen.size > 400) {
+      this.nearMissSeen.clear()
+    }
+  }
+
+  private async shareRun(): Promise<void> {
+    if (!this.lastShare) {
+      return
+    }
+    const result = await shareScore(this.lastShare)
+    this.telemetry.track('share', { result, best: this.lastShare.isBest })
+  }
+
+  /** After the very first run: a sealed chest on top of the summary. */
+  private offerWelcomeChest(): void {
+    if (!this.welcome.chestReady(this.progression.snapshot.totalRuns)) {
+      return
+    }
+    this.audio.play('reward')
+    this.ui.showGift({
+      eyebrow: t('gift.welcomeEyebrow'),
+      title: t('gift.welcomeTitle'),
+      icon: '🎁',
+      sealed: true,
+      text: t('gift.welcomeTap'),
+      primary: { label: t('gift.open'), onClick: () => this.openWelcomeChest() },
+    })
+  }
+
+  private openWelcomeChest(): void {
+    const reward = this.welcome.openChest()
+    if (!reward) {
+      this.ui.hideGift()
+      return
+    }
+    this.progression.creditCoins(reward.coins)
+    this.progression.creditCrystals(reward.crystals)
+    this.audio.play('reward')
+    this.haptics.pulse('reward')
+    this.telemetry.track('welcome_chest', { coins: reward.coins, crystals: reward.crystals })
+    const character = CHARACTERS.find((entry) => entry.id === TRIAL_CHARACTER)
+    const offerTrial =
+      character !== undefined &&
+      this.welcome.canTry(this.playerSave.characterCollection.ownedCharacters)
+    const name = character ? tc(`character.${character.id}.name`, character.name) : ''
+    this.ui.showGift({
+      eyebrow: t('gift.welcomeEyebrow'),
+      title: t('gift.welcomeOpened'),
+      icon: '✨',
+      rewards: [`+${reward.coins} ●`, `+${reward.crystals} 💎`],
+      offer: offerTrial
+        ? { title: t('gift.trialTitle', { name }), text: t('gift.trialText') }
+        : undefined,
+      primary: offerTrial
+        ? { label: t('gift.trialPlay'), onClick: () => this.startTrialRun() }
+        : { label: t('common.close'), onClick: () => this.ui.hideGift() },
+      secondary: offerTrial
+        ? { label: t('gift.later'), onClick: () => this.ui.hideGift() }
+        : undefined,
+    })
+  }
+
+  /** The welcome trial: the next run in a character the player does not own. */
+  private startTrialRun(): void {
+    this.ui.hideGift()
+    const id = this.welcome.startTrial()
+    if (!id) {
+      return
+    }
+    this.telemetry.track('trial_start', { character: id })
+    const current = this.currentLevel
+    const next = current ? this.levels.getNextLevel(current.id) : null
+    this.startRun(next && this.levels.isUnlocked(next.id) ? next : current)
   }
 
   private beginContinueOffer(): void {

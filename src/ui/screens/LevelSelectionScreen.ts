@@ -65,6 +65,7 @@ export class LevelSelectionScreen extends Screen {
 
   constructor(options: LevelSelectionScreenOptions) {
     super('screen--overlay')
+    this.root.classList.add('screen--sheet')
 
     const panel = createPanel('level-selection-panel')
 

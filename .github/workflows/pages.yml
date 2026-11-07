@@ -1,0 +1,51 @@
+name: Privacy policy (GitHub Pages)
+
+# Publishes the bundled privacy policy as a public page for the store
+# listings: https://<user>.github.io/<repo>/privacy.html
+# One-time setup: repository Settings → Pages → Source: "GitHub Actions".
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - public/privacy.html
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}privacy.html
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse to publish an unfinished policy
+        run: |
+          if grep -nE '\[[^]]*(ADI|E-POSTASI|GG\.AA\.YYYY|NAME|EMAIL|YYYY-MM-DD|Fill in|doldurun)[^]]*\]' public/privacy.html; then
+            echo "::error::privacy.html still has [placeholders]. Fill them in before publishing."
+            exit 1
+          fi
+
+      - name: Assemble site
+        run: |
+          mkdir -p site
+          cp public/privacy.html site/privacy.html
+          printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=privacy.html"><title>Turkuaz Adalar</title><a href="privacy.html">Privacy policy</a>\n' > site/index.html
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

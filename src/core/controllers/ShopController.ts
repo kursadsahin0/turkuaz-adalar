@@ -72,11 +72,25 @@ export class ShopController {
     this.showcase.rotate(deltaX)
   }
 
-  /** Dresses the runner in what the player has equipped. */
+  /** A character worn for one run without owning it (the welcome trial). */
+  private trialCharacter: string | null = null
+
+  /** Dresses the runner in what the player has equipped (or is trying). */
   applyAppearance(): void {
+    const equipped = this.services.playerSave.characterCollection.equipped
     this.hooks
       .characterModel()
-      ?.applyAppearance(resolveAppearance(this.services.playerSave.characterCollection.equipped))
+      ?.applyAppearance(
+        resolveAppearance(
+          this.trialCharacter ? { ...equipped, characterId: this.trialCharacter } : equipped,
+        ),
+      )
+  }
+
+  /** Starts or ends a one-run character trial. */
+  setTrial(characterId: string | null): void {
+    this.trialCharacter = characterId
+    this.applyAppearance()
   }
 
   /** Shows an item on the runner without equipping or buying it. */

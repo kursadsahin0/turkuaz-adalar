@@ -1,6 +1,6 @@
 import { t } from '../../i18n/i18n.ts'
 import type { ProgressionSnapshot } from '../../systems/progression/ProgressionManager.ts'
-import { createEl } from '../../utils/dom.ts'
+import { createEl, createIcon } from '../../utils/dom.ts'
 import { Button } from '../components/Button.ts'
 import { IconButton } from '../components/IconButton.ts'
 import { formatDistance, formatInteger } from '../format.ts'
@@ -21,6 +21,29 @@ export interface MenuBadges {
   readonly dailyReady: boolean
   /** Missions or achievements with an unclaimed reward. */
   readonly claimable: number
+}
+
+/** Outline icons for the three menu tiles (24×24 grid). */
+const TILE_ICONS = {
+  characters: [
+    'M12 11.5a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5z',
+    'M4.5 20c.8-3.6 3.8-5.8 7.5-5.8s6.7 2.2 7.5 5.8',
+  ],
+  missions: [
+    'M8 4h8v5.5a4 4 0 0 1-8 0V4z',
+    'M16 5.5h3V7a3 3 0 0 1-3 3',
+    'M8 5.5H5V7a3 3 0 0 0 3 3',
+    'M12 13.5V17',
+    'M8.5 20h7',
+    'M10 17h4',
+  ],
+  settings: ['M4 7h9', 'M17 7h3', 'M4 17h3', 'M11 17h9', 'M15 5v4', 'M9 15v4'],
+} as const
+
+/** Icon above a short label: the menu's secondary tiles. */
+function makeTile(button: Button, icon: readonly string[], label: string): void {
+  button.element.classList.add('menu__tile')
+  button.element.replaceChildren(createIcon(icon), createEl('span', 'menu__tile-label', label))
 }
 
 /** Title screen with local progression records and audio control. */
@@ -112,6 +135,8 @@ export class MenuScreen extends Screen {
       onClick: options.onProgress,
       className: 'menu__progress',
     })
+    makeTile(this.characterButton, TILE_ICONS.characters, t('menu.characters'))
+    makeTile(this.progressButton, TILE_ICONS.missions, t('menu.progress'))
     this.progressBadge = createEl('span', 'menu__badge', '')
     this.progressBadge.hidden = true
     this.progressButton.element.appendChild(this.progressBadge)
@@ -120,6 +145,7 @@ export class MenuScreen extends Screen {
       variant: 'secondary',
       onClick: options.onSettings,
     })
+    makeTile(this.settingsButton, TILE_ICONS.settings, t('menu.settings'))
     const secondary = createEl('div', 'menu__secondary')
     secondary.append(
       this.characterButton.element,

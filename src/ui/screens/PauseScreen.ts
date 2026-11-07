@@ -19,6 +19,7 @@ export class PauseScreen extends Screen {
   constructor(options: PauseScreenOptions) {
     super('screen--pause')
     this.root.classList.add('screen--overlay')
+    this.root.classList.add('screen--dialog')
 
     const panel = createPanel('pause-panel')
     const eyebrow = createEl('p', 'eyebrow', t('pause.eyebrow'))

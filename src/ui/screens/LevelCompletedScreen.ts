@@ -27,11 +27,13 @@ export interface LevelCompletedScreenOptions {
   onRestart: () => void
   onMenu: () => void
   onDoubleCoins: () => void
+  onShare: () => void
 }
 
 /** Screen shown when a level is completed successfully. */
 export class LevelCompletedScreen extends Screen {
   private readonly nextLevelButton: Button
+  private readonly shareButton: Button
   private readonly restartButton: Button
   private readonly menuButton: Button
   private readonly levelName: HTMLHeadingElement
@@ -48,6 +50,7 @@ export class LevelCompletedScreen extends Screen {
   constructor(options: LevelCompletedScreenOptions) {
     super('screen--overlay')
     this.root.classList.add('screen--completed')
+    this.root.classList.add('screen--dialog')
 
     const panel = createPanel('level-completed-panel')
 
@@ -96,11 +99,17 @@ export class LevelCompletedScreen extends Screen {
       onClick: options.onMenu,
     })
 
+    this.shareButton = new Button({
+      label: t('share.button'),
+      variant: 'text',
+      onClick: options.onShare,
+    })
     const actions = createEl('div', 'screen-actions')
     actions.append(
       this.nextLevelButton.element,
       this.restartButton.element,
       this.menuButton.element,
+      this.shareButton.element,
     )
 
     this.notes = createEl('ul', 'gameover__notices level-completed__notes')
@@ -155,6 +164,7 @@ export class LevelCompletedScreen extends Screen {
     this.nextLevelButton.dispose()
     this.restartButton.dispose()
     this.menuButton.dispose()
+    this.shareButton.dispose()
     this.doubleCoins.dispose()
     super.dispose()
   }

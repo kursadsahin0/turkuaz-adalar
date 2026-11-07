@@ -12,6 +12,7 @@ import { CharacterSelectionScreen } from './screens/CharacterSelectionScreen.ts'
 import { ContinueScreen, type ContinueOffer } from './screens/ContinueScreen.ts'
 import { DailyRewardScreen } from './screens/DailyRewardScreen.ts'
 import { ErrorScreen } from './screens/ErrorScreen.ts'
+import { GiftScreen, type GiftData } from './screens/GiftScreen.ts'
 import type { GameOverSummary } from './screens/GameOverScreen.ts'
 import { GameOverScreen } from './screens/GameOverScreen.ts'
 import { LevelCompletedScreen } from './screens/LevelCompletedScreen.ts'
@@ -45,6 +46,7 @@ export interface UIManagerCallbacks {
   onClaimDaily: () => void
   onClaimMission: (id: string) => void
   onClaimAchievement: (id: AchievementId) => void
+  onClaimSeason: (tier: number) => void
   onSettings: () => void
   onSelectLevel: (levelId: string | null) => void
   onUnlockLevel: (levelId: string) => void
@@ -60,6 +62,7 @@ export interface UIManagerCallbacks {
   onContinueCoins: () => void
   onContinueAd: () => void
   onDoubleCoins: () => void
+  onShare: () => void
   onContinueSkip: () => void
   onConsent: (personalizedAds: boolean) => void
   onOpenPolicy: () => void
@@ -82,6 +85,7 @@ interface Screens {
   readonly continueOffer: ContinueScreen
   readonly consent: ConsentScreen
   readonly policy: PrivacyPolicyScreen
+  readonly gift: GiftScreen
   readonly hud: GameHud
 }
 
@@ -240,6 +244,19 @@ export class UIManager {
     this.ui.consent.show()
   }
 
+  /** A gift card on top of whatever is showing (it stays until closed). */
+  showGift(data: GiftData): void {
+    this.ui.gift.open(data)
+  }
+
+  hideGift(): void {
+    this.ui.gift.hide()
+  }
+
+  get isGiftOpen(): boolean {
+    return this.ui.gift.isOpen
+  }
+
   /** The policy opens on top of whatever is showing and closes back to it. */
   showPolicy(): void {
     this.ui.policy.show()
@@ -350,6 +367,7 @@ export class UIManager {
         onRestart: c.onRestart,
         onQuit: c.onQuit,
         onDoubleCoins: c.onDoubleCoins,
+        onShare: c.onShare,
       }),
       error: new ErrorScreen({ onReload: c.onReload }),
       levelSelection: new LevelSelectionScreen({
@@ -370,6 +388,7 @@ export class UIManager {
         onRestart: c.onRestart,
         onMenu: c.onLevelSelect,
         onDoubleCoins: c.onDoubleCoins,
+        onShare: c.onShare,
       }),
       settings: new SettingsScreen({
         onBack: backToMenu,
@@ -383,6 +402,7 @@ export class UIManager {
         onBack: backToMenu,
         onClaimMission: c.onClaimMission,
         onClaimAchievement: c.onClaimAchievement,
+        onClaimSeason: c.onClaimSeason,
       }),
       daily: new DailyRewardScreen({ onClaim: c.onClaimDaily, onClose: backToMenu }),
       continueOffer: new ContinueScreen({
@@ -396,6 +416,7 @@ export class UIManager {
         onOpenPolicy: c.onOpenPolicy,
       }),
       policy: new PrivacyPolicyScreen({ onClose: c.onClosePolicy }),
+      gift: new GiftScreen(),
       hud: new GameHud({
         onPause: c.onPause,
         onJump: c.onJump,
@@ -423,6 +444,7 @@ export class UIManager {
       screens.daily,
       screens.continueOffer,
       screens.consent,
+      screens.gift,
       screens.policy,
     ]
   }

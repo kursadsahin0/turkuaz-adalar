@@ -21,6 +21,7 @@ export class DailyRewardScreen extends Screen {
   constructor(options: DailyRewardScreenOptions) {
     super('screen--overlay')
     this.root.classList.add('screen--daily')
+    this.root.classList.add('screen--dialog')
 
     const panel = createPanel('daily-panel')
     const eyebrow = createEl('p', 'eyebrow', t('daily.eyebrow'))

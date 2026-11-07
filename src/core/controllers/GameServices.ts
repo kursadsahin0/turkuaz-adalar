@@ -9,6 +9,7 @@ import type { PlayerSaveManager } from '../../systems/save/PlayerSaveManager.ts'
 import type { SaveManager } from '../../systems/save/SaveManager.ts'
 import type { Telemetry } from '../../systems/telemetry/Telemetry.ts'
 import type { UIManager } from '../../ui/UIManager.ts'
+import type { Reminders } from '../../platform/Reminders.ts'
 
 /**
  * The long-lived systems the Game owns, shared with its controllers. Audio is
@@ -25,6 +26,7 @@ export interface GameServices {
   readonly monetization: MonetizationManager
   readonly telemetry: Telemetry
   readonly haptics: Haptics
+  readonly reminders: Reminders
   readonly audio: AudioManager | undefined
 }
 

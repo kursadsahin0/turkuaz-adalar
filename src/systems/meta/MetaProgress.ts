@@ -6,6 +6,8 @@ import { DAILY_REWARDS, DailyRewards, type Reward } from './DailyRewards.ts'
 import { hoursUntilMidnight, systemClock, type Clock } from './dayKey.ts'
 import { LocalLeaderboard, type LeaderboardService } from './Leaderboard.ts'
 import { Missions, type MissionEvent } from './Missions.ts'
+import { SeasonRoad, seasonXpFor } from './SeasonRoad.ts'
+import type { CosmeticType } from '../../game/characters/CharacterData.ts'
 import type { AchievementView, ProgressData } from '../../ui/screens/ProgressScreen.ts'
 
 /** Collection numbers owned by other systems (islands, wardrobe). */
@@ -16,6 +18,16 @@ export interface WorldStats {
 }
 
 const NO_WORLD_STATS: WorldStats = { islandsCompleted: 0, totalStars: 0, charactersOwned: 1 }
+
+/** Gives a cosmetic for free; false when it was already owned. */
+export type CosmeticGrant = (type: CosmeticType, id: string) => boolean
+
+/** What claiming a season tier paid out. */
+export interface SeasonPayout {
+  readonly coins: number
+  readonly crystals: number
+  readonly cosmetic: string | null
+}
 
 /** Text to flash in the HUD when something completes mid-run. */
 export interface MetaNotice {
@@ -32,6 +44,8 @@ export class MetaProgress {
   readonly missions: Missions
   readonly achievements: Achievements
   readonly leaderboard: LeaderboardService
+  readonly season: SeasonRoad
+  private readonly grantCosmetic: CosmeticGrant
   private readonly progression: ProgressionManager
   private readonly clock: Clock
   private readonly worldStats: () => WorldStats
@@ -41,7 +55,10 @@ export class MetaProgress {
     progression: ProgressionManager,
     clock: Clock = systemClock,
     worldStats: () => WorldStats = () => NO_WORLD_STATS,
+    grantCosmetic: CosmeticGrant = () => false,
   ) {
+    this.grantCosmetic = grantCosmetic
+    this.season = new SeasonRoad(save, clock)
     this.progression = progression
     this.clock = clock
     this.worldStats = worldStats
@@ -56,7 +73,7 @@ export class MetaProgress {
   get badges(): { dailyReady: boolean; claimable: number } {
     return {
       dailyReady: this.daily.status().canClaim,
-      claimable: this.missions.claimable + this.achievements.claimable,
+      claimable: this.missions.claimable + this.achievements.claimable + this.season.claimable,
     }
   }
 
@@ -78,6 +95,31 @@ export class MetaProgress {
     })
     const notices = this.record({ kind: 'runEnd', distance, score })
     return [...notices, ...this.evaluateAchievements()]
+  }
+
+  /** Season road XP for a finished run; returns notices for tiers reached. */
+  recordSeason(run: { distance: number; completed: boolean; stars: number }): MetaNotice[] {
+    return this.season
+      .addXp(seasonXpFor(run))
+      .map((tier) => ({ text: t('feedback.seasonTier', { tier }) }))
+  }
+
+  claimSeason(tier: number): SeasonPayout | null {
+    const reward = this.season.claim(tier)
+    if (!reward) {
+      return null
+    }
+    let crystals = reward.crystals
+    let cosmetic: string | null = null
+    if (reward.cosmetic) {
+      if (this.grantCosmetic(reward.cosmetic.type, reward.cosmetic.id)) {
+        cosmetic = reward.cosmetic.id
+      } else {
+        crystals += reward.cosmetic.fallback
+      }
+    }
+    this.pay(reward.coins, crystals)
+    return { coins: reward.coins, crystals, cosmetic }
   }
 
   /** Re-checks achievements after island or wardrobe progress changes. */
@@ -134,6 +176,7 @@ export class MetaProgress {
       hoursLeft: hoursUntilMidnight(this.clock()),
       achievements,
       records: this.leaderboard.top(),
+      season: this.season.view(),
     }
   }
 

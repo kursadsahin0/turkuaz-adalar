@@ -1,5 +1,6 @@
 import type { SaveManager } from '../save/SaveManager.ts'
 import { Logger } from '../../utils/logger.ts'
+import { AnalyticsUploader } from './AnalyticsUploader.ts'
 
 /** A short trail of what happened before a crash. */
 export interface Breadcrumb {
@@ -51,9 +52,18 @@ export interface TelemetryOptions {
   readonly version: string
   /** Sentry DSN from VITE_SENTRY_DSN; empty disables remote reporting. */
   readonly sentryDsn?: string
-  /** Player setting: may crash reports leave the device? */
+  /** Player setting: may crash reports and anonymous usage data leave the device? */
   readonly crashReportsAllowed: boolean
   readonly environment: string
+  /**
+   * Optional usage analytics (VITE_ANALYTICS_KEY / VITE_ANALYTICS_HOST): a
+   * PostHog-compatible project. Without a key no event leaves the device.
+   */
+  readonly analytics?: {
+    readonly host: string
+    readonly apiKey: string
+    readonly platform: string
+  }
 }
 
 /**
@@ -66,7 +76,8 @@ export interface TelemetryOptions {
  *   Sentry SDK is loaded on demand and errors are also sent, without personal
  *   data.
  * - Analytics events go through `track()` into an in-memory buffer and any
- *   registered sinks.
+ *   registered sinks; with an analytics key configured and the same player
+ *   setting on, they are also uploaded anonymously (see AnalyticsUploader).
  */
 export class Telemetry {
   private readonly logger = new Logger('Telemetry')
@@ -79,6 +90,7 @@ export class Telemetry {
   private remoteLoading = false
   private crashReportsAllowed: boolean
   private installed = false
+  private uploader: AnalyticsUploader | null = null
 
   private readonly handleError = (event: ErrorEvent): void => {
     this.capture(
@@ -96,6 +108,30 @@ export class Telemetry {
     this.save = save
     this.options = options
     this.crashReportsAllowed = options.crashReportsAllowed
+    const analytics = options.analytics
+    if (analytics?.apiKey.trim() && analytics.host.trim()) {
+      this.uploader = new AnalyticsUploader(save, {
+        host: analytics.host.trim(),
+        apiKey: analytics.apiKey.trim(),
+        platform: analytics.platform,
+        version: options.version,
+        isAllowed: () => this.crashReportsAllowed,
+      })
+      this.sinks.push(this.uploader)
+    }
+  }
+
+  /** True when usage events are uploaded (a key is set and the player allows it). */
+  get uploadsAnalytics(): boolean {
+    return this.uploader !== null && this.crashReportsAllowed
+  }
+
+  /** Sends waiting analytics events now (e.g. as the app goes to the background). */
+  flush(): void {
+    if (this.uploader) {
+      void this.uploader.flush()
+      this.uploader.persist()
+    }
   }
 
   /** Starts listening for uncaught errors. Call once, as early as possible. */
@@ -107,10 +143,14 @@ export class Telemetry {
     window.addEventListener('error', this.handleError)
     window.addEventListener('unhandledrejection', this.handleRejection)
     this.syncRemote()
+    this.uploader?.start()
   }
 
   setCrashReportsAllowed(allowed: boolean): void {
     this.crashReportsAllowed = allowed
+    if (!allowed) {
+      this.uploader?.clear()
+    }
     this.syncRemote()
   }
 
@@ -162,6 +202,7 @@ export class Telemetry {
   }
 
   dispose(): void {
+    this.uploader?.dispose()
     if (this.installed) {
       window.removeEventListener('error', this.handleError)
       window.removeEventListener('unhandledrejection', this.handleRejection)

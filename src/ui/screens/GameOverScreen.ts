@@ -24,12 +24,14 @@ export interface GameOverScreenOptions {
   onRestart: () => void
   onQuit: () => void
   onDoubleCoins: () => void
+  onShare: () => void
 }
 
 /** Post-run summary with local best indicators. */
 export class GameOverScreen extends Screen {
   private readonly restartButton: Button
   private readonly menuButton: Button
+  private readonly shareButton: Button
   private readonly title: HTMLHeadingElement
   private readonly scoreValue: HTMLSpanElement
   private readonly distanceValue: HTMLSpanElement
@@ -43,6 +45,7 @@ export class GameOverScreen extends Screen {
   constructor(options: GameOverScreenOptions) {
     super('screen--gameover')
     this.root.classList.add('screen--overlay')
+    this.root.classList.add('screen--dialog')
 
     const panel = createPanel('gameover-panel')
     const eyebrow = createEl('p', 'eyebrow', t('over.eyebrow'))
@@ -75,8 +78,13 @@ export class GameOverScreen extends Screen {
       variant: 'secondary',
       onClick: options.onQuit,
     })
+    this.shareButton = new Button({
+      label: t('share.button'),
+      variant: 'text',
+      onClick: options.onShare,
+    })
     const actions = createEl('div', 'screen-actions')
-    actions.append(this.restartButton.element, this.menuButton.element)
+    actions.append(this.restartButton.element, this.menuButton.element, this.shareButton.element)
 
     this.noticeList = createEl('ul', 'gameover__notices')
     this.doubleCoins = new DoubleCoinsButton(options.onDoubleCoins)
@@ -130,6 +138,7 @@ export class GameOverScreen extends Screen {
   dispose(): void {
     this.restartButton.dispose()
     this.menuButton.dispose()
+    this.shareButton.dispose()
     this.doubleCoins.dispose()
     super.dispose()
   }

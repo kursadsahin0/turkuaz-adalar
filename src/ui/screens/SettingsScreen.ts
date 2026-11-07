@@ -16,6 +16,7 @@ export interface SettingsData {
   language: Language
   personalizedAds: boolean
   crashReports: boolean
+  reminders: boolean
   /** Show "Ad privacy options" (Google UMP regions). */
   adPrivacyOptions?: boolean
 }
@@ -44,6 +45,7 @@ export class SettingsScreen extends Screen {
   private readonly difficultySelect: HTMLSelectElement
   private readonly hintsToggle: HTMLInputElement
   private readonly vibrationToggle: HTMLInputElement
+  private readonly remindersToggle: HTMLInputElement
   private readonly languageSelect: HTMLSelectElement
   private readonly adsToggle: HTMLInputElement
   private readonly crashToggle: HTMLInputElement
@@ -65,10 +67,12 @@ export class SettingsScreen extends Screen {
     language: 'en',
     personalizedAds: false,
     crashReports: true,
+    reminders: true,
   }
 
   constructor(options: SettingsScreenOptions) {
     super('screen--overlay')
+    this.root.classList.add('screen--sheet')
 
     const panel = createPanel('settings-panel')
 
@@ -147,6 +151,9 @@ export class SettingsScreen extends Screen {
     const vibrationControl = this.createToggleControl(t('settings.vibration'), true)
     this.vibrationToggle = vibrationControl.toggle
     gameplaySection.appendChild(vibrationControl.element)
+    const remindersControl = this.createToggleControl(t('settings.reminders'), true)
+    this.remindersToggle = remindersControl.toggle
+    gameplaySection.appendChild(remindersControl.element)
 
     this.tutorialButton = new Button({
       label: t('settings.replayTutorial'),
@@ -223,6 +230,7 @@ export class SettingsScreen extends Screen {
     this.difficultySelect.value = this.settings.difficulty
     this.hintsToggle.checked = this.settings.showHints
     this.vibrationToggle.checked = this.settings.vibrationEnabled
+    this.remindersToggle.checked = this.settings.reminders
     this.languageSelect.value = this.settings.language
     this.tutorialButton.setLabel(t('settings.replayTutorial'))
     this.tutorialButton.setDisabled(false)
@@ -279,6 +287,9 @@ export class SettingsScreen extends Screen {
 
     this.vibrationToggle.addEventListener('change', () => {
       onChange({ vibrationEnabled: this.vibrationToggle.checked })
+    })
+    this.remindersToggle.addEventListener('change', () => {
+      onChange({ reminders: this.remindersToggle.checked })
     })
 
     this.languageSelect.addEventListener('change', () => {
@@ -340,6 +351,7 @@ export class SettingsScreen extends Screen {
       language: this.settings.language,
       personalizedAds: this.settings.personalizedAds,
       crashReports: this.settings.crashReports,
+      reminders: this.settings.reminders,
     }
 
     onChange({

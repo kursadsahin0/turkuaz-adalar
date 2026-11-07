@@ -6,7 +6,7 @@ The project is a complete gameplay foundation rather than a static scene: it has
 
 ## Features at a glance
 
-- **Turkish, English, German and Spanish** — every screen, HUD string and content name. The language follows the device on first launch and can be changed in Settings (`src/i18n/`). The privacy policy page has Turkish and English text; German and Spanish players see the English one.
+- **Turkish, English, German and Spanish** — every screen, HUD string and content name. The language follows the device on first launch and can be changed in Settings (`src/i18n/`). The privacy policy page is in all four languages too.
 - **Original procedural music** — a generated island loop played through WebAudio (`MusicSequencer.ts`), mellow in menus and fuller in runs. No audio files.
 - **Crystals as a second currency** — relic tokens add a spendable crystal; premium cosmetics cost crystals, and 5 crystals trade for 50 coins on the Characters screen.
 - **Daily reward** — seven-day login streak; missing a day restarts it.
@@ -244,6 +244,7 @@ Level pacing lives in `src/game/levels/LevelCatalog.ts`. Add another `LevelDefin
 ```bash
 npm run check                 # typecheck + lint + all tests + build
 npm run test:e2e              # real game in headless Chrome (run after build)
+npm run playtest              # bot plays islands, reports survival and knockout causes
 npx tsc --noEmit              # strict type check
 npm run build                 # type check + production bundle
 npm run validate:assets       # registry, loading, cache, clones, controller
@@ -273,6 +274,8 @@ The production bundle splits Three.js into its own cached chunk and loads Rapier
 
 `test:e2e` boots the dev build in headless Google Chrome and walks the menu, character screen, a tutorial run, pause/resume and crash → continue → game over. It then finishes island 1 for real (the runner crosses the finish line, earns three stars, unlocks island 2 and "Next island" starts it), starts every island once, and finally boots the release build from `dist/` and checks the physics WASM loads. Any page or console error fails it. CI runs it after the build.
 
+`playtest` lets a simple bot play islands in headless Chrome (fast-forwarded, no rendering) and prints how far it gets and what knocked it out, e.g. `npm run playtest -- 13 24 30 --tries 5`. The bot steers with the player's inputs and looks ~1.5 s ahead, so its numbers are only for comparing islands with each other; it does not replace playing by hand.
+
 The environment has also been exercised in headless Chrome (SwiftShader):
 
 - Menu → play → pause within the first second → resume works.
@@ -281,4 +284,5 @@ The environment has also been exercised in headless Chrome (SwiftShader):
 - Screenshot pixel checks confirm the turquoise/green/white/yellow palette, checker and mechanism details, and no black frames.
 - Camera smoke runs in landscape (1280×800) and portrait (390×844), covering menu, run, jumps, a live resize and pause; both viewports render non-blank frames with no exceptions.
 - Movement smoke drives the live game through `A`/`D`, arrows, Space, keyboard repeats, tap, swipe left/right/up/down, a long one-lane swipe, pause → resume, and a live portrait resize. Every lane change lands on the expected lane centre, jumps leave and return to the ground, dash activates, and no console exception is raised.
+
 # deneme

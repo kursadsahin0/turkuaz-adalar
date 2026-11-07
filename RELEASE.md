@@ -108,10 +108,12 @@ page the stores need as a public URL. Before publishing:
    "Children" section (13+) are filled in. Update the effective date whenever
    the policy changes.
 2. Have it reviewed; it describes the current app, not legal advice.
-3. Push the repository to GitHub and set _Settings → Pages → Source_ to
-   **GitHub Actions**. `.github/workflows/pages.yml` then publishes it at
-   `https://<user>.github.io/<repo>/privacy.html`; use that URL in Play Console
-   and App Store Connect. The workflow refuses to publish while any `[…]`
+3. Push this folder's repository
+   ([kursadsahin0/turkuaz-adalar](https://github.com/kursadsahin0/turkuaz-adalar))
+   and set _Settings → Pages → Source_ to **GitHub Actions**.
+   `.github/workflows/pages.yml` then publishes it at
+   **https://kursadsahin0.github.io/turkuaz-adalar/privacy.html**; use that URL
+   in Play Console and App Store Connect. The workflow refuses to publish while any `[…]`
    placeholder is left.
 
 ## Crash reports (optional)
@@ -131,10 +133,40 @@ Crashes are always kept in a local log on the device. To also receive them:
    switchable in Settings → Privacy). Only errors are sent: no tracing, replay
    or user data.
 
-Analytics events (`run_start`, `run_end`, `purchase`, `continue`, claims,
-consent, ad results) already flow through `Telemetry.track()`. They stay on
-the device until you register an `AnalyticsSink` for a real service; add an
-opt-in toggle and a privacy policy section when you do.
+## Usage analytics (optional): where players stop
+
+The game records a player funnel through `Telemetry.track()`:
+
+| Event                                                                                 | When                                     | Main properties                                                          |
+| ------------------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------ |
+| `first_open`, `app_open`, `session_start`, `session_end`                              | install, launch, foreground/background   | `launches`, `seconds`                                                    |
+| `tutorial_start`, `tutorial_step`, `tutorial_complete`, `tutorial_skip`               | first run                                | `step`                                                                   |
+| `run_start`                                                                           | every run                                | `level`, `difficulty`, `mechanic`, `chase`                               |
+| `crash`                                                                               | every crash (also ones a continue saves) | `level`, `cause` (obstacle id, `wave`, `fall`), `distance`, `progress` % |
+| `level_fail`                                                                          | the run ends without the finish line     | same + `continues`; `cause: quit` when left from pause                   |
+| `level_complete`, `run_end`                                                           | island finished / any run end            | `stars`, `seconds`, `continues`                                          |
+| `continue`, `double_coins`, `purchase`, `level_unlock`, claims, `consent`, ad results | as they happen                           |                                                                          |
+
+Nothing leaves the device until you add a key. To see funnels and retention:
+
+1. Create a free [PostHog Cloud](https://posthog.com) project (**EU** region).
+2. Put its _Project API key_ (starts with `phc_`, write-only) in
+   `.env.production.local`:
+
+   ```bash
+   VITE_ANALYTICS_KEY=phc_...
+   VITE_ANALYTICS_HOST=https://eu.i.posthog.com
+   ```
+
+3. Rebuild. Events are batched (20 events or every 30 s, and when the app goes
+   to the background), kept on the device while offline, and only sent while
+   _Send anonymous crash reports and usage data_ is on. They carry a random
+   install id, app version and platform; no name, account, device or
+   advertising id, and no person profiles are created.
+
+Useful PostHog insights: a funnel `first_open → tutorial_complete →
+level_complete (level-1) → … (level-5)`; a trend of `level_fail` broken down by
+`level` and `cause`; retention on `app_open`.
 
 ## Ads (AdMob)
 

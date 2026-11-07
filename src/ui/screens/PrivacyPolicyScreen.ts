@@ -20,6 +20,7 @@ export class PrivacyPolicyScreen extends Screen {
   constructor(options: PrivacyPolicyScreenOptions) {
     super('screen--overlay')
     this.root.classList.add('screen--privacy')
+    this.root.classList.add('screen--sheet')
 
     const panel = createPanel('privacy-panel')
     const top = createEl('div', 'progress__top')

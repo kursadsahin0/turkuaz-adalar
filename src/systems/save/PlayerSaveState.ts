@@ -55,6 +55,8 @@ export interface GameSettings {
   language: Language
   /** Send anonymous crash reports (only when a crash service is configured). */
   crashReports: boolean
+  /** Local reminders (daily reward, streak, weekly event). */
+  reminders: boolean
 }
 
 export interface TutorialState {
@@ -114,6 +116,7 @@ export const DEFAULT_PLAYER_SAVE: PlayerSaveState = {
     difficulty: 'medium',
     language: 'en',
     crashReports: true,
+    reminders: true,
   },
   tutorial: {
     completed: false,
@@ -269,6 +272,7 @@ export function sanitiseSettings(value: unknown): GameSettings {
         : 'medium',
     language: isLanguage(record.language) ? record.language : detectLanguage(),
     crashReports: typeof record.crashReports === 'boolean' ? record.crashReports : true,
+    reminders: typeof record.reminders === 'boolean' ? record.reminders : true,
   }
 }
 

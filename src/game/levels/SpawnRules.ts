@@ -61,7 +61,7 @@ export interface SpawnRules {
 }
 
 /** Ice makes lane changes this much slower; spawning leaves room for it. */
-export const ICE_LANE_CONTROL = 0.55
+export const ICE_LANE_CONTROL = 0.65
 const EMBER_KIND = 'falling-object'
 
 export const DEFAULT_SPAWN_RULES: SpawnRules = {

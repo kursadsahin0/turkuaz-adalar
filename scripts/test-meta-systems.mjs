@@ -813,6 +813,142 @@ function i18nDay(date) {
   )
 }
 
+// --- Analytics upload --------------------------------------------------------
+{
+  const { AnalyticsUploader } = await import('../src/systems/telemetry/AnalyticsUploader.ts')
+  const posts = []
+  let online = false
+  let allowed = true
+  const fetchImpl = async (url, init) => {
+    if (!online) {
+      throw new Error('offline')
+    }
+    posts.push({ url, body: JSON.parse(init.body) })
+    return { ok: true, status: 200 }
+  }
+  const save = new SaveManager()
+  const options = {
+    host: 'https://eu.i.posthog.com/',
+    apiKey: 'phc_test',
+    version: '1.0.0',
+    platform: 'web',
+    isAllowed: () => allowed,
+    fetchImpl,
+  }
+  const uploader = new AnalyticsUploader(save, options)
+  uploader.send({ name: 'level_fail', at: 0, props: { level: 'level-3', cause: 'crate' } })
+  await uploader.flush()
+  test('analytics: offline events wait on the device', posts.length === 0)
+  const reloaded = new AnalyticsUploader(save, options)
+  online = true
+  await reloaded.flush()
+  const sent = posts[0]?.body
+  test(
+    'analytics: queued events survive a restart and upload as one anonymous batch',
+    posts.length === 1 &&
+      posts[0].url === 'https://eu.i.posthog.com/batch/' &&
+      sent.api_key === 'phc_test' &&
+      sent.batch[0].event === 'level_fail' &&
+      sent.batch[0].properties.cause === 'crate' &&
+      typeof sent.batch[0].properties.distinct_id === 'string' &&
+      sent.batch[0].properties.$process_person_profile === false,
+  )
+  await reloaded.flush()
+  test('analytics: an uploaded batch is not sent twice', posts.length === 1)
+  allowed = false
+  reloaded.send({ name: 'run_start', at: 0, props: {} })
+  await reloaded.flush()
+  test('analytics: nothing is queued or sent once the player opts out', posts.length === 1)
+}
+
+// --- Season road, welcome gifts, island assist, reminders --------------------
+{
+  const { SeasonRoad, seasonXpFor, SEASON_TIER_XP, SEASON_TIERS } =
+    await import('../src/systems/meta/SeasonRoad.ts')
+  let day = new Date(2026, 10, 10, 12)
+  const save = fresh()
+  const road = new SeasonRoad(save, () => day)
+  test(
+    'season: a run is worth XP',
+    seasonXpFor({ distance: 500, completed: true, stars: 3 }) === 90,
+  )
+  const reached = road.addXp(SEASON_TIER_XP * 2 + 10)
+  test('season: XP reaches tiers', reached.join() === '1,2' && road.claimable === 2)
+  const reward = road.claim(1)
+  test('season: a reached tier pays once', reward !== null && road.claim(1) === null)
+  test('season: an unreached tier cannot be claimed', road.claim(5) === null)
+  road.addXp(SEASON_TIER_XP * 100)
+  test('season: the road stops at the last tier', road.view().tier === SEASON_TIERS)
+  test(
+    'season: progress survives a restart',
+    new SeasonRoad(save, () => day).view().tier === SEASON_TIERS,
+  )
+  day = new Date(2026, 11, 1, 9)
+  test('season: a new month starts a new road', new SeasonRoad(save, () => day).view().xp === 0)
+
+  const { WelcomeGifts, TRIAL_CHARACTER } = await import('../src/systems/meta/WelcomeGifts.ts')
+  const giftSave = fresh()
+  const gifts = new WelcomeGifts(giftSave)
+  test('welcome: no chest before the first run', !gifts.chestReady(0) && gifts.chestReady(1))
+  test('welcome: the chest opens once', gifts.openChest() !== null && gifts.openChest() === null)
+  test('welcome: no chest after a restart', !new WelcomeGifts(giftSave).chestReady(5))
+  test('welcome: no trial of a character already owned', !gifts.canTry([TRIAL_CHARACTER]))
+  test(
+    'welcome: the trial lasts one run',
+    gifts.startTrial() === TRIAL_CHARACTER &&
+      gifts.trialCharacter === TRIAL_CHARACTER &&
+      gifts.endTrial() === TRIAL_CHARACTER &&
+      gifts.trialCharacter === null &&
+      gifts.startTrial() === null,
+  )
+
+  const { IslandAssist } = await import('../src/systems/meta/IslandAssist.ts')
+  const assistSave = fresh()
+  const assist = new IslandAssist(assistSave)
+  for (let index = 0; index < 2; index += 1) assist.recordResult('level-5', false)
+  test('assist: off for the first failed tries', assist.levelFor('level-5') === 0)
+  assist.recordResult('level-5', false)
+  test('assist: a gentle step after three fails in a row', assist.levelFor('level-5') === 1)
+  for (let index = 0; index < 3; index += 1) assist.recordResult('level-5', false)
+  test('assist: a second step after six', new IslandAssist(assistSave).levelFor('level-5') === 2)
+  assist.recordResult('level-5', true)
+  test('assist: finishing the island resets it', assist.levelFor('level-5') === 0)
+
+  const { planReminders, REMINDER_IDS } = await import('../src/platform/Reminders.ts')
+  const evening = new Date(2026, 10, 11, 15) // a Wednesday afternoon
+  const claimed = planReminders(evening, {
+    dailyClaimedToday: true,
+    streak: 0,
+    eventClaimed: false,
+  })
+  const daily = claimed.find((plan) => plan.id === REMINDER_IDS.daily)
+  test(
+    'reminders: claimed today → tomorrow evening',
+    daily?.at.getDate() === 12 && daily.at.getHours() === 18,
+  )
+  const streak = planReminders(evening, {
+    dailyClaimedToday: false,
+    streak: 4,
+    eventClaimed: false,
+  })
+  const risk = streak.find((plan) => plan.id === REMINDER_IDS.daily)
+  test(
+    'reminders: an unclaimed streak → this evening, naming the streak',
+    risk?.at.getDate() === 11 && risk.at.getHours() === 19 && risk.body.includes('4'),
+  )
+  const event = claimed.find((plan) => plan.id === REMINDER_IDS.event)
+  test(
+    'reminders: the weekly event → next Monday morning',
+    event?.at.getDay() === 1 && event.at.getDate() === 16 && event.at.getHours() === 10,
+  )
+  test(
+    'reminders: never in the past or at night',
+    [...claimed, ...streak].every(
+      (plan) => plan.at > evening && plan.at.getHours() >= 9 && plan.at.getHours() <= 21,
+    ),
+  )
+}
+
 console.log(`\n${passed + failed} tests: ${passed} passed, ${failed} failed`)
 if (failed === 0) {
   console.log('\n✓ All meta system tests passed!')

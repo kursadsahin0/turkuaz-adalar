@@ -20,7 +20,8 @@ import { createServer, preview } from 'vite'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const server = await createServer({
   root,
-  server: { port: 5198, strictPort: false },
+  // No hot reload: a file saved mid-test must not restart the game under it.
+  server: { port: 5198, strictPort: false, hmr: false, watch: null },
   logLevel: 'error',
 })
 await server.listen()
@@ -154,8 +155,70 @@ try {
     await page.evaluate(() => window.__turkuaz.state === 'gameover'),
   )
   await wait(2500)
+  check(
+    'the share button is on the summary',
+    await page
+      .locator('.screen--gameover button', { hasText: /./ })
+      .count()
+      .then((n) => n >= 3),
+  )
+
+  console.log('Welcome chest and character trial')
+  check(
+    'a welcome chest opens over the first summary',
+    await page.evaluate(() => window.__turkuaz.ui.isGiftOpen),
+  )
+  const walletBefore = await page.evaluate(() => window.__turkuaz.progression.snapshot.coins)
+  await page.locator('.gift-panel .btn--primary').click()
+  check(
+    'opening it pays coins and offers a character trial',
+    await page.evaluate(
+      (before) =>
+        window.__turkuaz.progression.snapshot.coins >= before + 250 &&
+        document.querySelector('.gift__offer') !== null,
+      walletBefore,
+    ),
+  )
+  await page.locator('.gift-panel .btn--primary').click()
+  check(
+    'the trial run starts in the trial character',
+    await page.evaluate(
+      () =>
+        window.__turkuaz.state === 'playing' &&
+        window.__turkuaz.welcome.trialCharacter === 'tide-mage' &&
+        !window.__turkuaz.ui.isGiftOpen,
+    ),
+  )
+  await page.evaluate(() => window.__turkuaz.finishRun(true, true))
+  await wait(2500)
+  check(
+    'the trial ends with its run and the chest does not come back',
+    await page.evaluate(
+      () => window.__turkuaz.welcome.trialCharacter === null && !window.__turkuaz.ui.isGiftOpen,
+    ),
+  )
   await page.evaluate(() => window.__turkuaz.returnToMenu())
   check('back to the menu', await page.evaluate(() => window.__turkuaz.state === 'menu'))
+
+  console.log('Season road')
+  await page.evaluate(() => {
+    const g = window.__turkuaz
+    g.meta.season.addXp(250)
+    g.menus.showProgress()
+  })
+  await page.locator('.progress__tabs [data-tab="season"]').click()
+  const tierButtons = page.locator('.progress__list [data-kind="season"]:not([disabled])')
+  check('reached season tiers can be claimed', (await tierButtons.count()) === 2)
+  const crystalsBefore = await page.evaluate(() => window.__turkuaz.progression.snapshot.coins)
+  await tierButtons.first().click()
+  check(
+    'claiming a tier pays out',
+    await page.evaluate(
+      (before) => window.__turkuaz.progression.snapshot.coins > before,
+      crystalsBefore,
+    ),
+  )
+  await page.evaluate(() => window.__turkuaz.returnToMenu())
 
   console.log('Restart')
   // "Run again" right after a crash: the new run must not end at 0 m (the
@@ -173,7 +236,8 @@ try {
     await page
       .waitForFunction(() => window.__turkuaz.state !== 'playing', null, { timeout: 60_000 })
       .catch(() => undefined)
-    clearInterval(await page.evaluate(() => window.__keepAlive))
+    // The timer lives in the page, so it must be cleared there.
+    await page.evaluate(() => clearInterval(window.__keepAlive))
     restartDistances.push(await page.evaluate(() => Math.round(window.__turkuaz.distance)))
   }
   await page.evaluate(() => window.__turkuaz.returnToMenu())
@@ -220,13 +284,23 @@ try {
       }
     }, 50)
     const p = g.player.position
-    g.player.reset({ x: p.x, y: p.y + 0.2, z: -(level.targetDistance - 25) })
+    // Drop in from a metre up: the track there is streamed in this same frame,
+    // and the physics query only sees the recycled deck after the next step.
+    // Landed straight on it, the runner would sink into the deck.
+    g.player.reset({ x: p.x, y: p.y + 1.2, z: -(level.targetDistance - 25) })
   })
   const crossed = await page
     .waitForFunction(() => window.__turkuaz.state === 'gameover', null, { timeout: 60_000 })
     .then(() => true)
     .catch(() => false)
-  check('the runner crosses the finish line', crossed)
+  check(
+    'the runner crosses the finish line',
+    crossed,
+    await page.evaluate(() => {
+      const g = window.__turkuaz
+      return `${g.state} at ${Math.round(g.distance)} m, y ${g.player.position.y.toFixed(2)}`
+    }),
+  )
   const outcome = await page.evaluate(async () => {
     const g = window.__turkuaz
     const { LEVEL_CATALOG } = await import('/src/game/levels/LevelCatalog.ts')

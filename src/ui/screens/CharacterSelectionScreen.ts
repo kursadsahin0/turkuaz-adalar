@@ -56,6 +56,70 @@ function priceLabel(item: CatalogItem): string {
   return `${formatInteger(item.unlockCost)} ${item.currency === 'crystals' ? '💎' : '●'}`
 }
 
+/** The "equipped" tick in the corner of a card's picture. */
+/**
+ * Lets a horizontal strip scroll with a mouse too: the wheel scrolls it
+ * sideways and it can be dragged. Touch keeps the browser's own swipe.
+ * Returns a check telling whether the last press was a drag (not a tap).
+ */
+function enableSideScroll(strip: HTMLElement): () => boolean {
+  strip.addEventListener(
+    'wheel',
+    (event) => {
+      if (
+        strip.scrollWidth <= strip.clientWidth ||
+        Math.abs(event.deltaX) > Math.abs(event.deltaY)
+      ) {
+        return
+      }
+      event.preventDefault()
+      strip.scrollLeft += event.deltaY
+    },
+    { passive: false },
+  )
+  let startX: number | null = null
+  let startScroll = 0
+  let dragged = false
+  strip.addEventListener('pointerdown', (event) => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) {
+      return
+    }
+    startX = event.clientX
+    startScroll = strip.scrollLeft
+    dragged = false
+  })
+  strip.addEventListener('pointermove', (event) => {
+    if (startX === null) {
+      return
+    }
+    const moved = event.clientX - startX
+    if (!dragged && Math.abs(moved) > 6) {
+      dragged = true
+      strip.setPointerCapture(event.pointerId)
+    }
+    if (dragged) {
+      strip.scrollLeft = startScroll - moved
+    }
+  })
+  const end = (): void => {
+    startX = null
+  }
+  strip.addEventListener('pointerup', end)
+  strip.addEventListener('pointercancel', end)
+  return () => {
+    const was = dragged
+    dragged = false
+    return was
+  }
+}
+
+function equippedMark(): HTMLElement {
+  const mark = createEl('span', 'card-equipped', '✓')
+  mark.title = t('chars.equipped')
+  mark.setAttribute('aria-label', t('chars.equipped'))
+  return mark
+}
+
 /** Screen for selecting playable characters and cosmetics. */
 export class CharacterSelectionScreen extends Screen {
   private readonly backButton: IconButton
@@ -102,7 +166,7 @@ export class CharacterSelectionScreen extends Screen {
     const wallet = createEl('div', 'character-selection__wallet')
     wallet.append(coins, crystals)
 
-    top.append(eyebrow, title, this.backButton.element, wallet)
+    top.append(this.backButton.element, eyebrow, title, wallet)
 
     this.exchangeButton = new Button({
       label: t('chars.exchange', {
@@ -114,8 +178,15 @@ export class CharacterSelectionScreen extends Screen {
       className: 'character-selection__exchange',
     })
 
+    // The exchange is a small chip beside the wallet it changes.
+    wallet.append(this.exchangeButton.element)
+
     this.categoryTabs = createEl('div', 'character-selection__tabs')
+    const tabsDragged = enableSideScroll(this.categoryTabs)
     this.categoryTabs.addEventListener('click', (e) => {
+      if (tabsDragged()) {
+        return
+      }
       const target = e.target as HTMLElement
       const tab = target.closest('[data-category]')
       if (tab) {
@@ -138,13 +209,7 @@ export class CharacterSelectionScreen extends Screen {
       className: 'character-selection__select',
     })
 
-    panel.append(
-      top,
-      this.exchangeButton.element,
-      this.categoryTabs,
-      this.cosmeticsContainer,
-      this.selectButton.element,
-    )
+    panel.append(top, this.categoryTabs, this.cosmeticsContainer, this.selectButton.element)
     const dragHint = createEl('p', 'showcase__hint', `⟲ ${t('chars.dragHint')}`)
     this.root.append(dragHint, panel)
 
@@ -233,8 +298,12 @@ export class CharacterSelectionScreen extends Screen {
       )
       tab.dataset.category = cat.id
       tab.textContent = cat.label
+      tab.type = 'button'
       this.categoryTabs.appendChild(tab)
     }
+    this.categoryTabs
+      .querySelector('.character-selection__tab--active')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }
 
   private renderCosmetics(): void {
@@ -380,14 +449,11 @@ export class CharacterSelectionScreen extends Screen {
     info.append(name, description, stats)
 
     if (isCurrent) {
-      const currentBadge = createEl('div', 'character-card__badge', t('chars.equipped'))
-      card.appendChild(currentBadge)
+      preview.appendChild(equippedMark())
     } else if (!isUnlocked) {
-      const lock = createEl('div', 'character-card__lock', '🔒')
+      preview.appendChild(createEl('div', 'character-card__lock', '🔒'))
       // The price sits with the name, so it reads as part of the card.
-      const unlockCost = createEl('div', 'character-card__unlock-cost', priceLabel(character))
-      card.appendChild(lock)
-      info.appendChild(unlockCost)
+      info.appendChild(createEl('div', 'character-card__unlock-cost', priceLabel(character)))
     }
 
     card.append(preview, info)
@@ -435,8 +501,9 @@ export class CharacterSelectionScreen extends Screen {
     info.append(name, description, cost)
 
     if (isEquipped) {
-      const equippedBadge = createEl('div', 'cosmetic-card__badge', t('chars.equipped'))
-      card.appendChild(equippedBadge)
+      preview.appendChild(equippedMark())
+    } else if (!isOwned) {
+      preview.appendChild(createEl('div', 'character-card__lock', '🔒'))
     }
 
     card.append(preview, info)

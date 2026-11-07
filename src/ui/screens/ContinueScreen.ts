@@ -55,6 +55,7 @@ export class ContinueScreen extends Screen {
   constructor(options: ContinueScreenOptions) {
     super('screen--overlay')
     this.root.classList.add('screen--continue')
+    this.root.classList.add('screen--dialog')
     this.options = options
 
     const panel = createPanel('continue-panel')
