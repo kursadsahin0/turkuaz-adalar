@@ -131,15 +131,18 @@ function roundRect(
 
 const logger = new Logger('Share')
 
+export type ShareResult =
+  | { readonly kind: 'shared' | 'cancelled' | 'failed' }
+  /** No share sheet here (most desktop browsers): show the card instead. */
+  | { readonly kind: 'preview'; readonly image: string; readonly text: string }
+
 /**
  * Opens the system share sheet with the card image and a challenge text.
  * Native: the image is written to the cache folder and shared as a file.
- * Web: the Web Share API with a file when supported, else a download.
- * Returns how it was shared, or 'failed'/'cancelled'.
+ * Web: the Web Share API with a file when supported; otherwise the card is
+ * handed back as a preview the caller shows with download/copy buttons.
  */
-export async function shareScore(
-  data: ShareCardData,
-): Promise<'shared' | 'downloaded' | 'cancelled' | 'failed'> {
+export async function shareScore(data: ShareCardData): Promise<ShareResult> {
   const canvas = drawShareCard(data)
   const text = t('share.text', { score: formatInteger(Math.floor(data.score)) })
   try {
@@ -155,30 +158,60 @@ export async function shareScore(
         directory: Directory.Cache,
       })
       await Share.share({ title: 'Turkuaz Adalar', text, files: [file.uri] })
-      return 'shared'
+      return { kind: 'shared' }
     }
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
-    if (!blob) {
-      return 'failed'
+    if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+      const file = blob ? new File([blob], 'turkuaz-score.png', { type: 'image/png' }) : null
+      if (file && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: 'Turkuaz Adalar', text, files: [file] })
+        return { kind: 'shared' }
+      }
     }
-    const file = new File([blob], 'turkuaz-score.png', { type: 'image/png' })
-    if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
-      await navigator.share({ title: 'Turkuaz Adalar', text, files: [file] })
-      return 'shared'
-    }
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = file.name
-    link.click()
-    setTimeout(() => URL.revokeObjectURL(link.href), 10_000)
-    return 'downloaded'
+    return { kind: 'preview', image: canvas.toDataURL('image/png'), text }
   } catch (error) {
     // Closing the share sheet rejects with an "AbortError"/"canceled".
     const message = error instanceof Error ? `${error.name} ${error.message}` : String(error)
     if (/abort|cancel/i.test(message)) {
-      return 'cancelled'
+      return { kind: 'cancelled' }
     }
     logger.warn('Sharing failed.', error)
-    return 'failed'
+    return { kind: 'failed' }
+  }
+}
+
+/** Saves the card image as a file download (browsers). */
+export function downloadShareImage(image: string): void {
+  const link = document.createElement('a')
+  link.href = image
+  link.download = 'turkuaz-score.png'
+  link.rel = 'noopener'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+}
+
+/** Copies the challenge text; false when the clipboard is unavailable. */
+export async function copyShareText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    // The async clipboard can be blocked (permissions, unfocused frames):
+    // fall back to a selected textarea and the legacy copy command.
+    const area = document.createElement('textarea')
+    area.value = text
+    area.setAttribute('readonly', '')
+    area.style.position = 'fixed'
+    area.style.opacity = '0'
+    document.body.appendChild(area)
+    area.select()
+    try {
+      return document.execCommand('copy')
+    } catch {
+      return false
+    } finally {
+      area.remove()
+    }
   }
 }

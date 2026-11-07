@@ -1,4 +1,5 @@
-import { createEl } from '../../utils/dom.ts'
+import { createEl, createIcon } from '../../utils/dom.ts'
+import { t } from '../../i18n/i18n.ts'
 import { Button } from '../components/Button.ts'
 import { Screen } from './Screen.ts'
 import { createPanel } from './screenUtils.ts'
@@ -12,7 +13,9 @@ export interface GiftData {
   readonly eyebrow: string
   readonly title: string
   /** Large emoji shown in the middle (a chest, a trophy...). */
-  readonly icon: string
+  readonly icon?: string
+  /** An image shown instead of the icon (e.g. the score card). */
+  readonly image?: { readonly src: string; readonly alt: string }
   /** Reward chips, e.g. "+250 ●". */
   readonly rewards?: readonly string[]
   readonly text?: string
@@ -20,6 +23,8 @@ export interface GiftData {
   readonly offer?: { readonly title: string; readonly text: string }
   readonly primary: GiftAction
   readonly secondary?: GiftAction
+  /** When set, a ✕ in the corner closes the card (calls this). */
+  readonly onClose?: () => void
   /** When set, the icon shakes until the primary button is pressed. */
   readonly sealed?: boolean
 }
@@ -44,13 +49,24 @@ export class GiftScreen extends Screen {
 
   open(data: GiftData): void {
     this.disposeButtons()
-    const icon = createEl('div', `gift__icon${data.sealed ? ' gift__icon--sealed' : ''}`, data.icon)
-    icon.setAttribute('aria-hidden', 'true')
     const children: HTMLElement[] = [
       createEl('p', 'eyebrow', data.eyebrow),
       createEl('h2', 'screen-title gift__title', data.title),
-      icon,
     ]
+    if (data.image) {
+      const image = createEl('img', 'gift__image')
+      image.src = data.image.src
+      image.alt = data.image.alt
+      children.push(image)
+    } else if (data.icon) {
+      const icon = createEl(
+        'div',
+        `gift__icon${data.sealed ? ' gift__icon--sealed' : ''}`,
+        data.icon,
+      )
+      icon.setAttribute('aria-hidden', 'true')
+      children.push(icon)
+    }
     if (data.rewards && data.rewards.length > 0) {
       const rewards = createEl('div', 'gift__rewards')
       for (const reward of data.rewards) {
@@ -81,6 +97,14 @@ export class GiftScreen extends Screen {
       actions.append(this.secondary.element)
     }
     children.push(actions)
+    if (data.onClose) {
+      const close = createEl('button', 'icon-btn gift__close')
+      close.type = 'button'
+      close.setAttribute('aria-label', t('common.close'))
+      close.append(createIcon(['M6 6l12 12', 'M18 6L6 18']))
+      close.addEventListener('click', data.onClose)
+      children.push(close)
+    }
     this.panel.replaceChildren(...children)
     if (this.root.hidden) {
       this.show()

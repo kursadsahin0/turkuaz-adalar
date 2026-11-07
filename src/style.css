@@ -4930,3 +4930,126 @@ a:focus-visible {
   border-radius: 999px;
   transform: translateX(-50%);
 }
+
+/* A plain coin bumps the coin counter instead of showing a toast. */
+.hud-stat--coins.is-bumped .hud-stat__value {
+  display: inline-block;
+  transform-origin: center;
+  animation: hud-coin-bump 0.28s var(--ease-out);
+}
+
+@keyframes hud-coin-bump {
+  40% {
+    transform: scale(1.22);
+    color: var(--sand-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-stat--coins.is-bumped .hud-stat__value {
+    animation: none;
+  }
+}
+
+/* Score card preview (browsers without a share sheet). */
+.gift__image {
+  display: block;
+  width: min(100%, 220px);
+  aspect-ratio: 4 / 5;
+  margin: 12px auto 4px;
+  border: 1px solid rgba(170, 255, 240, 0.18);
+  border-radius: 14px;
+  box-shadow: 0 14px 30px rgba(2, 14, 18, 0.45);
+  object-fit: cover;
+}
+
+@media (max-height: 640px) {
+  .gift__image {
+    width: min(100%, 150px);
+  }
+}
+
+/* A short status message above every screen. */
+.app-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + var(--safe-bottom));
+  z-index: 20;
+  max-width: calc(100% - 32px);
+  padding: 10px 18px;
+  border: 1px solid rgba(170, 255, 240, 0.2);
+  border-radius: 999px;
+  background: rgba(4, 30, 36, 0.94);
+  box-shadow: 0 12px 28px rgba(2, 14, 18, 0.4);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: app-toast 2.4s var(--ease-out) both;
+}
+
+@keyframes app-toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+  10%,
+  85% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 4px);
+  }
+}
+
+.gift-panel {
+  position: relative;
+}
+
+.gift-panel .gift__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+}
+
+.gift-panel .gift__close svg {
+  width: 18px;
+  height: 18px;
+}
+
+/*
+ * Missions tabs on narrow phones: each tab is as wide as its label (long
+ * "Achievements" gets more room than "Season"), and the count badge sits on
+ * the tab's corner instead of taking label space.
+ */
+.progress__tabs {
+  display: flex;
+}
+
+.progress__tabs .character-selection__tab {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 6px 6px;
+  justify-content: safe center;
+  overflow: visible;
+  letter-spacing: 0.02em;
+}
+
+.progress__tabs .character-selection__tab .menu__badge {
+  position: absolute;
+  top: -5px;
+  right: -3px;
+  min-width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0 4px;
+  font-size: 0.58rem;
+  line-height: 16px;
+}

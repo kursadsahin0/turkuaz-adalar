@@ -16,7 +16,12 @@ import { CHARACTERS } from '../game/characters/CharacterData.ts'
 import { MonetizationManager } from '../systems/monetization/MonetizationManager.ts'
 import { NativeBridge } from '../platform/NativeBridge.ts'
 import { Reminders } from '../platform/Reminders.ts'
-import { shareScore, type ShareCardData } from '../platform/ShareCard.ts'
+import {
+  copyShareText,
+  downloadShareImage,
+  shareScore,
+  type ShareCardData,
+} from '../platform/ShareCard.ts'
 import { ConsentManager } from '../systems/privacy/ConsentManager.ts'
 import { Telemetry } from '../systems/telemetry/Telemetry.ts'
 import { PowerUpSystem } from '../game/powerups/PowerUpSystem.ts'
@@ -1121,7 +1126,7 @@ export class Game {
       switch (pickup.kind) {
         case 'coin':
           this.audio.play('coin')
-          this.ui.pushFeedback(t('feedback.coin', { coins: pickup.coins }), 'coin')
+          this.ui.bumpCoins()
           break
         case 'token':
           this.crystals += 1
@@ -1501,7 +1506,43 @@ export class Game {
       return
     }
     const result = await shareScore(this.lastShare)
-    this.telemetry.track('share', { result, best: this.lastShare.isBest })
+    this.telemetry.track('share', { result: result.kind, best: this.lastShare.isBest })
+    if (result.kind === 'failed') {
+      this.ui.toast(t('share.failed'))
+    } else if (result.kind === 'preview') {
+      this.showSharePreview(result.image, result.text)
+    }
+  }
+
+  /** Browsers without a share sheet: show the card with download/copy. */
+  private showSharePreview(image: string, text: string): void {
+    this.ui.showGift({
+      eyebrow: t('share.previewEyebrow'),
+      title: t('share.challenge'),
+      image: { src: image, alt: text },
+      onClose: () => this.ui.hideGift(),
+      primary: {
+        label: t('share.download'),
+        onClick: () => {
+          downloadShareImage(image)
+          this.telemetry.track('share', {
+            result: 'downloaded',
+            best: this.lastShare?.isBest === true,
+          })
+          this.ui.hideGift()
+          this.ui.toast(t('share.downloaded'))
+        },
+      },
+      secondary: {
+        label: t('share.copy'),
+        onClick: () => {
+          void copyShareText(text).then((copied) => {
+            this.ui.hideGift()
+            this.ui.toast(t(copied ? 'share.copied' : 'share.copyFailed'))
+          })
+        },
+      },
+    })
   }
 
   /** After the very first run: a sealed chest on top of the summary. */

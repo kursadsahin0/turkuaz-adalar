@@ -80,6 +80,7 @@ export class GameHud {
   private readonly distanceValue: HTMLSpanElement
   private readonly crystalsValue: HTMLSpanElement
   private readonly coinsValue: HTMLSpanElement
+  private readonly coinsStat: HTMLDivElement
   private readonly coinsLabel: HTMLSpanElement
   private readonly powerUpTray: HTMLDivElement
   private readonly toastTray: HTMLDivElement
@@ -149,6 +150,7 @@ export class GameHud {
     crystals.append(crystalsLabel, this.crystalsValue)
 
     const coins = createEl('div', 'hud-stat hud-stat--small hud-stat--coins')
+    this.coinsStat = coins
     this.coinsLabel = createEl('span', 'hud-stat__label', t('common.coins'))
     this.coinsValue = createEl('span', 'hud-stat__value', '0')
     coins.append(this.coinsLabel, this.coinsValue)
@@ -314,6 +316,16 @@ export class GameHud {
       toast.remove()
     }, TOAST_LIFETIME)
     this.toastTimers.add(timer)
+  }
+
+  /**
+   * A plain coin is too frequent for a toast: the coin counter gives a small
+   * bump instead (restarted on every coin).
+   */
+  bumpCoins(): void {
+    this.coinsStat.classList.remove('is-bumped')
+    void this.coinsStat.offsetWidth
+    this.coinsStat.classList.add('is-bumped')
   }
 
   setTutorial(tutorial: HudTutorial | null): void {

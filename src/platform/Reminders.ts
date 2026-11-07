@@ -152,6 +152,9 @@ export class Reminders {
           title: plan.title,
           body: plan.body,
           schedule: { at: plan.at, allowWhileIdle: true },
+          // A reminder may be a few minutes late. Asking for exact alarms would
+          // make Android open the "Alarms & reminders" settings screen.
+          isExactNotification: false,
           smallIcon: 'ic_stat_turkuaz',
           iconColor: '#2fe0cd',
         })),

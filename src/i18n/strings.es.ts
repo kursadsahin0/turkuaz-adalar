@@ -318,6 +318,13 @@ export const ES: Record<StringKey, string> = {
   'share.newBest': '¡nuevo récord!',
   'share.challenge': '¿Puedes superarme?',
   'share.text': 'He hecho {score} puntos en Turkuaz Adalar. ¿Puedes superarme?',
+  'share.previewEyebrow': 'Tu tarjeta de puntuación',
+  'share.download': 'Descargar imagen',
+  'share.copy': 'Copiar texto',
+  'share.downloaded': 'Tarjeta guardada',
+  'share.copied': 'Texto copiado',
+  'share.copyFailed': 'No se pudo copiar el texto',
+  'share.failed': 'No se pudo compartir, inténtalo de nuevo',
 }
 
 /** Spanish names of authored content (islands, runners, cosmetics, power-ups). */

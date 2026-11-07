@@ -253,6 +253,18 @@ export class UIManager {
     this.ui.gift.hide()
   }
 
+  /**
+   * A short message at the bottom of the screen, above any screen (unlike HUD
+   * toasts, which only show during a run).
+   */
+  toast(text: string): void {
+    this.layer.querySelector('.app-toast')?.remove()
+    const toast = createEl('div', 'app-toast', text)
+    toast.setAttribute('role', 'status')
+    this.layer.appendChild(toast)
+    window.setTimeout(() => toast.remove(), 2400)
+  }
+
   get isGiftOpen(): boolean {
     return this.ui.gift.isOpen
   }
@@ -325,6 +337,10 @@ export class UIManager {
 
   updateHud(state: HUDState): void {
     this.ui.hud.update(state)
+  }
+
+  bumpCoins(): void {
+    this.ui.hud.bumpCoins()
   }
 
   pushFeedback(text: string, tone: 'coin' | 'powerup' | 'reward' | 'shield' = 'coin'): void {

@@ -350,6 +350,13 @@ export const EN = {
   'share.newBest': 'new record!',
   'share.challenge': 'Can you beat my score?',
   'share.text': 'I scored {score} in Turkuaz Adalar. Can you beat it?',
+  'share.previewEyebrow': 'Your score card',
+  'share.download': 'Download image',
+  'share.copy': 'Copy text',
+  'share.downloaded': 'Score card saved',
+  'share.copied': 'Text copied',
+  'share.copyFailed': 'Could not copy the text',
+  'share.failed': 'Could not share, try again',
 } as const
 
 export type StringKey = keyof typeof EN
@@ -684,6 +691,13 @@ export const TR: Record<StringKey, string> = {
   'share.newBest': 'yeni rekor!',
   'share.challenge': 'Skorumu geçebilir misin?',
   'share.text': "Turkuaz Adalar'da {score} puan yaptım. Geçebilir misin?",
+  'share.previewEyebrow': 'Skor kartın',
+  'share.download': 'Resmi indir',
+  'share.copy': 'Metni kopyala',
+  'share.downloaded': 'Skor kartı kaydedildi',
+  'share.copied': 'Metin kopyalandı',
+  'share.copyFailed': 'Metin kopyalanamadı',
+  'share.failed': 'Paylaşılamadı, tekrar dene',
 }
 
 /**

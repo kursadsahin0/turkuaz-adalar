@@ -1,4 +1,9 @@
-import { AdMob, AdmobConsentStatus, RewardAdPluginEvents } from '@capacitor-community/admob'
+import {
+  AdMob,
+  AdmobConsentStatus,
+  MaxAdContentRating,
+  RewardAdPluginEvents,
+} from '@capacitor-community/admob'
 import { Capacitor, type PluginListenerHandle } from '@capacitor/core'
 import { Logger } from '../../utils/logger.ts'
 import type { AdConfig, AdResult, RewardConfig } from './AdProvider.ts'
@@ -225,7 +230,11 @@ export class AdMobProvider extends AdProvider {
     if (this.initialized) {
       return
     }
-    await AdMob.initialize({ initializeForTesting: this.testing })
+    await AdMob.initialize({
+      initializeForTesting: this.testing,
+      // The game is declared for 13+: no ad rated above Teen may be served.
+      maxAdContentRating: MaxAdContentRating.Teen,
+    })
     this.initialized = true
   }
 }
