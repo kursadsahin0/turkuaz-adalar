@@ -11,7 +11,7 @@ export class SceneManager {
 
   constructor() {
     this.scene = new THREE.Scene()
-    this.scene.name = 'TurkuazAdalar'
+    this.scene.name = 'Tidelark'
     this.scene.background = new THREE.Color(RENDER_CONFIG.clearColor)
     this.scene.fog = new THREE.Fog(
       RENDER_CONFIG.fogColor,

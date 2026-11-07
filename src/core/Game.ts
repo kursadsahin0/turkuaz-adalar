@@ -79,6 +79,10 @@ type GameState = 'loading' | 'menu' | 'playing' | 'paused' | 'offer' | 'gameover
 const CONTINUE_INVULNERABILITY = 3
 /** Metres cleared ahead of the runner after a continue or a fall recovery. */
 const RESPAWN_RUNWAY = 25
+/** A respawn this close to the end of the live track is not trusted. */
+const RESPAWN_TRACK_MARGIN = 2
+/** A respawn without a usable checkpoint lands this far behind where the run stopped. */
+const RESPAWN_BACKSTEP = 3
 /** Lateral clearance (beyond the obstacle's radius) that still counts as a near miss. */
 const NEAR_MISS_GAP = 0.85
 const NEAR_MISS_COINS = 5
@@ -1194,7 +1198,7 @@ export class Game {
       return
     }
 
-    this.player.teleport(new THREE.Vector3(respawn.x, respawn.y, respawn.z))
+    this.player.teleport(this.safeRespawn(respawn))
     this.world.obstacles.clearAhead(this.player.position.z, RESPAWN_RUNWAY)
     this.camera.recenter(this.player.position, this.distance)
     this.effects.apply('recovery')
@@ -1641,12 +1645,7 @@ export class Game {
   /** Puts the runner back on the track with a short invulnerability window. */
   private revive(): void {
     this.chase.recover()
-    const checkpoint = this.recovery.lastCheckpoint
-    const spawn = this.spawnPosition()
-    const position = checkpoint
-      ? new THREE.Vector3(checkpoint.x, checkpoint.y, checkpoint.z)
-      : new THREE.Vector3(0, spawn.y, this.player.position.z + 4)
-    this.player.reset(position)
+    this.player.reset(this.safeRespawn(this.recovery.lastCheckpoint))
     // A clear runway, so the continue never restarts in front of the obstacle it hit.
     this.world.obstacles.clearAhead(this.player.position.z, RESPAWN_RUNWAY)
     this.camera.recenter(this.player.position, this.distance)
@@ -1699,6 +1698,32 @@ export class Game {
     return this.scratchFeet
       .copy(this.player.position)
       .setY(this.player.position.y - player.halfHeight - player.radius + 0.05)
+  }
+
+  /**
+   * Where the runner comes back after a continue or a fall: the checkpoint
+   * when there is still track under it, otherwise just behind where the run
+   * stopped, on the nearest lane. A checkpoint passed long ago can sit on a
+   * segment that has since been recycled ahead, and respawning there drops
+   * the runner straight into the sea.
+   */
+  private safeRespawn(checkpoint: { x: number; y: number; z: number } | null): THREE.Vector3 {
+    const spawn = this.spawnPosition()
+    if (checkpoint && this.world.hasTrackAt(checkpoint.z, RESPAWN_TRACK_MARGIN)) {
+      return new THREE.Vector3(checkpoint.x, Math.max(checkpoint.y, spawn.y), checkpoint.z)
+    }
+    const lanes = GAME_CONFIG.track.lanePositions
+    const x = lanes.reduce((best, lane) =>
+      Math.abs(lane - this.player.position.x) < Math.abs(best - this.player.position.x)
+        ? lane
+        : best,
+    )
+    let z = this.player.position.z + RESPAWN_BACKSTEP
+    // Step forward until there is solid track (the run may have stopped at the rear edge).
+    for (let tries = 0; tries < 20 && !this.world.hasTrackAt(z, RESPAWN_TRACK_MARGIN); tries += 1) {
+      z -= 2
+    }
+    return new THREE.Vector3(x, spawn.y, z)
   }
 
   private spawnPosition(): THREE.Vector3 {

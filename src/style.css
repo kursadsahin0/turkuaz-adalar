@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------ *
- * Turkuaz Adalar — design tokens
+ * Tidelark — design tokens
  * ------------------------------------------------------------------ */
 :root {
   color-scheme: dark;
@@ -5052,4 +5052,13 @@ a:focus-visible {
   padding: 0 4px;
   font-size: 0.58rem;
   line-height: 16px;
+}
+
+/* "Tidelark" on one line: "TIDE" in sea tones, "LARK" in sand. */
+.game-title--word .game-title__line {
+  display: inline;
+}
+
+.game-title--word .game-title__line:last-child {
+  margin-left: 0.02em;
 }

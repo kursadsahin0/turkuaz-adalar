@@ -401,7 +401,7 @@ try {
   const originalError = console.error
   const capture = (...args) => {
     const text = args.map((value) => String(value)).join(' ')
-    if (text.includes('[Turkuaz Adalar]')) {
+    if (text.includes('[Tidelark]')) {
       warnings.push(text)
     }
   }

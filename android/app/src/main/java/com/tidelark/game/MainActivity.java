@@ -1,4 +1,4 @@
-package com.turkuazadalar.game;
+package com.tidelark.game;
 
 import com.getcapacitor.BridgeActivity;
 

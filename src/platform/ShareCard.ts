@@ -81,7 +81,7 @@ export function drawShareCard(data: ShareCardData): HTMLCanvasElement {
   g.textAlign = 'center'
   g.fillStyle = '#ffe2a8'
   g.font = `800 64px ${FONT}`
-  g.fillText('TURKUAZ ADALAR', WIDTH / 2, 150)
+  g.fillText('TIDELARK', WIDTH / 2, 150)
 
   g.fillStyle = 'rgba(233, 255, 250, 0.82)'
   g.font = `700 44px ${FONT}`
@@ -157,14 +157,14 @@ export async function shareScore(data: ShareCardData): Promise<ShareResult> {
         data: base64,
         directory: Directory.Cache,
       })
-      await Share.share({ title: 'Turkuaz Adalar', text, files: [file.uri] })
+      await Share.share({ title: 'Tidelark', text, files: [file.uri] })
       return { kind: 'shared' }
     }
     if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
       const file = blob ? new File([blob], 'turkuaz-score.png', { type: 'image/png' }) : null
       if (file && navigator.canShare({ files: [file] })) {
-        await navigator.share({ title: 'Turkuaz Adalar', text, files: [file] })
+        await navigator.share({ title: 'Tidelark', text, files: [file] })
         return { kind: 'shared' }
       }
     }

@@ -100,10 +100,8 @@ function splashSvg(size) {
     ${background(size)}
     <circle cx="${c}" cy="${c - size * 0.06}" r="${size * 0.12}" fill="url(#glow)"/>
     ${crystal(c, c - size * 0.07, size * 0.17)}
-    <text x="${c}" y="${c + size * 0.1}" text-anchor="middle" font-family="Avenir Next, Helvetica, Arial, sans-serif"
-      font-weight="800" font-size="${size * 0.05}" letter-spacing="${size * 0.004}" fill="${COLORS.mint}">TURKUAZ</text>
-    <text x="${c}" y="${c + size * 0.155}" text-anchor="middle" font-family="Avenir Next, Helvetica, Arial, sans-serif"
-      font-weight="800" font-size="${size * 0.05}" letter-spacing="${size * 0.004}" fill="${COLORS.sand}">ADALAR</text>
+    <text x="${c}" y="${c + size * 0.125}" text-anchor="middle" font-family="Avenir Next, Helvetica, Arial, sans-serif"
+      font-weight="800" font-size="${size * 0.06}" letter-spacing="${size * 0.004}"><tspan fill="${COLORS.mint}">TIDE</tspan><tspan fill="${COLORS.sand}">LARK</tspan></text>
   </svg>`
 }
 
@@ -126,8 +124,8 @@ function featureSvg() {
     <circle cx="250" cy="230" r="190" fill="url(#glow)"/>
     ${crystal(250, 220, 260)}
     ${waves(250, 400, 300, 16)}
-    <text x="470" y="225" font-family="Avenir Next, Helvetica, Arial, sans-serif" font-weight="800" font-size="92" fill="${COLORS.mint}">Turkuaz</text>
-    <text x="470" y="320" font-family="Avenir Next, Helvetica, Arial, sans-serif" font-weight="800" font-size="92" fill="${COLORS.sand}">Adalar</text>
+    <text x="470" y="250" font-family="Avenir Next, Helvetica, Arial, sans-serif" font-weight="800" font-size="104"><tspan fill="${COLORS.mint}">Tide</tspan><tspan fill="${COLORS.sand}">lark</tspan></text>
+    <text x="474" y="312" font-family="Avenir Next, Helvetica, Arial, sans-serif" font-weight="600" font-size="34" letter-spacing="3" fill="${COLORS.mint}" fill-opacity="0.75">ISLAND RUNNER</text>
   </svg>`
 }
 

@@ -93,10 +93,11 @@ export class MenuScreen extends Screen {
     const brand = createEl('div', 'brand')
     const mark = createEl('div', 'brand-mark')
     mark.appendChild(createEl('span', 'brand-mark__glow'))
-    const title = createEl('h1', 'game-title')
+    const title = createEl('h1', 'game-title game-title--word')
+    title.setAttribute('aria-label', 'Tidelark')
     title.append(
-      createEl('span', 'game-title__line', 'Turkuaz'),
-      createEl('span', 'game-title__line', 'Adalar'),
+      createEl('span', 'game-title__line', 'Tide'),
+      createEl('span', 'game-title__line', 'lark'),
     )
     const tagline = createEl('p', 'tagline', t('menu.tagline'))
     brand.append(mark, title, tagline)

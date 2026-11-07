@@ -243,7 +243,7 @@ export class Telemetry {
       .then((Sentry) => {
         Sentry.init({
           dsn,
-          release: `turkuaz-adalar@${this.options.version}`,
+          release: `tidelark@${this.options.version}`,
           environment: this.options.environment,
           sendDefaultPii: false,
           // Errors only: no performance tracing, session replay or user data.

@@ -31,7 +31,7 @@ import { LEVEL_29 } from './levels/Level29.ts'
 import { LEVEL_30 } from './levels/Level30.ts'
 
 /**
- * Complete level catalog for Turkuaz Adalar.
+ * Complete level catalog for Tidelark.
  * Levels are stored in separate files for maintainability.
  * Add new levels by importing them and appending to this array.
  */

@@ -1,6 +1,6 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 
-const PREFIX = '[Turkuaz Adalar]'
+const PREFIX = '[Tidelark]'
 
 export class Logger {
   private readonly scope: string

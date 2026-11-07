@@ -47,7 +47,7 @@ async function bootstrap(): Promise<void> {
 
 void bootstrap().catch((error: unknown) => {
   const resolved = toError(error)
-  console.error('[Turkuaz Adalar] Bootstrap failed.', resolved)
+  console.error('[Tidelark] Bootstrap failed.', resolved)
   renderFatalFallback(resolved)
 })
 

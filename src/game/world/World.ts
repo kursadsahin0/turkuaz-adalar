@@ -119,6 +119,27 @@ export class World {
     this.obstaclesEnabled = enabled
   }
 
+  /**
+   * Whether a world Z still has track under it, with `margin` metres to
+   * spare. Segments behind the runner are recycled ahead, so an old
+   * position (a checkpoint passed long ago) can be over open sea.
+   */
+  hasTrackAt(z: number, margin = 0): boolean {
+    const segments = this.field.all
+    if (segments.length === 0) {
+      return false
+    }
+    const half = GAME_CONFIG.track.segmentLength / 2
+    let front = Infinity
+    let rear = -Infinity
+    for (const segment of segments) {
+      front = Math.min(front, segment.centerZ - half)
+      rear = Math.max(rear, segment.centerZ + half)
+    }
+    // Segments are laid end to end, so the live track is one span.
+    return z >= front + margin && z <= rear - margin
+  }
+
   /** Shows the finish line at a world Z, or hides it (`null`) for the endless run. */
   setFinishLine(z: number | null): void {
     this.finishLine.setPosition(z)

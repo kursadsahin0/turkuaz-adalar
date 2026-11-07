@@ -283,11 +283,7 @@ test(
   iapContent.includes('extends IAPProvider'),
   'Does not extend IAPProvider',
 )
-test(
-  'Sample products defined',
-  iapContent.includes('com.turkuazadalar'),
-  'Sample products not defined',
-)
+test('Sample products defined', iapContent.includes('com.tidelark'), 'Sample products not defined')
 test(
   'Purchase simulation',
   iapContent.includes('Simulate purchase') || iapContent.includes('simulate purchase'),

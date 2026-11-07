@@ -5,6 +5,11 @@ import { DEFAULT_SPAWN_RULES, spawnRulesFor, type SpawnRules } from './SpawnRule
 
 /** Speed and obstacle-density factors per assist level (0 = off). */
 const ASSIST_SPEED = [1, 0.95, 0.9] as const
+/**
+ * Global pace on top of every island's own speeds. The chasing wave and the
+ * obstacle look-ahead read the same speed, so they keep pace with it.
+ */
+export const RUN_SPEED_SCALE = 1.12
 const ASSIST_DENSITY = [1, 0.88, 0.78] as const
 
 /**
@@ -78,7 +83,7 @@ export class LevelManager {
     const baseSpeed =
       this.definition.baseSpeed +
       (this.definition.maxSpeed - this.definition.baseSpeed) * easeOutCubic(this.progress)
-    return baseSpeed * this.difficultyMultiplier * ASSIST_SPEED[this.assistLevel]
+    return baseSpeed * RUN_SPEED_SCALE * this.difficultyMultiplier * ASSIST_SPEED[this.assistLevel]
   }
 
   get difficulty(): number {

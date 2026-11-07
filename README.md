@@ -1,4 +1,4 @@
-# Turkuaz Adalar
+# Tidelark
 
 A mobile-first, endless island runner built with **Three.js**, **TypeScript**, **Vite** and **Rapier3D**. Guide a glowing tide-runner across recycled island platforms, dodge crates and coral spires, collect crystals and dash across the emerald shallows.
 

@@ -41,7 +41,7 @@ jobs:
         run: |
           mkdir -p site
           cp public/privacy.html site/privacy.html
-          printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=privacy.html"><title>Turkuaz Adalar</title><a href="privacy.html">Privacy policy</a>\n' > site/index.html
+          printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=privacy.html"><title>Tidelark</title><a href="privacy.html">Privacy policy</a>\n' > site/index.html
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

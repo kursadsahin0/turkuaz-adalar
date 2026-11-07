@@ -11,10 +11,10 @@
  * - Handle refunds gracefully
  *
  * PRODUCT IDs (example):
- * - com.turkuazadalar.skin.crimson
- * - com.turkuazadalar.outfit.explorer
- * - com.turkuazadalar.premium.no_ads
- * - com.turkuazadalar.premium.double_coins
+ * - com.tidelark.skin.crimson
+ * - com.tidelark.outfit.explorer
+ * - com.tidelark.premium.no_ads
+ * - com.tidelark.premium.double_coins
  *
  * SECURITY WARNINGS:
  * - Never trust client-side purchase validation
@@ -111,7 +111,7 @@ export abstract class IAPProvider {
 export class TestIAPProvider extends IAPProvider {
   private readonly products: Product[] = [
     {
-      id: 'com.turkuazadalar.skin.crimson',
+      id: 'com.tidelark.skin.crimson',
       type: 'consumable',
       name: 'Crimson Tide Skin',
       description: 'Bold red color for daring runners.',
@@ -120,7 +120,7 @@ export class TestIAPProvider extends IAPProvider {
       currency: 'USD',
     },
     {
-      id: 'com.turkuazadalar.skin.golden',
+      id: 'com.tidelark.skin.golden',
       type: 'consumable',
       name: 'Golden Sun Skin',
       description: 'Shine bright like the tropical sun.',
@@ -129,7 +129,7 @@ export class TestIAPProvider extends IAPProvider {
       currency: 'USD',
     },
     {
-      id: 'com.turkuazadalar.premium.no_ads',
+      id: 'com.tidelark.premium.no_ads',
       type: 'non-consumable',
       name: 'No Ads',
       description: 'Remove all advertisements permanently.',

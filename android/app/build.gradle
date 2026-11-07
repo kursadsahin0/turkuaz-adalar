@@ -56,10 +56,10 @@ def configuredAdmobAppId = [
 def admobAppId = configuredAdmobAppId ?: ADMOB_TEST_APP_ID
 
 android {
-    namespace = "com.turkuazadalar.game"
+    namespace = "com.tidelark.game"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.turkuazadalar.game"
+        applicationId "com.tidelark.game"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode appVersionCode

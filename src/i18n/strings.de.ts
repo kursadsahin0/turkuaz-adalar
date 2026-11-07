@@ -10,7 +10,7 @@ export const DE: Record<StringKey, string> = {
   'common.close': 'Schließen',
   'common.claim': 'Abholen',
   'common.claimed': 'Abgeholt',
-  'loading.eyebrow': 'Turkuaz Adalar',
+  'loading.eyebrow': 'Tidelark',
   'loading.title': 'Die Inseln werden kartiert',
   'loading.preparing': 'Die Engine startet',
   'loading.hint': 'Am schönsten im Hochformat mit Ton.',
@@ -123,7 +123,7 @@ export const DE: Record<StringKey, string> = {
   'consent.eyebrow': 'Bevor du startest',
   'consent.title': 'Deine Privatsphäre',
   'consent.copy':
-    'Turkuaz Adalar ist kostenlos und wird durch freiwillige Werbung unterstützt. Wähle, wie diese Werbung funktionieren darf. Das Spiel ist in beiden Fällen gleich.',
+    'Tidelark ist kostenlos und wird durch freiwillige Werbung unterstützt. Wähle, wie diese Werbung funktionieren darf. Das Spiel ist in beiden Fällen gleich.',
   'consent.point.saves': 'Dein Fortschritt wird nur auf diesem Gerät gespeichert.',
   'consent.point.ads':
     'Personalisierte Werbung nutzt eine Werbe-ID, um passendere Anzeigen zu zeigen. Ohne Einwilligung ist die Werbung nicht personalisiert.',
@@ -317,7 +317,7 @@ export const DE: Record<StringKey, string> = {
   'share.endless': 'Endloslauf',
   'share.newBest': 'neuer Rekord!',
   'share.challenge': 'Schaffst du mehr?',
-  'share.text': 'Ich habe in Turkuaz Adalar {score} Punkte geholt. Schaffst du mehr?',
+  'share.text': 'Ich habe in Tidelark {score} Punkte geholt. Schaffst du mehr?',
   'share.previewEyebrow': 'Deine Punktekarte',
   'share.download': 'Bild herunterladen',
   'share.copy': 'Text kopieren',

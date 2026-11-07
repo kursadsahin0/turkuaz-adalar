@@ -73,7 +73,7 @@ export class Renderer {
 
     this.canvas = this.renderer.domElement
     this.canvas.className = 'game-canvas'
-    this.canvas.setAttribute('aria-label', 'Turkuaz Adalar game world')
+    this.canvas.setAttribute('aria-label', 'Tidelark game world')
     this.canvas.addEventListener('contextmenu', this.handleContextMenu)
     this.container.appendChild(this.canvas)
 

@@ -1,15 +1,15 @@
-# Store listing — Turkuaz Adalar
+# Store listing — Tidelark
 
 Ready to paste into Play Console (Main store listing → add translations for
 de-DE and es-ES) and App Store Connect (one localization per language).
 Character counts were checked against the store limits.
 
-| Field                    | Limit | Türkçe         | English        | Deutsch        | Español        |
-| ------------------------ | ----- | -------------- | -------------- | -------------- | -------------- |
-| App name                 | 30    | Turkuaz Adalar | Turkuaz Adalar | Turkuaz Adalar | Turkuaz Adalar |
-| Short description (Play) | 80    | 76             | 79             | 68             | 75             |
-| Subtitle (App Store)     | 30    | 26             | 27             | 27             | 28             |
-| Keywords (App Store)     | 100   | 89             | 96             | 94             | 97             |
+| Field                    | Limit | Türkçe   | English  | Deutsch  | Español  |
+| ------------------------ | ----- | -------- | -------- | -------- | -------- |
+| App name                 | 30    | Tidelark | Tidelark | Tidelark | Tidelark |
+| Short description (Play) | 80    | 76       | 79       | 68       | 75       |
+| Subtitle (App Store)     | 30    | 26       | 27       | 27       | 28       |
+| Keywords (App Store)     | 100   | 89       | 96       | 94       | 97       |
 
 ---
 
@@ -30,7 +30,7 @@ Ada ada koş, kristal topla
 **Tam açıklama**
 
 ```
-Turkuaz Adalar'a hoş geldin! Gökyüzünde süzülen adaların arasında, turkuaz denizin üstünde uzanan pistte koş, zıpla, kay ve atıl.
+Tidelark'a hoş geldin! Gökyüzünde süzülen adaların arasında, turkuaz denizin üstünde uzanan pistte koş, zıpla, kay ve atıl.
 
 🏝️ 30 ADA, 3 BÖLÜM
 Turkuaz Sığlıkları'ndan Turkuaz Taht'a kadar her adanın kendi gökyüzü, hızı ve engelleri var. Buzlu adalarda kayarsın, rüzgârlı adalarda esinti seni şeritten iter, köz adalarında alevler yolunu keser. Her adada üç yıldız topla.
@@ -66,7 +66,7 @@ Hesap yok, kayıt yok: ilerlemen yalnızca cihazında saklanır. Reklamlar iste�
 **Bu sürümdeki yenilikler**
 
 ```
-Turkuaz Adalar'ın ilk sürümü! 30 ada, dev dalga kovalamacaları, haftalık etkinlik, sonsuz koşu ve özelleştirilebilir koşucular seni bekliyor.
+Tidelark'ın ilk sürümü! 30 ada, dev dalga kovalamacaları, haftalık etkinlik, sonsuz koşu ve özelleştirilebilir koşucular seni bekliyor.
 ```
 
 **Anahtar kelimeler (App Store, 89/100)**
@@ -94,7 +94,7 @@ Island runner with crystals
 **Full description**
 
 ```
-Welcome to Turkuaz Adalar! Run, jump, slide and dash along a track that stretches over a turquoise sea, between islands floating in the sky.
+Welcome to Tidelark! Run, jump, slide and dash along a track that stretches over a turquoise sea, between islands floating in the sky.
 
 🏝️ 30 ISLANDS, 3 CHAPTERS
 From the Turkuaz Shallows to the Turquoise Throne, every island has its own sky, speed and obstacles. Slip across ice islands, fight gusts that push you out of your lane on windy ones and dodge falling embers on volcanic ones. Earn three stars on each.
@@ -130,7 +130,7 @@ No account, no sign-up: your progress stays on your device. Ads are optional; yo
 **What's new**
 
 ```
-The first release of Turkuaz Adalar! 30 islands, giant wave chases, a weekly event, an endless run and customisable runners are waiting for you.
+The first release of Tidelark! 30 islands, giant wave chases, a weekly event, an endless run and customisable runners are waiting for you.
 ```
 
 **Keywords (App Store, 96/100)**
@@ -158,7 +158,7 @@ Insel-Runner mit Kristallen
 **Vollständige Beschreibung**
 
 ```
-Willkommen bei Turkuaz Adalar! Lauf, spring, rutsch und sprinte über eine Strecke hoch über einem türkisen Meer, zwischen Inseln, die am Himmel schweben.
+Willkommen bei Tidelark! Lauf, spring, rutsch und sprinte über eine Strecke hoch über einem türkisen Meer, zwischen Inseln, die am Himmel schweben.
 
 🏝️ 30 INSELN, 3 KAPITEL
 Von den Türkisen Untiefen bis zum Türkisthron hat jede Insel ihren eigenen Himmel, ihr eigenes Tempo und eigene Hindernisse. Rutsch über Eisinseln, trotze Windböen, die dich aus deiner Spur drücken, und weiche auf Vulkaninseln fallender Glut aus. Hol dir auf jeder Insel drei Sterne.
@@ -194,7 +194,7 @@ Kein Konto, keine Anmeldung: Dein Fortschritt bleibt auf deinem Gerät. Werbung 
 **Neuerungen**
 
 ```
-Die erste Version von Turkuaz Adalar! 30 Inseln, Verfolgungsjagden mit der Riesenwelle, ein wöchentliches Event, ein Endloslauf und Runner zum Anpassen warten auf dich.
+Die erste Version von Tidelark! 30 Inseln, Verfolgungsjagden mit der Riesenwelle, ein wöchentliches Event, ein Endloslauf und Runner zum Anpassen warten auf dich.
 ```
 
 **Keywords (App Store, 94/100)**
@@ -222,7 +222,7 @@ Carrera de islas y cristales
 **Descripción completa**
 
 ```
-¡Bienvenido a Turkuaz Adalar! Corre, salta, deslízate y acelera por una pista sobre un mar turquesa, entre islas que flotan en el cielo.
+¡Bienvenido a Tidelark! Corre, salta, deslízate y acelera por una pista sobre un mar turquesa, entre islas que flotan en el cielo.
 
 🏝️ 30 ISLAS, 3 CAPÍTULOS
 Desde los Bajíos Turquesa hasta el Trono Turquesa, cada isla tiene su propio cielo, velocidad y obstáculos. Patina sobre islas de hielo, resiste las ráfagas que te sacan de tu carril en las islas ventosas y esquiva las brasas en las volcánicas. Consigue tres estrellas en cada una.
@@ -258,7 +258,7 @@ Sin cuenta ni registro: tu progreso se queda en tu dispositivo. Los anuncios son
 **Novedades**
 
 ```
-¡La primera versión de Turkuaz Adalar! Te esperan 30 islas, persecuciones de la ola gigante, un evento semanal, una carrera infinita y corredores personalizables.
+¡La primera versión de Tidelark! Te esperan 30 islas, persecuciones de la ola gigante, un evento semanal, una carrera infinita y corredores personalizables.
 ```
 
 **Palabras clave (App Store, 97/100)**

@@ -1,5 +1,5 @@
 /**
- * Performance validation script for Turkuaz Adalar.
+ * Performance validation script for Tidelark.
  * Validates that performance optimization code is properly implemented.
  */
 
@@ -26,7 +26,7 @@ function readFile(path) {
   }
 }
 
-console.log('Turkuaz Adalar Performance Validation\n')
+console.log('Tidelark Performance Validation\n')
 
 let passed = 0
 let failed = 0

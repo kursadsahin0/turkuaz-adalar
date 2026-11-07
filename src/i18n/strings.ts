@@ -14,7 +14,7 @@ export const EN = {
   'common.claimed': 'Claimed',
 
   // Loading
-  'loading.eyebrow': 'Turkuaz Adalar',
+  'loading.eyebrow': 'Tidelark',
   'loading.title': 'Charting the islands',
   'loading.preparing': 'Preparing the engine',
   'loading.hint': 'Best experienced in portrait with sound on.',
@@ -142,7 +142,7 @@ export const EN = {
   'consent.eyebrow': 'Before you start',
   'consent.title': 'Your privacy',
   'consent.copy':
-    'Turkuaz Adalar is free and supported by optional ads. Choose how those ads may work. The game plays the same either way.',
+    'Tidelark is free and supported by optional ads. Choose how those ads may work. The game plays the same either way.',
   'consent.point.saves': 'Your progress is saved only on this device.',
   'consent.point.ads':
     'Personalised ads use an advertising ID to show more relevant ads. Without consent, ads are not personalised.',
@@ -349,7 +349,7 @@ export const EN = {
   'share.endless': 'Endless run',
   'share.newBest': 'new record!',
   'share.challenge': 'Can you beat my score?',
-  'share.text': 'I scored {score} in Turkuaz Adalar. Can you beat it?',
+  'share.text': 'I scored {score} in Tidelark. Can you beat it?',
   'share.previewEyebrow': 'Your score card',
   'share.download': 'Download image',
   'share.copy': 'Copy text',
@@ -371,7 +371,7 @@ export const TR: Record<StringKey, string> = {
   'common.claim': 'Al',
   'common.claimed': 'Alındı',
 
-  'loading.eyebrow': 'Turkuaz Adalar',
+  'loading.eyebrow': 'Tidelark',
   'loading.title': 'Adalar haritalanıyor',
   'loading.preparing': 'Motor hazırlanıyor',
   'loading.hint': 'En iyi deneyim için dikey ekranda ve sesi açık oyna.',
@@ -490,7 +490,7 @@ export const TR: Record<StringKey, string> = {
   'consent.eyebrow': 'Başlamadan önce',
   'consent.title': 'Gizliliğin',
   'consent.copy':
-    'Turkuaz Adalar ücretsizdir ve isteğe bağlı reklamlarla desteklenir. Bu reklamların nasıl çalışacağını sen seç. Oyun her iki durumda da aynı oynanır.',
+    'Tidelark ücretsizdir ve isteğe bağlı reklamlarla desteklenir. Bu reklamların nasıl çalışacağını sen seç. Oyun her iki durumda da aynı oynanır.',
   'consent.point.saves': 'İlerlemen yalnızca bu cihazda saklanır.',
   'consent.point.ads':
     'Kişiselleştirilmiş reklamlar, daha ilgili reklamlar göstermek için reklam kimliğini kullanır. İzin vermezsen reklamlar kişiselleştirilmez.',
@@ -690,7 +690,7 @@ export const TR: Record<StringKey, string> = {
   'share.endless': 'Sonsuz koşu',
   'share.newBest': 'yeni rekor!',
   'share.challenge': 'Skorumu geçebilir misin?',
-  'share.text': "Turkuaz Adalar'da {score} puan yaptım. Geçebilir misin?",
+  'share.text': "Tidelark'ta {score} puan yaptım. Geçebilir misin?",
   'share.previewEyebrow': 'Skor kartın',
   'share.download': 'Resmi indir',
   'share.copy': 'Metni kopyala',

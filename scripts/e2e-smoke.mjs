@@ -147,6 +147,28 @@ try {
     .catch(() => undefined)
   const revivedRun = await page.evaluate((z) => z - window.__turkuaz.player.position.z, revivedAt)
   check('the runner gets going after a continue', revivedRun > 8, `${revivedRun.toFixed(1)} m`)
+  // A checkpoint passed long ago sits on a segment that has been recycled
+  // ahead: a continue must not respawn the runner over open sea.
+  await page.evaluate(() => {
+    const g = window.__turkuaz
+    if (g.state !== 'playing') return
+    g.recovery.setCheckpoint({ x: 0, y: 2.81, z: g.player.position.z + 120 })
+    g.finishRun(true)
+  })
+  await wait(800)
+  await page.evaluate(() => {
+    if (window.__turkuaz.state === 'offer') window.__turkuaz.continueOffer.payWithCoins()
+  })
+  await wait(1200)
+  const afterStale = await page.evaluate(() => ({
+    state: window.__turkuaz.state,
+    y: window.__turkuaz.player.position.y,
+  }))
+  check(
+    'a continue with a stale checkpoint lands on the track',
+    afterStale.state === 'playing' && afterStale.y > 2,
+    `${afterStale.state}, y ${afterStale.y.toFixed(2)}`,
+  )
   await page.evaluate(() => {
     if (window.__turkuaz.state === 'playing') window.__turkuaz.finishRun(true, true)
   })

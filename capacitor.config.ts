@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
-  appId: 'com.turkuazadalar.game',
-  appName: 'Turkuaz Adalar',
+  appId: 'com.tidelark.game',
+  appName: 'Tidelark',
   webDir: 'dist',
   server: {
     // Serve the bundled game from https://localhost. Cleartext (http) traffic
