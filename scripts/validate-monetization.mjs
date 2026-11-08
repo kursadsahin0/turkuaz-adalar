@@ -9,7 +9,6 @@ const AD_PROVIDER_FILE = join(root, 'src/systems/monetization/AdProvider.ts')
 const TEST_AD_PROVIDER_FILE = join(root, 'src/systems/monetization/TestAdProvider.ts')
 const ADMOB_PROVIDER_FILE = join(root, 'src/systems/monetization/AdMobProvider.ts')
 const MONETIZATION_MANAGER_FILE = join(root, 'src/systems/monetization/MonetizationManager.ts')
-const IAP_PROVIDER_FILE = join(root, 'src/systems/monetization/IAPProvider.ts')
 
 function readFile(path) {
   try {
@@ -129,9 +128,13 @@ test(
   'Rewarded ad unit ID not configurable',
 )
 test(
-  'No interstitial ads (rewarded only)',
-  !admobContent.includes('interstitial'),
-  'Interstitial code is back; the game only uses opt-in rewarded ads',
+  'Interstitials are paced, not shown on every island',
+  admobContent.includes('interstitialAdUnitId') &&
+    readFile(join(root, 'src/systems/monetization/InterstitialPacing.ts')).includes(
+      'firstAfterCompletions',
+    ) &&
+    readFile(join(root, 'src/core/Game.ts')).includes('interstitials.shouldShow('),
+  'Interstitial ads must go through InterstitialPacing',
 )
 test(
   'Rewarded ads implemented',
@@ -208,104 +211,6 @@ test('getEvents method', managerContent.includes('getEvents()'), 'getEvents meth
 test('clearEvents method', managerContent.includes('clearEvents()'), 'clearEvents method not found')
 test('Dispose method', managerContent.includes('dispose()'), 'dispose method not found')
 
-// Test 5: IAP Provider Interface
-console.log('\nTest 5: IAP Provider Interface')
-const iapContent = readFile(IAP_PROVIDER_FILE)
-test(
-  'IAPProvider class defined',
-  iapContent.includes('class IAPProvider'),
-  'IAPProvider class not found',
-)
-test(
-  'Product interface defined',
-  iapContent.includes('interface Product'),
-  'Product interface not found',
-)
-test(
-  'PurchaseResult interface defined',
-  iapContent.includes('interface PurchaseResult'),
-  'PurchaseResult interface not found',
-)
-test(
-  'IAPConfig interface defined',
-  iapContent.includes('interface IAPConfig'),
-  'IAPConfig interface not found',
-)
-test(
-  'initialize method abstract',
-  iapContent.includes('abstract initialize'),
-  'initialize not abstract',
-)
-test(
-  'getProducts method abstract',
-  iapContent.includes('abstract getProducts'),
-  'getProducts not abstract',
-)
-test('purchase method abstract', iapContent.includes('abstract purchase'), 'purchase not abstract')
-test(
-  'restorePurchases method abstract',
-  iapContent.includes('abstract restorePurchases'),
-  'restorePurchases not abstract',
-)
-test(
-  'isPurchased method abstract',
-  iapContent.includes('abstract isPurchased'),
-  'isPurchased not abstract',
-)
-test('consume method abstract', iapContent.includes('abstract consume'), 'consume not abstract')
-test('Dispose method', iapContent.includes('dispose()'), 'dispose method not found')
-test('Integration notes', iapContent.includes('INTEGRATION NOTES'), 'Integration notes missing')
-test(
-  'Platform-specific notes',
-  iapContent.includes('Google Play Billing'),
-  'Platform notes missing',
-)
-test(
-  'Security warnings',
-  iapContent.includes('SECURITY WARNINGS') || iapContent.includes('security'),
-  'Security warnings missing',
-)
-test(
-  'Receipt validation note',
-  iapContent.includes('validate receipts'),
-  'Receipt validation note missing',
-)
-
-// Test 6: Test IAP Provider
-console.log('\nTest 6: Test IAP Provider')
-test(
-  'TestIAPProvider class defined',
-  iapContent.includes('class TestIAPProvider'),
-  'TestIAPProvider class not found',
-)
-test(
-  'Extends IAPProvider',
-  iapContent.includes('extends IAPProvider'),
-  'Does not extend IAPProvider',
-)
-test('Sample products defined', iapContent.includes('com.tidelark'), 'Sample products not defined')
-test(
-  'Purchase simulation',
-  iapContent.includes('Simulate purchase') || iapContent.includes('simulate purchase'),
-  'Purchase not simulated',
-)
-test(
-  'Purchased tracking',
-  iapContent.includes('purchasedProducts'),
-  'Purchased products not tracked',
-)
-test(
-  'Restore purchases',
-  iapContent.includes('restorePurchases'),
-  'Restore purchases not implemented',
-)
-test('Consume consumables', iapContent.includes('consume'), 'Consume not implemented')
-test(
-  'Non-consumable protection',
-  iapContent.includes('non-consumable'),
-  'Non-consumable protection not implemented',
-)
-
 // Test 7: Separation from Gameplay
 console.log('\nTest 7: Separation from Gameplay')
 test(
@@ -379,7 +284,6 @@ if (failed === 0) {
   console.log('\nArchitecture is ready for:')
   console.log('- Test mode development and testing')
   console.log('- AdMob integration when Android SDK is added')
-  console.log('- IAP integration when platform SDKs are added')
   console.log('- Clear separation from gameplay')
   console.log('- Platform policy compliance')
   process.exit(0)

@@ -11,6 +11,8 @@ export class SceneManager {
 
   constructor() {
     this.scene = new THREE.Scene()
+    // Game updates world matrices once per frame before rendering (see Game.tick).
+    this.scene.matrixWorldAutoUpdate = false
     this.scene.name = 'Tidelark'
     this.scene.background = new THREE.Color(RENDER_CONFIG.clearColor)
     this.scene.fog = new THREE.Fog(

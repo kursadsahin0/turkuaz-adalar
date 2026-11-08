@@ -76,6 +76,8 @@ jobs:
         # Optional secrets: without them the bundle uses Google's test ads.
         env:
           VITE_ADMOB_REWARDED_ANDROID: ${{ secrets.ADMOB_REWARDED_ANDROID }}
+          VITE_ADMOB_BANNER_ANDROID: ${{ secrets.ADMOB_BANNER_ANDROID }}
+          VITE_ADMOB_INTERSTITIAL_ANDROID: ${{ secrets.ADMOB_INTERSTITIAL_ANDROID }}
           VITE_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: npm run android:sync
 

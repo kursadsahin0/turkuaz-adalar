@@ -142,7 +142,7 @@ export const EN = {
   'consent.eyebrow': 'Before you start',
   'consent.title': 'Your privacy',
   'consent.copy':
-    'Tidelark is free and supported by optional ads. Choose how those ads may work. The game plays the same either way.',
+    'Tidelark is free and supported by ads: a banner at the bottom of the screen, now and then a full-screen ad between islands, and optional video ads for a second chance or double coins. Choose how those ads may work. The game plays the same either way.',
   'consent.point.saves': 'Your progress is saved only on this device.',
   'consent.point.ads':
     'Personalised ads use an advertising ID to show more relevant ads. Without consent, ads are not personalised.',
@@ -490,7 +490,7 @@ export const TR: Record<StringKey, string> = {
   'consent.eyebrow': 'Başlamadan önce',
   'consent.title': 'Gizliliğin',
   'consent.copy':
-    'Tidelark ücretsizdir ve isteğe bağlı reklamlarla desteklenir. Bu reklamların nasıl çalışacağını sen seç. Oyun her iki durumda da aynı oynanır.',
+    'Tidelark ücretsizdir ve reklamlarla desteklenir: ekranın altında bir banner, ara sıra adalar arasında tam ekran reklam ve ikinci şans ya da çift coin için isteğe bağlı video reklamlar. Bu reklamların nasıl çalışacağını sen seç. Oyun her iki durumda da aynı oynanır.',
   'consent.point.saves': 'İlerlemen yalnızca bu cihazda saklanır.',
   'consent.point.ads':
     'Kişiselleştirilmiş reklamlar, daha ilgili reklamlar göstermek için reklam kimliğini kullanır. İzin vermezsen reklamlar kişiselleştirilmez.',

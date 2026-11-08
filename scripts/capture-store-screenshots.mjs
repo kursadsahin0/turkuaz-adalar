@@ -174,6 +174,12 @@ try {
       g.finishRun(false, false, false, true)
     })
     await wait(2200)
+    // The first finished run offers the welcome chest on top: keep the summary in view.
+    await page.evaluate(() => {
+      const g = window.__turkuaz
+      if (g.ui.isGiftOpen) g.ui.hideGift()
+    })
+    await wait(900)
     await shot('06-level-complete')
 
     await page.evaluate(() => {

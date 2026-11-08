@@ -123,7 +123,7 @@ export const DE: Record<StringKey, string> = {
   'consent.eyebrow': 'Bevor du startest',
   'consent.title': 'Deine Privatsphäre',
   'consent.copy':
-    'Tidelark ist kostenlos und wird durch freiwillige Werbung unterstützt. Wähle, wie diese Werbung funktionieren darf. Das Spiel ist in beiden Fällen gleich.',
+    'Tidelark ist kostenlos und wird durch Werbung finanziert: ein Banner am unteren Bildschirmrand, ab und zu eine Vollbildanzeige zwischen den Inseln und freiwillige Videowerbung für eine zweite Chance oder doppelte Münzen. Wähle, wie diese Werbung funktionieren darf. Das Spiel ist in beiden Fällen gleich.',
   'consent.point.saves': 'Dein Fortschritt wird nur auf diesem Gerät gespeichert.',
   'consent.point.ads':
     'Personalisierte Werbung nutzt eine Werbe-ID, um passendere Anzeigen zu zeigen. Ohne Einwilligung ist die Werbung nicht personalisiert.',
