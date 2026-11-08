@@ -55,6 +55,8 @@ Turn on **Play App Signing** when you create the app in Play Console.
 
 ### 4. Play Console
 
+Every form answer, ready to paste, is in [`store/PLAY_CONSOLE.md`](store/PLAY_CONSOLE.md).
+
 - **Store listing**: titles, short/full descriptions (TR and EN), keywords
   and category are ready to paste in [`store/listing.md`](store/listing.md).
 - **Graphics**: `store/icon-512.png`, `store/feature-graphic-1024x500.png` and
