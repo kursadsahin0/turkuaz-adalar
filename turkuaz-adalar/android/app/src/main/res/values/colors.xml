@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Launch screen: the same deep sea as the in-game loading screen. -->
+    <color name="splash_background">#062C36</color>
+</resources>

@@ -1,0 +1,1174 @@
+{
+  "asset": "TurkuazRunner",
+  "validated_file": "/Users/kursatsahin/Desktop/turkuaz/blender/turkuaz_character_rigged.blend",
+  "blender_version": "5.2.3 LTS",
+  "fps": 30,
+  "summary": {
+    "passed": 181,
+    "warnings": 0,
+    "failed": 0,
+    "total": 181
+  },
+  "checks": [
+    {
+      "name": "scene.fps",
+      "status": "pass",
+      "detail": "30 fps (expected 30)"
+    },
+    {
+      "name": "scene.units",
+      "status": "pass",
+      "detail": "METRIC / METERS"
+    },
+    {
+      "name": "object.mesh.exists",
+      "status": "pass",
+      "detail": "TK_CharacterMesh"
+    },
+    {
+      "name": "object.rig.exists",
+      "status": "pass",
+      "detail": "TK_Armature"
+    },
+    {
+      "name": "object.mesh.type",
+      "status": "pass",
+      "detail": "MESH"
+    },
+    {
+      "name": "object.rig.type",
+      "status": "pass",
+      "detail": "ARMATURE"
+    },
+    {
+      "name": "mesh.armature_modifier",
+      "status": "pass",
+      "detail": "1 armature modifier(s), target=TK_Armature"
+    },
+    {
+      "name": "mesh.object_transform",
+      "status": "pass",
+      "detail": "mesh object at origin with unit scale"
+    },
+    {
+      "name": "rig.object_transform",
+      "status": "pass",
+      "detail": "rig object at origin with unit scale"
+    },
+    {
+      "name": "rig.display",
+      "status": "pass",
+      "detail": "armature display type OCTAHEDRAL"
+    },
+    {
+      "name": "rig.animation_data",
+      "status": "pass",
+      "detail": "armature has animation data"
+    },
+    {
+      "name": "mesh.triangles",
+      "status": "pass",
+      "detail": "37010 triangles"
+    },
+    {
+      "name": "mesh.uv_layer",
+      "status": "pass",
+      "detail": [
+        "UVMap"
+      ]
+    },
+    {
+      "name": "mesh.height",
+      "status": "pass",
+      "detail": "1.783 m (target 1.75 m)"
+    },
+    {
+      "name": "mesh.feet_on_ground",
+      "status": "pass",
+      "detail": "lowest vertex z=-0.0010 m"
+    },
+    {
+      "name": "mesh.centered",
+      "status": "pass",
+      "detail": "x bounds -0.331..0.331"
+    },
+    {
+      "name": "weights.groups_map_to_deform_bones",
+      "status": "pass",
+      "detail": "all groups are deform bones"
+    },
+    {
+      "name": "weights.max_influences",
+      "status": "pass",
+      "detail": "2 influences per vertex (limit 4)"
+    },
+    {
+      "name": "weights.no_unweighted",
+      "status": "pass",
+      "detail": "0 unweighted vertices"
+    },
+    {
+      "name": "weights.normalized",
+      "status": "pass",
+      "detail": "0 vertices with weight sum != 1"
+    },
+    {
+      "name": "weights.range",
+      "status": "pass",
+      "detail": "0 vertices with weight outside 0..1"
+    },
+    {
+      "name": "weights.only_deform_bones",
+      "status": "pass",
+      "detail": "0 weights on non-deform bones"
+    },
+    {
+      "name": "materials.no_empty_slots",
+      "status": "pass",
+      "detail": "24/24 filled"
+    },
+    {
+      "name": "materials.node_based",
+      "status": "pass",
+      "detail": "24/24 node-based"
+    },
+    {
+      "name": "textures.image_nodes",
+      "status": "pass",
+      "detail": [
+        "TK_BadgeWave"
+      ]
+    },
+    {
+      "name": "textures.TK_BadgeWave.resolution",
+      "status": "pass",
+      "detail": "128x128"
+    },
+    {
+      "name": "textures.TK_BadgeWave.packed",
+      "status": "pass",
+      "detail": "packed into .blend"
+    },
+    {
+      "name": "textures.export_ready",
+      "status": "pass",
+      "detail": "all textures packed"
+    },
+    {
+      "name": "armature.bone_count",
+      "status": "pass",
+      "detail": "22 bones"
+    },
+    {
+      "name": "armature.deform_count",
+      "status": "pass",
+      "detail": "21 deform bones"
+    },
+    {
+      "name": "armature.required_bones",
+      "status": "pass",
+      "detail": "all required bones present"
+    },
+    {
+      "name": "armature.hierarchy",
+      "status": "pass",
+      "detail": "hierarchy matches humanoid template"
+    },
+    {
+      "name": "armature.left_right_symmetry",
+      "status": "pass",
+      "detail": "mirrored left/right bones"
+    },
+    {
+      "name": "armature.root_non_deform",
+      "status": "pass",
+      "detail": "root drives motion but does not deform the mesh"
+    },
+    {
+      "name": "armature.baked_no_constraints",
+      "status": "pass",
+      "detail": "no pose constraints (all motion is baked FK)"
+    },
+    {
+      "name": "armature.no_drivers",
+      "status": "pass",
+      "detail": "0 driver(s)"
+    },
+    {
+      "name": "armature.run_metadata",
+      "status": "pass",
+      "detail": {
+        "run_reference_speed": 2.8124999999999996,
+        "run_cycle_seconds": 0.5333333333333333,
+        "run_stance_ratio": 0.4
+      }
+    },
+    {
+      "name": "clip.Idle.exists",
+      "status": "pass",
+      "detail": "Idle"
+    },
+    {
+      "name": "clip.Run.exists",
+      "status": "pass",
+      "detail": "Run"
+    },
+    {
+      "name": "clip.Jump.exists",
+      "status": "pass",
+      "detail": "Jump"
+    },
+    {
+      "name": "clip.Airborne.exists",
+      "status": "pass",
+      "detail": "Airborne"
+    },
+    {
+      "name": "clip.Fall.exists",
+      "status": "pass",
+      "detail": "Fall"
+    },
+    {
+      "name": "clip.Land.exists",
+      "status": "pass",
+      "detail": "Land"
+    },
+    {
+      "name": "clip.Win.exists",
+      "status": "pass",
+      "detail": "Win"
+    },
+    {
+      "name": "clip.Lose.exists",
+      "status": "pass",
+      "detail": "Lose"
+    },
+    {
+      "name": "clip.Slide.exists",
+      "status": "pass",
+      "detail": "Slide"
+    },
+    {
+      "name": "clip.Turn.exists",
+      "status": "pass",
+      "detail": "Turn"
+    },
+    {
+      "name": "clip.Turn_Right.exists",
+      "status": "pass",
+      "detail": "Turn_Right"
+    },
+    {
+      "name": "clips.required_set",
+      "status": "pass",
+      "detail": "11/11 required clips"
+    },
+    {
+      "name": "clips.no_unexpected_actions",
+      "status": "pass",
+      "detail": "only the authored clips exist"
+    },
+    {
+      "name": "clip.Idle.frame_range",
+      "status": "pass",
+      "detail": "1..121 (expected 1..121)"
+    },
+    {
+      "name": "clip.Idle.fps_metadata",
+      "status": "pass",
+      "detail": "fps=30"
+    },
+    {
+      "name": "clip.Idle.loop_metadata",
+      "status": "pass",
+      "detail": "loop=True"
+    },
+    {
+      "name": "clip.Idle.cyclic_flag",
+      "status": "pass",
+      "detail": "use_cyclic=True"
+    },
+    {
+      "name": "action.Idle.channels",
+      "status": "pass",
+      "detail": "198 fcurves; missing=[] extra=[]"
+    },
+    {
+      "name": "action.Idle.keyframe_count",
+      "status": "pass",
+      "detail": "all channels keyed on 121 frames"
+    },
+    {
+      "name": "action.Idle.interpolation",
+      "status": "pass",
+      "detail": "all keys linear"
+    },
+    {
+      "name": "clip.Idle.root_in_place",
+      "status": "pass",
+      "detail": "max root translation 0.00e+00 m, rotation 0.00e+00 rad"
+    },
+    {
+      "name": "clip.Idle.finite",
+      "status": "pass",
+      "detail": "0 frames with non-finite values"
+    },
+    {
+      "name": "clip.Idle.loop_seam",
+      "status": "pass",
+      "detail": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    {
+      "name": "clip.Run.frame_range",
+      "status": "pass",
+      "detail": "1..17 (expected 1..17)"
+    },
+    {
+      "name": "clip.Run.fps_metadata",
+      "status": "pass",
+      "detail": "fps=30"
+    },
+    {
+      "name": "clip.Run.loop_metadata",
+      "status": "pass",
+      "detail": "loop=True"
+    },
+    {
+      "name": "clip.Run.cyclic_flag",
+      "status": "pass",
+      "detail": "use_cyclic=True"
+    },
+    {
+      "name": "action.Run.channels",
+      "status": "pass",
+      "detail": "198 fcurves; missing=[] extra=[]"
+    },
+    {
+      "name": "action.Run.keyframe_count",
+      "status": "pass",
+      "detail": "all channels keyed on 17 frames"
+    },
+    {
+      "name": "action.Run.interpolation",
+      "status": "pass",
+      "detail": "all keys linear"
+    },
+    {
+      "name": "clip.Run.root_in_place",
+      "status": "pass",
+      "detail": "max root translation 0.00e+00 m, rotation 0.00e+00 rad"
+    },
+    {
+      "name": "clip.Run.finite",
+      "status": "pass",
+      "detail": "0 frames with non-finite values"
+    },
+    {
+      "name": "clip.Run.loop_seam",
+      "status": "pass",
+      "detail": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    {
+      "name": "clip.Jump.frame_range",
+      "status": "pass",
+      "detail": "1..22 (expected 1..22)"
+    },
+    {
+      "name": "clip.Jump.fps_metadata",
+      "status": "pass",
+      "detail": "fps=30"
+    },
+    {
+      "name": "clip.Jump.loop_metadata",
+      "status": "pass",
+      "detail": "loop=False"
+    },
+    {
+      "name": "clip.Jump.cyclic_flag",
+      "status": "pass",
+      "detail": "use_cyclic=False"
+    },
+    {
+      "name": "action.Jump.channels",
+      "status": "pass",
+      "detail": "198 fcurves; missing=[] extra=[]"
+    },
+    {
+      "name": "action.Jump.keyframe_count",
+      "status": "pass",
+      "detail": "all channels keyed on 22 frames"
+    },
+    {
+      "name": "action.Jump.interpolation",
+      "status": "pass",
+      "detail": "all keys linear"
+    },
+    {
+      "name": "clip.Jump.root_in_place",
+      "status": "pass",
+      "detail": "max root translation 0.00e+00 m, rotation 0.00e+00 rad"
+    },
+    {
+      "name": "clip.Jump.finite",
+      "status": "pass",
+      "detail": "0 frames with non-finite values"
+    },
+    {
+      "name": "clip.Jump.one_shot",
+      "status": "pass",
+      "detail": "start/end poses intentionally differ (transition clip)"
+    },
+    {
+      "name": "clip.Airborne.frame_range",
+      "status": "pass",
+      "detail": "1..31 (expected 1..31)"
+    },
+    {
+      "name": "clip.Airborne.fps_metadata",
+      "status": "pass",
+      "detail": "fps=30"
+    },
+    {
+      "name": "clip.Airborne.loop_metadata",
+      "status": "pass",
+      "detail": "loop=True"
+    },
+    {
+      "name": "clip.Airborne.cyclic_flag",
+      "status": "pass",
+      "detail": "use_cyclic=True"
+    },
+    {
+      "name": "action.Airborne.channels",
+      "status": "pass",
+      "detail": "198 fcurves; missing=[] extra=[]"
+    },
+    {
+      "name": "action.Airborne.keyframe_count",
+      "status": "pass",
+      "detail": "all channels keyed on 31 frames"
+    },
+    {
+      "name": "action.Airborne.interpolation",
+      "status": "pass",
+      "detail": "all keys linear"
+    },
+    {
+      "name": "clip.Airborne.root_in_place",
+      "status": "pass",
+      "detail": "max root translation 0.00e+00 m, rotation 0.00e+00 rad"
+    },
+    {
+      "name": "clip.Airborne.finite",
+      "status": "pass",
+      "detail": "0 frames with non-finite values"
+    },
+    {
+      "name": "clip.Airborne.loop_seam",
+      "status": "pass",
+      "detail": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    {
+      "name": "clip.Fall.frame_range",
+      "status": "pass",
+      "detail": "1..21 (expected 1..21)"
+    },
+    {
+      "name": "clip.Fall.fps_metadata",
+      "status": "pass",
+      "detail": "fps=30"
+    },
+    {
+      "name": "clip.Fall.loop_metadata",
+      "status": "pass",
+      "detail": "loop=True"
+    },
+    {
+      "name": "clip.Fall.cyclic_flag",
+      "status": "pass",
+      "detail": "use_cyclic=True"
+    },
+    {
+      "name": "action.Fall.channels",
+      "status": "pass",
+      "detail": "198 fcurves; missing=[] extra=[]"
+    },
+    {
+      "name": "action.Fall.keyframe_count",
+      "status": "pass",
+      "detail": "all channels keyed on 21 frames"
+    },
+    {
+      "name": "action.Fall.interpolation",
+      "status": "pass",
+      "detail": "all keys linear"
+    },
+    {
+      "name": "clip.Fall.root_in_place",
+      "status": "pass",
+      "detail": "max root translation 0.00e+00 m, rotation 0.00e+00 rad"
+    },
+    {
+      "name": "clip.Fall.finite",
+      "status": "pass",
+      "detail": "0 frames with non-finite values"
+    },
+    {
+      "name": "clip.Fall.loop_seam",
+      "status": "pass",
+      "detail": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    {
+      "name": "clip.Land.frame_range",
+      "status": "pass",
+      "detail": "1..19 (expected 1..19)"
+    },
+    {
+      "name": "clip.Land.fps_metadata",
+      "status": "pass",
+      "detail": "fps=30"
+    },
+    {
+      "name": "clip.Land.loop_metadata",
+      "status": "pass",
+      "detail": "loop=False"
+    },
+    {
+      "name": "clip.Land.cyclic_flag",
+      "status": "pass",
+      "detail": "use_cyclic=False"
+    },
+    {
+      "name": "action.Land.channels",
+      "status": "pass",
+      "detail": "198 fcurves; missing=[] extra=[]"
+    },
+    {
+      "name": "action.Land.keyframe_count",
+      "status": "pass",
+      "detail": "all channels keyed on 19 frames"
+    },
+    {
+      "name": "action.Land.interpolation",
+      "status": "pass",
+      "detail": "all keys linear"
+    },
+    {
+      "name": "clip.Land.root_in_place",
+      "status": "pass",
+      "detail": "max root translation 0.00e+00 m, rotation 0.00e+00 rad"
+    },
+    {
+      "name": "clip.Land.finite",
+      "status": "pass",
+      "detail": "0 frames with non-finite values"
+    },
+    {
+      "name": "clip.Land.one_shot",
+      "status": "pass",
+      "detail": "start/end poses intentionally differ (transition clip)"
+    },
+    {
+      "name": "clip.Win.frame_range",
+      "status": "pass",
+      "detail": "1..91 (expected 1..91)"
+    },
+    {
+      "name": "clip.Win.fps_metadata",
+      "status": "pass",
+      "detail": "fps=30"
+    },
+    {
+      "name": "clip.Win.loop_metadata",
+      "status": "pass",
+      "detail": "loop=True"
+    },
+    {
+      "name": "clip.Win.cyclic_flag",
+      "status": "pass",
+      "detail": "use_cyclic=True"
+    },
+    {
+      "name": "action.Win.channels",
+      "status": "pass",
+      "detail": "198 fcurves; missing=[] extra=[]"
+    },
+    {
+      "name": "action.Win.keyframe_count",
+      "status": "pass",
+      "detail": "all channels keyed on 91 frames"
+    },
+    {
+      "name": "action.Win.interpolation",
+      "status": "pass",
+      "detail": "all keys linear"
+    },
+    {
+      "name": "clip.Win.root_in_place",
+      "status": "pass",
+      "detail": "max root translation 0.00e+00 m, rotation 0.00e+00 rad"
+    },
+    {
+      "name": "clip.Win.finite",
+      "status": "pass",
+      "detail": "0 frames with non-finite values"
+    },
+    {
+      "name": "clip.Win.loop_seam",
+      "status": "pass",
+      "detail": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    {
+      "name": "clip.Lose.frame_range",
+      "status": "pass",
+      "detail": "1..76 (expected 1..76)"
+    },
+    {
+      "name": "clip.Lose.fps_metadata",
+      "status": "pass",
+      "detail": "fps=30"
+    },
+    {
+      "name": "clip.Lose.loop_metadata",
+      "status": "pass",
+      "detail": "loop=True"
+    },
+    {
+      "name": "clip.Lose.cyclic_flag",
+      "status": "pass",
+      "detail": "use_cyclic=True"
+    },
+    {
+      "name": "action.Lose.channels",
+      "status": "pass",
+      "detail": "198 fcurves; missing=[] extra=[]"
+    },
+    {
+      "name": "action.Lose.keyframe_count",
+      "status": "pass",
+      "detail": "all channels keyed on 76 frames"
+    },
+    {
+      "name": "action.Lose.interpolation",
+      "status": "pass",
+      "detail": "all keys linear"
+    },
+    {
+      "name": "clip.Lose.root_in_place",
+      "status": "pass",
+      "detail": "max root translation 0.00e+00 m, rotation 0.00e+00 rad"
+    },
+    {
+      "name": "clip.Lose.finite",
+      "status": "pass",
+      "detail": "0 frames with non-finite values"
+    },
+    {
+      "name": "clip.Lose.loop_seam",
+      "status": "pass",
+      "detail": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    {
+      "name": "clip.Slide.frame_range",
+      "status": "pass",
+      "detail": "1..31 (expected 1..31)"
+    },
+    {
+      "name": "clip.Slide.fps_metadata",
+      "status": "pass",
+      "detail": "fps=30"
+    },
+    {
+      "name": "clip.Slide.loop_metadata",
+      "status": "pass",
+      "detail": "loop=False"
+    },
+    {
+      "name": "clip.Slide.cyclic_flag",
+      "status": "pass",
+      "detail": "use_cyclic=False"
+    },
+    {
+      "name": "action.Slide.channels",
+      "status": "pass",
+      "detail": "198 fcurves; missing=[] extra=[]"
+    },
+    {
+      "name": "action.Slide.keyframe_count",
+      "status": "pass",
+      "detail": "all channels keyed on 31 frames"
+    },
+    {
+      "name": "action.Slide.interpolation",
+      "status": "pass",
+      "detail": "all keys linear"
+    },
+    {
+      "name": "clip.Slide.root_in_place",
+      "status": "pass",
+      "detail": "max root translation 0.00e+00 m, rotation 0.00e+00 rad"
+    },
+    {
+      "name": "clip.Slide.finite",
+      "status": "pass",
+      "detail": "0 frames with non-finite values"
+    },
+    {
+      "name": "clip.Slide.one_shot",
+      "status": "pass",
+      "detail": "start/end poses intentionally differ (transition clip)"
+    },
+    {
+      "name": "clip.Turn.frame_range",
+      "status": "pass",
+      "detail": "1..21 (expected 1..21)"
+    },
+    {
+      "name": "clip.Turn.fps_metadata",
+      "status": "pass",
+      "detail": "fps=30"
+    },
+    {
+      "name": "clip.Turn.loop_metadata",
+      "status": "pass",
+      "detail": "loop=True"
+    },
+    {
+      "name": "clip.Turn.cyclic_flag",
+      "status": "pass",
+      "detail": "use_cyclic=True"
+    },
+    {
+      "name": "action.Turn.channels",
+      "status": "pass",
+      "detail": "198 fcurves; missing=[] extra=[]"
+    },
+    {
+      "name": "action.Turn.keyframe_count",
+      "status": "pass",
+      "detail": "all channels keyed on 21 frames"
+    },
+    {
+      "name": "action.Turn.interpolation",
+      "status": "pass",
+      "detail": "all keys linear"
+    },
+    {
+      "name": "clip.Turn.root_in_place",
+      "status": "pass",
+      "detail": "max root translation 0.00e+00 m, rotation 0.00e+00 rad"
+    },
+    {
+      "name": "clip.Turn.finite",
+      "status": "pass",
+      "detail": "0 frames with non-finite values"
+    },
+    {
+      "name": "clip.Turn.loop_seam",
+      "status": "pass",
+      "detail": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    {
+      "name": "clip.Turn_Right.frame_range",
+      "status": "pass",
+      "detail": "1..21 (expected 1..21)"
+    },
+    {
+      "name": "clip.Turn_Right.fps_metadata",
+      "status": "pass",
+      "detail": "fps=30"
+    },
+    {
+      "name": "clip.Turn_Right.loop_metadata",
+      "status": "pass",
+      "detail": "loop=True"
+    },
+    {
+      "name": "clip.Turn_Right.cyclic_flag",
+      "status": "pass",
+      "detail": "use_cyclic=True"
+    },
+    {
+      "name": "action.Turn_Right.channels",
+      "status": "pass",
+      "detail": "198 fcurves; missing=[] extra=[]"
+    },
+    {
+      "name": "action.Turn_Right.keyframe_count",
+      "status": "pass",
+      "detail": "all channels keyed on 21 frames"
+    },
+    {
+      "name": "action.Turn_Right.interpolation",
+      "status": "pass",
+      "detail": "all keys linear"
+    },
+    {
+      "name": "clip.Turn_Right.root_in_place",
+      "status": "pass",
+      "detail": "max root translation 0.00e+00 m, rotation 0.00e+00 rad"
+    },
+    {
+      "name": "clip.Turn_Right.finite",
+      "status": "pass",
+      "detail": "0 frames with non-finite values"
+    },
+    {
+      "name": "clip.Turn_Right.loop_seam",
+      "status": "pass",
+      "detail": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    {
+      "name": "clip.Lose.loop_safe",
+      "status": "pass",
+      "detail": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    {
+      "name": "clip.Turn.loop_safe",
+      "status": "pass",
+      "detail": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    {
+      "name": "clip.Turn_Right.loop_safe",
+      "status": "pass",
+      "detail": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    {
+      "name": "clip.Win.loop_safe",
+      "status": "pass",
+      "detail": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    {
+      "name": "run.L.stance0.speed",
+      "status": "pass",
+      "detail": "actual -2.814 m/s vs reference -2.812 m/s (0.0 % error)"
+    },
+    {
+      "name": "run.L.stance0.constant_velocity",
+      "status": "pass",
+      "detail": "max per-frame deviation 0.25 mm"
+    },
+    {
+      "name": "run.L.stance0.height",
+      "status": "pass",
+      "detail": "max flat-foot ankle height error 0.6 mm"
+    },
+    {
+      "name": "run.L.stance0.heel_lift",
+      "status": "pass",
+      "detail": "toe-off heel lift 42 mm"
+    },
+    {
+      "name": "run.L.stance0.ik_accuracy",
+      "status": "pass",
+      "detail": "max target error 0.6 mm"
+    },
+    {
+      "name": "run.R.stance0.speed",
+      "status": "pass",
+      "detail": "actual -2.814 m/s vs reference -2.812 m/s (0.0 % error)"
+    },
+    {
+      "name": "run.R.stance0.constant_velocity",
+      "status": "pass",
+      "detail": "max per-frame deviation 0.26 mm"
+    },
+    {
+      "name": "run.R.stance0.height",
+      "status": "pass",
+      "detail": "max flat-foot ankle height error 0.6 mm"
+    },
+    {
+      "name": "run.R.stance0.heel_lift",
+      "status": "pass",
+      "detail": "toe-off heel lift 42 mm"
+    },
+    {
+      "name": "run.R.stance0.ik_accuracy",
+      "status": "pass",
+      "detail": "max target error 0.6 mm"
+    },
+    {
+      "name": "run.ground_penetration",
+      "status": "pass",
+      "detail": "lowest toe position z=17.9 mm"
+    },
+    {
+      "name": "run.swing_clearance",
+      "status": "pass",
+      "detail": "maximum ankle lift 0.450 m"
+    },
+    {
+      "name": "run.hip_bob",
+      "status": "pass",
+      "detail": "hip bob range 60 mm"
+    },
+    {
+      "name": "export.glb_exists",
+      "status": "pass",
+      "detail": "/Users/kursatsahin/Desktop/turkuaz/blender/turkuaz_runner.glb"
+    },
+    {
+      "name": "export.glb_size",
+      "status": "pass",
+      "detail": "1454 KiB"
+    },
+    {
+      "name": "export.clip_count",
+      "status": "pass",
+      "detail": "11 actions ready for export"
+    },
+    {
+      "name": "export.game_copies",
+      "status": "pass",
+      "detail": "both game copies present"
+    }
+  ],
+  "metrics": {
+    "mesh": {
+      "vertices": 18640,
+      "triangles": 37010,
+      "material_slots": 24,
+      "uv_layers": [
+        "UVMap"
+      ],
+      "bounds": {
+        "x": [
+          -0.3309,
+          0.3309
+        ],
+        "y": [
+          -0.294,
+          0.212
+        ],
+        "z": [
+          -0.001,
+          1.7816
+        ]
+      },
+      "materials": [
+        "TK_Mat_Jacket",
+        "TK_Mat_Cream",
+        "TK_Mat_JacketDark",
+        "TK_Mat_Gold",
+        "TK_Mat_Shorts",
+        "TK_Mat_Leather",
+        "TK_Mat_Skin",
+        "TK_Mat_Sole",
+        "TK_Mat_Coral",
+        "TK_Mat_CreamDark",
+        "TK_Mat_Hair",
+        "TK_Mat_HairDark",
+        "TK_Mat_EyeWhite",
+        "TK_Mat_Iris",
+        "TK_Mat_Pupil",
+        "TK_Mat_EyeHighlight",
+        "TK_Mat_Brow",
+        "TK_Mat_SkinShade",
+        "TK_Mat_SkinLight",
+        "TK_Mat_Mouth",
+        "TK_Mat_Backpack",
+        "TK_Mat_BackpackDark",
+        "TK_Mat_LeatherDark",
+        "TK_Mat_Badge"
+      ],
+      "images": [
+        "TK_BadgeWave"
+      ]
+    },
+    "weights": {
+      "max_influences": 2,
+      "unweighted_vertices": 0,
+      "vertices_with_bad_sum": 0
+    },
+    "armature": {
+      "bones": 22,
+      "deform_bones": 21,
+      "names": [
+        "root",
+        "hips",
+        "spine",
+        "chest",
+        "neck",
+        "head",
+        "shoulder.L",
+        "upper_arm.L",
+        "forearm.L",
+        "hand.L",
+        "shoulder.R",
+        "upper_arm.R",
+        "forearm.R",
+        "hand.R",
+        "thigh.L",
+        "shin.L",
+        "foot.L",
+        "toe.L",
+        "thigh.R",
+        "shin.R",
+        "foot.R",
+        "toe.R"
+      ],
+      "extras": {
+        "run_reference_speed": 2.8124999999999996,
+        "run_cycle_seconds": 0.5333333333333333,
+        "run_stance_ratio": 0.4
+      }
+    },
+    "loop_seams": {
+      "Idle": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      },
+      "Run": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      },
+      "Airborne": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      },
+      "Fall": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      },
+      "Win": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      },
+      "Lose": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      },
+      "Turn": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      },
+      "Turn_Right": {
+        "location": 0.0,
+        "rotation_radians": 0.0,
+        "scale": 0.0,
+        "bone_head_meters": 0.0
+      }
+    },
+    "run": {
+      "stance_ratio": 0.4,
+      "foot_travel_meters": 0.6,
+      "reference_speed_mps": 2.8125,
+      "feet": {
+        "L0": {
+          "frames": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "speed_mps": -2.8136,
+          "reference_speed_mps": -2.8125,
+          "speed_error_percent": 0.04,
+          "max_frame_deviation_mm": 0.254,
+          "max_flat_foot_height_error_mm": 0.55,
+          "toe_off_heel_lift_mm": 41.67,
+          "max_target_error_mm": 0.56
+        },
+        "R0": {
+          "frames": [
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "speed_mps": -2.8137,
+          "reference_speed_mps": -2.8125,
+          "speed_error_percent": 0.04,
+          "max_frame_deviation_mm": 0.256,
+          "max_flat_foot_height_error_mm": 0.55,
+          "toe_off_heel_lift_mm": 41.68,
+          "max_target_error_mm": 0.55
+        }
+      },
+      "min_toe_z_meters": 0.0179,
+      "max_ankle_lift_meters": 0.4499,
+      "hip_bob_meters": 0.06
+    }
+  }
+}
