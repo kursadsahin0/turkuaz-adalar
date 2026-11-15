@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Files the app may hand to other apps (the share sheet). Only the cache is
+  exposed: the score card is written there before sharing. External storage
+  is deliberately not listed.
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="share_cache" path="." />
+</paths>

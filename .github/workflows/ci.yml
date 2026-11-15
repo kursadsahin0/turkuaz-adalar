@@ -2,17 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master, main]
   pull_request:
   workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
-
-defaults:
-  run:
-    working-directory: turkuaz-adalar
 
 jobs:
   web:
@@ -26,7 +22,6 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: turkuaz-adalar/package-lock.json
 
       - run: npm ci
 
@@ -53,7 +48,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: web-dist
-          path: turkuaz-adalar/dist
+          path: dist
           retention-days: 7
 
   android:
@@ -68,7 +63,6 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: turkuaz-adalar/package-lock.json
 
       - uses: actions/setup-java@v4
         with:
@@ -82,6 +76,8 @@ jobs:
         # Optional secrets: without them the bundle uses Google's test ads.
         env:
           VITE_ADMOB_REWARDED_ANDROID: ${{ secrets.ADMOB_REWARDED_ANDROID }}
+          VITE_ADMOB_BANNER_ANDROID: ${{ secrets.ADMOB_BANNER_ANDROID }}
+          VITE_ADMOB_INTERSTITIAL_ANDROID: ${{ secrets.ADMOB_INTERSTITIAL_ANDROID }}
           VITE_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: npm run android:sync
 
@@ -95,7 +91,7 @@ jobs:
         run: echo "$KEYSTORE_BASE64" | base64 --decode > android/upload.jks
 
       - name: Gradle bundleRelease
-        working-directory: turkuaz-adalar/android
+        working-directory: android
         env:
           TURKUAZ_KEYSTORE_FILE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && 'upload.jks' || '' }}
           TURKUAZ_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -109,5 +105,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: android-bundle
-          path: turkuaz-adalar/android/app/build/outputs/bundle/release/*.aab
+          path: android/app/build/outputs/bundle/release/*.aab
           retention-days: 7
