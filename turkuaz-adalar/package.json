@@ -33,7 +33,7 @@
     "format": "prettier --write \"src/**/*.{ts,css}\" \"scripts/**/*.mjs\" \"*.{ts,json,md}\" \"public/*.html\"",
     "format:check": "prettier --check \"src/**/*.{ts,css}\" \"scripts/**/*.mjs\" \"*.{ts,json,md}\" \"public/*.html\"",
     "check": "npm run typecheck && npm run lint && npm test && npm run build",
-    "assets:brand": "node scripts/generate-brand-assets.mjs && capacitor-assets generate --android --ios --iconBackgroundColor '#062c36' --iconBackgroundColorDark '#041a20' --splashBackgroundColor '#062c36' --splashBackgroundColorDark '#041a20'",
+    "assets:brand": "node scripts/generate-brand-assets.mjs && capacitor-assets generate --android --ios --iconBackgroundColor '#ff9f78' --iconBackgroundColorDark '#ff9f78' --splashBackgroundColor '#062c36' --splashBackgroundColorDark '#041a20'",
     "test:e2e": "node scripts/e2e-smoke.mjs",
     "store:screenshots": "node scripts/capture-store-screenshots.mjs",
     "playtest": "node scripts/playtest-bot.mjs"
@@ -58,6 +58,7 @@
     "@capacitor/ios": "^8.6.0",
     "@capacitor/local-notifications": "^8.3.1",
     "@capacitor/share": "^8.0.3",
+    "@capacitor/splash-screen": "^8.0.2",
     "@dimforge/rapier3d-compat": "^0.21.0",
     "@sentry/browser": "^10.78.0",
     "three": "^0.187.0"

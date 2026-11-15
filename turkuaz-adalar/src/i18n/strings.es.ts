@@ -124,7 +124,7 @@ export const ES: Record<StringKey, string> = {
   'consent.eyebrow': 'Antes de empezar',
   'consent.title': 'Tu privacidad',
   'consent.copy':
-    'Tidelark es gratis y se financia con anuncios opcionales. Elige cómo pueden funcionar esos anuncios. El juego es igual en ambos casos.',
+    'Tidelark es gratis y se financia con anuncios: un banner en la parte inferior de la pantalla, de vez en cuando un anuncio a pantalla completa entre islas y anuncios de vídeo opcionales para una segunda oportunidad o el doble de monedas. Elige cómo pueden funcionar esos anuncios. El juego es igual en ambos casos.',
   'consent.point.saves': 'Tu progreso solo se guarda en este dispositivo.',
   'consent.point.ads':
     'Los anuncios personalizados usan un ID de publicidad para mostrar anuncios más relevantes. Sin consentimiento, los anuncios no son personalizados.',

@@ -23,7 +23,10 @@
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* Height of the bottom banner ad (plus a gap), set from code; 0 without one. */
+  --ad-banner: 0px;
+  /* Everything that keeps clear of the bottom edge also clears the banner. */
+  --safe-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--ad-banner));
   --safe-left: env(safe-area-inset-left, 0px);
 
   --font-sans: 'Avenir Next', 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -56,7 +59,8 @@ body,
   overflow: hidden;
   padding: 0;
   padding-top: var(--safe-top);
-  padding-bottom: var(--safe-bottom);
+  /* The page itself only clears the system bar; the banner is the UI's job. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: var(--safe-left);
   padding-right: var(--safe-right);
 }
@@ -5061,4 +5065,639 @@ a:focus-visible {
 
 .game-title--word .game-title__line:last-child {
   margin-left: 0.02em;
+}
+
+/* ------------------------------------------------------------------ *
+ * Island complete v2: a celebration first, then the numbers, then
+ * one clear next step.
+ * ------------------------------------------------------------------ */
+.screen--completed .level-completed-panel {
+  position: relative;
+  width: min(420px, 100%);
+  padding-top: 22px;
+  overflow: hidden auto;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(241, 210, 154, 0.16), transparent 62%),
+    radial-gradient(90% 50% at 50% 0%, rgba(97, 245, 227, 0.14), transparent 70%),
+    linear-gradient(180deg, #0b3a44 0%, #072a32 46%, #05212a 100%);
+}
+
+/* Soft rays behind the stars. */
+.screen--completed .level-completed-panel::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  width: 360px;
+  height: 360px;
+  transform: translateX(-50%);
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(255, 233, 189, 0.07) 0deg 9deg,
+    transparent 9deg 24deg
+  );
+  mask-image: radial-gradient(circle, #000 18%, transparent 62%);
+  -webkit-mask-image: radial-gradient(circle, #000 18%, transparent 62%);
+  pointer-events: none;
+  animation: lc-rays 24s linear infinite;
+}
+
+.screen--completed .level-completed-panel > * {
+  position: relative;
+}
+
+.lc-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.screen--completed .level-completed__stars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  height: 74px;
+  margin: 0 0 6px;
+  font-size: inherit;
+}
+
+.screen--completed .level-completed__star {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  color: rgba(170, 255, 240, 0.14);
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.25));
+}
+
+.screen--completed .level-completed__star svg {
+  width: 100%;
+  height: 100%;
+  stroke: rgba(170, 255, 240, 0.28);
+  stroke-width: 1.2;
+}
+
+.screen--completed .level-completed__star--2 {
+  width: 70px;
+  height: 70px;
+  margin-bottom: 4px;
+}
+
+.screen--completed .level-completed__star--1 {
+  transform: rotate(-12deg);
+}
+
+.screen--completed .level-completed__star--3 {
+  transform: rotate(12deg);
+}
+
+.screen--completed .level-completed__star.star--earned {
+  color: #ffd56b;
+  filter: drop-shadow(0 0 14px rgba(255, 205, 96, 0.55)) drop-shadow(0 3px 0 #b8742a);
+}
+
+.screen--completed .level-completed__star.star--earned svg {
+  stroke: #fff3c4;
+  stroke-width: 1;
+}
+
+.screen--completed .level-completed__stars.is-animating .star--earned {
+  animation: lc-star-pop 0.55s var(--ease-out) both;
+}
+
+.screen--completed .level-completed__stars.is-animating .level-completed__star--1 {
+  --lc-tilt: -12deg;
+  animation-delay: 0.15s;
+}
+
+.screen--completed .level-completed__stars.is-animating .level-completed__star--2 {
+  --lc-tilt: 0deg;
+  animation-delay: 0.35s;
+}
+
+.screen--completed .level-completed__stars.is-animating .level-completed__star--3 {
+  --lc-tilt: 12deg;
+  animation-delay: 0.55s;
+}
+
+.lc-hero__eyebrow {
+  margin: 0;
+  color: var(--sand-soft);
+}
+
+.screen--completed .lc-hero__title {
+  margin: 2px 0 0;
+  font-size: clamp(1.35rem, 6vw, 1.7rem);
+  line-height: 1.1;
+}
+
+.lc-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 12px 0 14px;
+}
+
+.lc-score__label {
+  color: var(--mint);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.lc-score__value {
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 13vw, 3.3rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-shadow: 0 6px 26px rgba(97, 245, 227, 0.3);
+}
+
+.screen--completed .lc-score__badge {
+  position: static;
+  margin-top: 8px;
+  transform: none;
+}
+
+.lc-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.lc-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 9px 4px 8px;
+  border: 1px solid rgba(170, 255, 240, 0.1);
+  border-radius: 14px;
+  background: rgba(2, 18, 22, 0.42);
+  text-align: center;
+}
+
+.lc-stat__icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-bottom: 2px;
+  border-radius: 50%;
+  color: var(--mint);
+  background: rgba(97, 245, 227, 0.12);
+}
+
+.lc-stat--coins .lc-stat__icon {
+  color: #ffd56b;
+  background: rgba(255, 213, 107, 0.14);
+}
+
+.lc-stat--crystals .lc-stat__icon {
+  color: #9ee7ff;
+  background: rgba(158, 231, 255, 0.12);
+}
+
+.lc-stat--time .lc-stat__icon {
+  color: var(--sand-soft);
+  background: rgba(241, 210, 154, 0.12);
+}
+
+.lc-stat__value {
+  max-width: 100%;
+  overflow: hidden;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lc-stat__label {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.screen--completed .level-completed__notes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.screen--completed .level-completed__notes .gameover__notice {
+  position: relative;
+  margin: 0;
+  padding: 8px 12px 8px 34px;
+  border: 1px solid rgba(241, 210, 154, 0.16);
+  border-radius: 12px;
+  background: rgba(241, 210, 154, 0.07);
+  color: var(--sand-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.screen--completed .level-completed__notes .gameover__notice::before {
+  content: '✦';
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: #ffd56b;
+  font-size: 0.8rem;
+}
+
+.screen--completed .level-completed-panel .lc-double {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.screen--completed .level-completed-panel .lc-double {
+  min-height: 46px;
+  border-color: rgba(255, 213, 107, 0.45);
+  background: linear-gradient(180deg, rgba(255, 213, 107, 0.2), rgba(255, 170, 60, 0.12));
+  color: #ffe6a6;
+  font-size: 0.86rem;
+}
+
+.screen--completed .level-completed-panel .lc-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.lc-actions__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.screen--completed .lc-actions__half {
+  min-height: 44px;
+  padding-inline: 8px;
+  font-size: 0.86rem;
+}
+
+.screen--completed .level-completed__next {
+  min-height: 54px;
+  font-size: 1.02rem;
+}
+
+.screen--completed .lc-share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  align-self: center;
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: 0.82rem;
+}
+
+@keyframes lc-star-pop {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--lc-tilt, 0deg)) scale(0.2);
+  }
+  65% {
+    opacity: 1;
+    transform: rotate(var(--lc-tilt, 0deg)) scale(1.18);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(var(--lc-tilt, 0deg)) scale(1);
+  }
+}
+
+@keyframes lc-rays {
+  to {
+    transform: translateX(-50%) rotate(360deg);
+  }
+}
+
+/* Short phones: tighter hero so everything fits without scrolling. */
+@media (max-height: 700px) {
+  .screen--completed .level-completed__stars {
+    height: 56px;
+  }
+
+  .screen--completed .level-completed__star {
+    width: 42px;
+    height: 42px;
+  }
+
+  .screen--completed .level-completed__star--2 {
+    width: 54px;
+    height: 54px;
+  }
+
+  .lc-score {
+    margin: 8px 0 10px;
+  }
+
+  .lc-score__value {
+    font-size: 2.4rem;
+  }
+
+  .lc-stat {
+    padding: 6px 3px;
+  }
+
+  .lc-stat__icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .screen--completed .level-completed__next {
+    min-height: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen--completed .level-completed-panel::before,
+  .screen--completed .level-completed__stars.is-animating .star--earned {
+    animation: none;
+  }
+}
+
+/* The sticky action bar keeps its fade but sits closer to the content here. */
+.screen--completed > .level-completed-panel > .screen-actions.lc-actions {
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
+/* Landscape phones: celebration and numbers left, choices right. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .screen--completed .level-completed-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    grid-auto-flow: dense;
+    column-gap: 18px;
+    align-items: start;
+    width: min(760px, 100%);
+    padding-top: 14px;
+  }
+
+  .screen--completed .level-completed-panel::before {
+    left: 26%;
+  }
+
+  .screen--completed .lc-hero,
+  .screen--completed .lc-score,
+  .screen--completed .lc-stats {
+    grid-column: 1;
+  }
+
+  .screen--completed .level-completed__notes,
+  .screen--completed .level-completed-panel .lc-double,
+  .screen--completed > .level-completed-panel > .screen-actions.lc-actions {
+    grid-column: 2;
+  }
+
+  .screen--completed .lc-hero {
+    grid-row: 1;
+  }
+
+  .screen--completed .level-completed__notes {
+    grid-row: 1;
+    margin-top: 0;
+  }
+
+  .screen--completed > .level-completed-panel > .screen-actions.lc-actions {
+    position: static;
+    margin: 10px 0 0;
+    padding: 0;
+    background: none;
+  }
+
+  .screen--completed .level-completed__stars {
+    height: 48px;
+  }
+
+  .screen--completed .level-completed__star {
+    width: 36px;
+    height: 36px;
+  }
+
+  .screen--completed .level-completed__star--2 {
+    width: 46px;
+    height: 46px;
+  }
+
+  .screen--completed .lc-hero__title {
+    font-size: 1.2rem;
+  }
+
+  .lc-score {
+    margin: 6px 0 8px;
+  }
+
+  .lc-score__value {
+    font-size: 2rem;
+  }
+
+  .screen--completed .lc-score__badge {
+    margin-top: 4px;
+  }
+
+  .lc-stat {
+    padding: 5px 2px;
+  }
+
+  .lc-stat__icon {
+    display: none;
+  }
+
+  .screen--completed .level-completed__next {
+    min-height: 46px;
+  }
+
+  .screen--completed .lc-actions__half {
+    min-height: 40px;
+  }
+}
+
+/* Short phones: compact notes and stats so the summary fits above the actions. */
+@media (max-height: 700px) and (orientation: portrait) {
+  .screen--completed .level-completed__notes {
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .screen--completed .level-completed__notes .gameover__notice {
+    padding: 5px 10px 5px 30px;
+    font-size: 0.72rem;
+  }
+
+  .screen--completed .level-completed__notes .gameover__notice::before {
+    left: 10px;
+  }
+
+  .lc-stat__icon {
+    display: none;
+  }
+
+  .screen--completed .level-completed-panel .lc-double {
+    min-height: 40px;
+    margin-top: 8px;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Splash / loading: matches the native launch screen (the emblem centred
+ * on the deep sea), then adds the wordmark and the real progress.
+ * ------------------------------------------------------------------ */
+.screen--loading {
+  background: radial-gradient(circle at 50% 50%, #0a4553 0%, #062c36 46%, #041a20 100%);
+}
+
+.screen--loading::before {
+  display: none;
+}
+
+.splash {
+  position: absolute;
+  inset: 0;
+}
+
+.splash__emblem {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 156px;
+  height: 156px;
+  margin: -78px 0 0 -78px;
+  border-radius: 36px;
+  box-shadow:
+    0 18px 50px rgba(0, 0, 0, 0.35),
+    0 0 80px rgba(255, 171, 126, 0.18);
+  animation: splash-breathe 3.2s ease-in-out 0.4s infinite;
+}
+
+.splash__below {
+  position: absolute;
+  top: calc(50% + 104px);
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(240px, calc(100% - 48px));
+  transform: translateX(-50%);
+  animation: splash-rise 0.6s var(--ease-out) 0.15s both;
+}
+
+.splash__wordmark {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.splash__tide {
+  color: var(--mint);
+}
+
+.splash__lark {
+  color: var(--sand);
+}
+
+.splash__track.loading__track {
+  width: 100%;
+  height: 4px;
+  margin-top: 22px;
+}
+
+.splash__status.loading__status {
+  margin: 12px 0 0;
+}
+
+.splash__hint {
+  position: absolute;
+  right: 24px;
+  bottom: calc(24px + var(--safe-bottom));
+  left: 24px;
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 0.68rem;
+  line-height: 1.5;
+  text-align: center;
+  animation: splash-fade 0.6s var(--ease-out) 0.3s both;
+}
+
+/* Landscape phones: emblem and progress side by side. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .splash__emblem {
+    left: calc(50% - 120px);
+  }
+
+  .splash__below {
+    top: 50%;
+    left: calc(50% + 110px);
+    transform: translate(-50%, -50%);
+    animation-name: splash-fade;
+  }
+
+  .splash__hint {
+    display: none;
+  }
+}
+
+@keyframes splash-breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.015);
+  }
+}
+
+@keyframes splash-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes splash-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash__emblem,
+  .splash__below,
+  .splash__hint {
+    animation: none;
+  }
 }

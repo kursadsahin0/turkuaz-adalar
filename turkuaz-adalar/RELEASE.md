@@ -55,6 +55,8 @@ Turn on **Play App Signing** when you create the app in Play Console.
 
 ### 4. Play Console
 
+Every form answer, ready to paste, is in [`store/PLAY_CONSOLE.md`](store/PLAY_CONSOLE.md).
+
 - **Store listing**: titles, short/full descriptions (TR and EN), keywords
   and category are ready to paste in [`store/listing.md`](store/listing.md).
 - **Graphics**: `store/icon-512.png`, `store/feature-graphic-1024x500.png` and
@@ -116,6 +118,30 @@ page the stores need as a public URL. Before publishing:
    in Play Console and App Store Connect. The workflow refuses to publish while any `[…]`
    placeholder is left.
 
+## app-ads.txt (after the Play release)
+
+AdMob checks that the ads in Tidelark are really sold by you through an
+`app-ads.txt` file at the root of the **developer website** in the Play
+listing. Without it AdMob can limit ad serving. The file is ready in
+[`store/app-ads.txt`](store/app-ads.txt):
+
+```
+google.com, pub-3498040280017092, DIRECT, f08c47fec0942fa0
+```
+
+The privacy page lives under `/turkuaz-adalar/`, which is not a site root, so
+use a GitHub user site:
+
+1. Create a public repository named exactly **kursadsahin0.github.io**.
+2. Add `store/app-ads.txt` to it as `app-ads.txt` (at the top level), commit
+   and push. Pages publishes user sites automatically; check
+   https://kursadsahin0.github.io/app-ads.txt shows the line above.
+3. In Play Console → Store settings → Store listing contact details, set
+   **Website** to `https://kursadsahin0.github.io`.
+4. Once the app is live, link it in AdMob (App settings → app store details)
+   and use **Apps → app-ads.txt** there to start the check (it can take a
+   day).
+
 ## Crash reports (optional)
 
 Crashes are always kept in a local log on the device. To also receive them:
@@ -170,13 +196,20 @@ level_complete (level-1) → … (level-5)`; a trend of `level_fail` broken down
 
 ## Ads (AdMob)
 
-Rewarded ads ("watch an ad to continue") use AdMob through
+Three ad formats use AdMob: rewarded ads ("watch an ad to continue", "double
+your coins"), an always-on adaptive banner at the bottom of the screen (every
+screen and the run controls sit above it, with a 12 px gap) and an occasional
+full-screen interstitial when the player leaves an island's summary. The
+interstitial is paced by `src/systems/monetization/InterstitialPacing.ts`: not
+before the 3rd completed island, then at most every 3rd, never within 3
+minutes of the last one or 90 seconds of a rewarded ad. All go through
 `@capacitor-community/admob` on Android and iOS; the browser build keeps a
 simulated provider. **Every build uses Google's test IDs until you supply
 real ones**, so development can never generate invalid traffic.
 
-1. In AdMob, create the app for Android and iOS and one **Rewarded** ad unit
-   each.
+1. In AdMob, create the app for Android and iOS and one **Rewarded** and one
+   **Banner** and one **Interstitial** ad unit each. A store build without a real banner unit shows no
+   banner (and `release:check` refuses it).
 2. Copy `.env.example` to `.env.production.local` (git-ignored) and fill in
    all four IDs. It is the single source for every build:
 
@@ -185,6 +218,10 @@ real ones**, so development can never generate invalid traffic.
    ADMOB_APP_ID_IOS=ca-app-pub-xxxxxxxxxxxxxxxx~bbbbbbbbbb
    VITE_ADMOB_REWARDED_ANDROID=ca-app-pub-xxxxxxxxxxxxxxxx/cccccccccc  # Ad units → Rewarded
    VITE_ADMOB_REWARDED_IOS=ca-app-pub-xxxxxxxxxxxxxxxx/dddddddddd
+   VITE_ADMOB_BANNER_ANDROID=ca-app-pub-xxxxxxxxxxxxxxxx/eeeeeeeeee     # Ad units → Banner
+   VITE_ADMOB_BANNER_IOS=ca-app-pub-xxxxxxxxxxxxxxxx/ffffffffff
+   VITE_ADMOB_INTERSTITIAL_ANDROID=ca-app-pub-xxxxxxxxxxxxxxxx/gggggggggg  # Ad units → Interstitial
+   VITE_ADMOB_INTERSTITIAL_IOS=ca-app-pub-xxxxxxxxxxxxxxxx/hhhhhhhhhh
    ```
 
    - Android reads the app ID in `app/build.gradle` (an environment variable or
@@ -197,7 +234,7 @@ real ones**, so development can never generate invalid traffic.
    missing, malformed or Google test ID, or on IDs from two different AdMob
    accounts. `npm run android:release` and `npm run ios:release` run it first,
    and Gradle refuses a **signed** release whose app ID is the test ID.
-   On CI add the secrets `ADMOB_APP_ID_ANDROID` and `ADMOB_REWARDED_ANDROID`.
+   On CI add the secrets `ADMOB_APP_ID_ANDROID`, `ADMOB_REWARDED_ANDROID`, `ADMOB_BANNER_ANDROID` and `ADMOB_INTERSTITIAL_ANDROID`.
 
 4. In AdMob → _Privacy & messaging_, create a **GDPR** message (and an
    **IDFA explainer** for iOS). The game shows it via Google's UMP SDK where the
@@ -211,7 +248,6 @@ Rewards are granted only on the SDK's reward callback; closing an ad early
 returns to the offer without a revive. Requests are non-personalised unless
 the player allowed personalised ads.
 
-**In-app purchases**: the game sells nothing for real money yet, so
-`IAPProvider.ts` stays an interface. If you add something like "remove ads",
-use a store-validated plugin (for example RevenueCat) and declare it in the
-store listings and privacy policy.
+**In-app purchases**: the game sells nothing for real money. If you add
+something like "remove ads", use a store-validated plugin (for example
+RevenueCat) and declare it in the store listings and privacy policy.

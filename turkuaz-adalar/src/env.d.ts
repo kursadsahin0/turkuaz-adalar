@@ -13,4 +13,10 @@ interface ImportMetaEnv {
   /** AdMob ad unit IDs. Unset = Google's test ads. See RELEASE.md. */
   readonly VITE_ADMOB_REWARDED_ANDROID?: string
   readonly VITE_ADMOB_REWARDED_IOS?: string
+  /** The always-on bottom banner. Unset in a store build = no banner. */
+  readonly VITE_ADMOB_BANNER_ANDROID?: string
+  readonly VITE_ADMOB_BANNER_IOS?: string
+  /** Full-screen ad between islands. Unset in a store build = none. */
+  readonly VITE_ADMOB_INTERSTITIAL_ANDROID?: string
+  readonly VITE_ADMOB_INTERSTITIAL_IOS?: string
 }

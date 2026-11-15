@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import type { LoadedAsset } from '../../assets/ModelLoader.ts'
 import { PALETTE } from '../../config/Palette.ts'
+import type { CoinVisuals } from './CoinInstancer.ts'
 import type { CollectibleKind } from './CollectibleKind.ts'
 import { COLLECTIBLE_DEFINITIONS } from './CollectibleKind.ts'
 
@@ -27,6 +28,7 @@ export class CollectiblePrefabs {
   private readonly geometries: THREE.BufferGeometry[] = []
   private readonly materials: THREE.Material[] = []
   private readonly bodyMaterials = new Map<CollectibleKind, THREE.MeshStandardMaterial>()
+  private coinLook: CoinVisuals | null = null
 
   create(kind: CollectibleKind): CollectiblePrefab {
     const definition = COLLECTIBLE_DEFINITIONS[kind]
@@ -81,6 +83,7 @@ export class CollectiblePrefabs {
     this.geometries.length = 0
     this.materials.length = 0
     this.bodyMaterials.clear()
+    this.coinLook = null
   }
 
   private bodyMaterial(kind: CollectibleKind): THREE.MeshStandardMaterial {
@@ -145,21 +148,28 @@ export class CollectiblePrefabs {
     return mesh
   }
 
-  private buildCoin(root: THREE.Group, kind: CollectibleKind): void {
-    const body = this.mesh(
-      this.geometry(new THREE.CylinderGeometry(0.24, 0.24, 0.055, 16)),
-      this.bodyMaterial(kind),
-    )
-    body.rotation.x = Math.PI / 2
-    root.add(body)
+  /**
+   * Coins are drawn by CoinInstancer from one shared body and rim; a coin's
+   * own root only carries its transform.
+   */
+  private buildCoin(root: THREE.Group, _kind: CollectibleKind): void {
+    root.userData.instanced = true
+  }
 
-    // A solid darker rim outlines the coin against the bright deck.
-    const rim = this.mesh(
-      this.geometry(new THREE.TorusGeometry(0.245, 0.03, 6, 24)),
-      this.coinRimMaterial(),
-      false,
-    )
-    root.add(rim)
+  /** The shared coin geometry and materials (created once). */
+  coinVisuals(): CoinVisuals {
+    if (!this.coinLook) {
+      const body = this.geometry(new THREE.CylinderGeometry(0.24, 0.24, 0.055, 16))
+      body.rotateX(Math.PI / 2)
+      this.coinLook = {
+        bodyGeometry: body,
+        // A solid darker rim outlines the coin against the bright deck.
+        rimGeometry: this.geometry(new THREE.TorusGeometry(0.245, 0.03, 6, 24)),
+        bodyMaterial: this.bodyMaterial('coin'),
+        rimMaterial: this.coinRimMaterial(),
+      }
+    }
+    return this.coinLook
   }
 
   private buildToken(root: THREE.Group, kind: CollectibleKind): void {

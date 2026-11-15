@@ -27,6 +27,7 @@ export class Renderer {
 
   private readonly container: HTMLElement
   private resizeObserver: ResizeObserver | null = null
+  private pixelRatioLimit: number | null = null
   private width = 1
   private height = 1
   private pixelRatio = 1
@@ -96,7 +97,10 @@ export class Renderer {
 
     const width = Math.max(1, Math.round(this.container.clientWidth || window.innerWidth))
     const height = Math.max(1, Math.round(this.container.clientHeight || window.innerHeight))
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, this.qualitySettings.maxPixelRatio)
+    const pixelRatio = Math.min(
+      window.devicePixelRatio || 1,
+      this.pixelRatioLimit ?? this.qualitySettings.maxPixelRatio,
+    )
 
     const sizeChanged = width !== this.width || height !== this.height
     const ratioChanged = pixelRatio !== this.pixelRatio
@@ -121,6 +125,20 @@ export class Renderer {
 
   getQualitySettings(): QualitySettings {
     return this.qualitySettings
+  }
+
+  /** The screen's own pixel ratio: the sharpest the canvas can usefully be. */
+  get devicePixelRatio(): number {
+    return window.devicePixelRatio || 1
+  }
+
+  /**
+   * Caps the pixel ratio below the tier's maximum (dynamic resolution), or
+   * `null` to use the tier's maximum.
+   */
+  setPixelRatioLimit(limit: number | null): void {
+    this.pixelRatioLimit = limit
+    this.resize()
   }
 
   setQualityLevel(level: QualityLevel): void {

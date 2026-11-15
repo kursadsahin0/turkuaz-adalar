@@ -7,6 +7,7 @@ import type { Collectible } from './Collectible.ts'
 import type { CollectibleKind, CollectiblePickup, PowerUpKind } from './CollectibleKind.ts'
 import { COLLECTIBLE_KINDS, POWER_UP_KINDS } from './CollectibleKind.ts'
 import { CollectionBurstField } from './CollectionBurst.ts'
+import { CoinInstancer } from './CoinInstancer.ts'
 import { CollectiblePool } from './CollectiblePool.ts'
 import { CollectiblePrefabs } from './CollectiblePrefabs.ts'
 import { DEFAULT_SPAWN_RULES, type SpawnRules } from '../levels/SpawnRules.ts'
@@ -29,6 +30,7 @@ export class CollectibleManager {
   private readonly pools = new Map<CollectibleKind, CollectiblePool>()
   private readonly bySegment = new Map<number, Collectible[]>()
   private readonly bursts: CollectionBurstField
+  private readonly coins: CoinInstancer
   private nextId = 1
   private disposed = false
 
@@ -55,6 +57,7 @@ export class CollectibleManager {
     }
 
     scene.add(this.bursts.points)
+    this.coins = new CoinInstancer(scene, this.prefabs.coinVisuals())
   }
 
   /** Live pickups, including ones still playing their collection animation. */
@@ -217,6 +220,7 @@ export class CollectibleManager {
       this.clearSegment(segmentId)
     }
     this.bursts.clear()
+    this.coins.sync(this.bySegment.values())
   }
 
   /**
@@ -233,6 +237,7 @@ export class CollectibleManager {
         collectible.root.visible = visible && collectible.state !== 'idle'
       }
     }
+    this.coins.sync(this.bySegment.values())
   }
 
   collectAt(position: THREE.Vector3, playerRadius: number): CollectiblePickup[] {
@@ -385,6 +390,7 @@ export class CollectibleManager {
         }
       }
     }
+    this.coins.sync(this.bySegment.values())
   }
 
   /** Emits the collection spark burst for a pickup. */
@@ -406,6 +412,7 @@ export class CollectibleManager {
       pool.dispose()
     }
     this.pools.clear()
+    this.coins.dispose()
     this.prefabs.dispose()
     this.bursts.dispose()
   }

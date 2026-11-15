@@ -10,6 +10,11 @@ import type { FloatingIslandAssets } from './FloatingIsland.ts'
  */
 export class DistantIslands {
   private readonly root = new THREE.Group()
+
+  /** The distant islands' scene-graph root (for instanced drawing). */
+  get object(): THREE.Object3D {
+    return this.root
+  }
   private readonly meshes: THREE.Mesh[] = []
 
   constructor(scene: THREE.Scene, assets: FloatingIslandAssets) {

@@ -1,6 +1,10 @@
 import {
   AdMob,
   AdmobConsentStatus,
+  BannerAdPluginEvents,
+  BannerAdPosition,
+  BannerAdSize,
+  InterstitialAdPluginEvents,
   MaxAdContentRating,
   RewardAdPluginEvents,
 } from '@capacitor-community/admob'
@@ -20,10 +24,14 @@ export const ADMOB_TEST_IDS = {
   android: {
     appId: 'ca-app-pub-3940256099942544~3347511713',
     rewardedAdUnitId: 'ca-app-pub-3940256099942544/5224354917',
+    bannerAdUnitId: 'ca-app-pub-3940256099942544/9214589741',
+    interstitialAdUnitId: 'ca-app-pub-3940256099942544/1033173712',
   },
   ios: {
     appId: 'ca-app-pub-3940256099942544~1458002511',
     rewardedAdUnitId: 'ca-app-pub-3940256099942544/1712485313',
+    bannerAdUnitId: 'ca-app-pub-3940256099942544/2435281174',
+    interstitialAdUnitId: 'ca-app-pub-3940256099942544/4411468910',
   },
 } as const
 
@@ -34,6 +42,13 @@ export interface AdMobConfig {
   /** Informational: the app ID itself is set natively (manifest / Info.plist). */
   readonly appId: string
   readonly rewardedAdUnitId: string
+  /**
+   * The always-on bottom banner, or null for none: a store build without a
+   * real banner unit shows no banner rather than Google's test banner.
+   */
+  readonly bannerAdUnitId: string | null
+  /** Full-screen ad between islands (paced by InterstitialPacing), or null for none. */
+  readonly interstitialAdUnitId: string | null
 }
 
 /** Result of the start-up privacy flow (UMP + App Tracking Transparency). */
@@ -55,11 +70,17 @@ export function resolveAdMobConfig(): AdMobConfig & { readonly testing: boolean 
   const env = import.meta.env
   const rewarded =
     platform === 'ios' ? env.VITE_ADMOB_REWARDED_IOS : env.VITE_ADMOB_REWARDED_ANDROID
+  const banner = platform === 'ios' ? env.VITE_ADMOB_BANNER_IOS : env.VITE_ADMOB_BANNER_ANDROID
+  const interstitial =
+    platform === 'ios' ? env.VITE_ADMOB_INTERSTITIAL_IOS : env.VITE_ADMOB_INTERSTITIAL_ANDROID
   const test = ADMOB_TEST_IDS[platform]
+  const testing = !rewarded
   return {
     appId: test.appId,
     rewardedAdUnitId: rewarded || test.rewardedAdUnitId,
-    testing: !rewarded,
+    bannerAdUnitId: banner || (testing ? test.bannerAdUnitId : null),
+    interstitialAdUnitId: interstitial || (testing ? test.interstitialAdUnitId : null),
+    testing,
   }
 }
 
@@ -83,6 +104,9 @@ export class AdMobProvider extends AdProvider {
   private ready = new Set<string>()
   private loading = new Map<string, Promise<void>>()
   private personalized = false
+  private bannerShown = false
+  private interstitialReady = false
+  private bannerSizeListener: PluginListenerHandle | null = null
 
   constructor(testMode = false, config: AdMobConfig & { readonly testing?: boolean }) {
     super(testMode)
@@ -137,6 +161,7 @@ export class AdMobProvider extends AdProvider {
     this.personalized = personalized
     // Ads loaded under the previous choice must not be shown under the new one.
     this.ready.clear()
+    this.interstitialReady = false
   }
 
   async loadAd(config: AdConfig): Promise<void> {
@@ -221,9 +246,109 @@ export class AdMobProvider extends AdProvider {
     return 3000
   }
 
+  /**
+   * Shows the adaptive banner at the bottom of the screen (or reloads it, e.g.
+   * after the personalisation choice changed). `onHeight` receives the
+   * banner's height in CSS pixels, 0 when it is gone, so the game can keep
+   * its own controls clear of it.
+   */
+  async showBanner(onHeight: (height: number) => void): Promise<boolean> {
+    const adId = this.config.bannerAdUnitId
+    if (this.disposed || !adId) {
+      return false
+    }
+    try {
+      await this.initialize()
+      if (!this.bannerSizeListener) {
+        this.bannerSizeListener = await AdMob.addListener(
+          BannerAdPluginEvents.SizeChanged,
+          (size) => onHeight(Math.max(0, size.height)),
+        )
+      }
+      if (this.bannerShown) {
+        await AdMob.removeBanner().catch(() => undefined)
+      }
+      await AdMob.showBanner({
+        adId,
+        adSize: BannerAdSize.ADAPTIVE_BANNER,
+        position: BannerAdPosition.BOTTOM_CENTER,
+        margin: 0,
+        isTesting: this.testing,
+        npa: !this.personalized,
+      })
+      this.bannerShown = true
+      return true
+    } catch (error) {
+      this.logger.warn('Banner could not be shown.', error)
+      return false
+    }
+  }
+
+  /** Loads the full-screen ad in the background so it can show without a wait. */
+  async prepareInterstitial(): Promise<boolean> {
+    const adId = this.config.interstitialAdUnitId
+    if (this.disposed || !adId) {
+      return false
+    }
+    if (this.interstitialReady) {
+      return true
+    }
+    try {
+      await this.initialize()
+      await AdMob.prepareInterstitial({ adId, isTesting: this.testing, npa: !this.personalized })
+      this.interstitialReady = true
+      return true
+    } catch (error) {
+      this.logger.warn('Interstitial could not be loaded.', error)
+      return false
+    }
+  }
+
+  /**
+   * Shows the prepared full-screen ad and resolves once it is closed (or could
+   * not be shown). Returns whether an ad was actually shown.
+   */
+  async showInterstitial(): Promise<boolean> {
+    if (this.disposed || !this.interstitialReady) {
+      return false
+    }
+    this.interstitialReady = false
+    const handles: PluginListenerHandle[] = []
+    try {
+      const outcome = new Promise<boolean>((resolve) => {
+        void AdMob.addListener(InterstitialAdPluginEvents.Dismissed, () => resolve(true)).then(
+          (handle) => handles.push(handle),
+        )
+        void AdMob.addListener(InterstitialAdPluginEvents.FailedToShow, () => resolve(false)).then(
+          (handle) => handles.push(handle),
+        )
+      })
+      await AdMob.showInterstitial()
+      return await outcome
+    } catch (error) {
+      this.logger.warn('Interstitial could not be shown.', error)
+      return false
+    } finally {
+      for (const handle of handles) {
+        void handle.remove()
+      }
+    }
+  }
+
+  async removeBanner(): Promise<void> {
+    if (!this.bannerShown) {
+      return
+    }
+    this.bannerShown = false
+    await AdMob.removeBanner().catch(() => undefined)
+  }
+
   dispose(): void {
     super.dispose()
     this.ready.clear()
+    void this.removeBanner()
+    void this.bannerSizeListener?.remove()
+    this.bannerSizeListener = null
   }
 
   private async initialize(): Promise<void> {

@@ -13,8 +13,18 @@ import { loadAdMobIds, problemWith, publisherOf, ROOT } from './admob-config.mjs
 const only = process.argv.slice(2).find((arg) => arg === 'android' || arg === 'ios')
 const platforms = only ? [only] : ['android', 'ios']
 const keys = {
-  android: ['ADMOB_APP_ID_ANDROID', 'VITE_ADMOB_REWARDED_ANDROID'],
-  ios: ['ADMOB_APP_ID_IOS', 'VITE_ADMOB_REWARDED_IOS'],
+  android: [
+    'ADMOB_APP_ID_ANDROID',
+    'VITE_ADMOB_REWARDED_ANDROID',
+    'VITE_ADMOB_BANNER_ANDROID',
+    'VITE_ADMOB_INTERSTITIAL_ANDROID',
+  ],
+  ios: [
+    'ADMOB_APP_ID_IOS',
+    'VITE_ADMOB_REWARDED_IOS',
+    'VITE_ADMOB_BANNER_IOS',
+    'VITE_ADMOB_INTERSTITIAL_IOS',
+  ],
 }
 
 const ids = loadAdMobIds()

@@ -29,6 +29,7 @@ export interface MonetizationEvent {
     | 'ad_completed'
     | 'ad_failed'
     | 'ad_skipped'
+    | 'interstitial_shown'
     | 'purchase_completed'
     | 'purchase_failed'
   timestamp: number
@@ -82,6 +83,7 @@ export class MonetizationManager {
     }
 
     const result = await this.provider.showAd(config, rewardConfig)
+    this.lastRewardedAt = Date.now()
     this.recordEvent({
       type: result.success ? 'ad_completed' : 'ad_failed',
       timestamp: Date.now(),
@@ -114,9 +116,50 @@ export class MonetizationManager {
    * Applies the player's consent choice. Providers that support it (AdMob:
    * `npa=1` for non-personalised requests) read this before each request.
    */
+  private bannerHeight: ((height: number) => void) | null = null
+  /** When the last rewarded ad closed (ms epoch), 0 = never. */
+  lastRewardedAt = 0
+
   setPersonalizedAds(personalized: boolean): void {
+    const changed = personalized !== this.personalizedAds
     this.personalizedAds = personalized
     this.provider.setPersonalizedAds?.(personalized)
+    // A banner requested under the old choice is reloaded under the new one.
+    if (changed && this.bannerHeight) {
+      void this.showBanner(this.bannerHeight)
+    }
+  }
+
+  /** Preloads the between-islands full-screen ad (native AdMob only). */
+  prepareInterstitial(): Promise<boolean> {
+    return this.provider instanceof AdMobProvider
+      ? this.provider.prepareInterstitial()
+      : Promise.resolve(false)
+  }
+
+  /** Shows the preloaded full-screen ad; resolves after it closes. */
+  async showInterstitial(): Promise<boolean> {
+    if (!(this.provider instanceof AdMobProvider)) {
+      return false
+    }
+    const shown = await this.provider.showInterstitial()
+    if (shown) {
+      this.recordEvent({ type: 'interstitial_shown', timestamp: Date.now() })
+    }
+    return shown
+  }
+
+  /**
+   * Shows the always-on bottom banner (native AdMob only). `onHeight` gets
+   * its height in CSS pixels, 0 when it is gone. Returns whether a banner
+   * is (being) shown.
+   */
+  async showBanner(onHeight: (height: number) => void): Promise<boolean> {
+    if (!(this.provider instanceof AdMobProvider)) {
+      return false
+    }
+    this.bannerHeight = onHeight
+    return this.provider.showBanner(onHeight)
   }
 
   get personalizedAdsAllowed(): boolean {

@@ -1,6 +1,6 @@
 /**
  * Abstract advertising provider interface.
- * Implementations can be platform-specific (AdMob for Android, IAP for iOS, web ads for web).
+ * Implementations: AdMob on Android and iOS, a simulated provider in the browser.
  * All providers must strictly follow platform policies and never simulate ad completion.
  */
 

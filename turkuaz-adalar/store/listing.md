@@ -60,7 +60,7 @@ Günlük ödüller, her gün yenilenen görevler, ada görevleri ve kristal kaza
 • İnternetsiz oynanır
 • Düşük donanımlı telefonlarda grafik kalitesi kendini ayarlar
 
-Hesap yok, kayıt yok: ilerlemen yalnızca cihazında saklanır. Reklamlar isteğe bağlıdır; sadece ikinci şans ya da çift coin için reklam izlersin.
+Hesap yok, kayıt yok: ilerlemen yalnızca cihazında saklanır. Oyun ücretsizdir ve reklam içerir: ekranın altında küçük bir banner, ara sıra adalar arasında tam ekran reklam, ikinci şans ya da çift coin için de isteğe bağlı video reklam.
 ```
 
 **Bu sürümdeki yenilikler**
@@ -124,7 +124,7 @@ Daily rewards, fresh daily missions, island missions and achievements that pay o
 • Plays offline
 • Graphics quality adjusts itself on low-end phones
 
-No account, no sign-up: your progress stays on your device. Ads are optional; you only watch one for a second chance or double coins.
+No account, no sign-up: your progress stays on your device. The game is free and contains ads: a small banner at the bottom of the screen, now and then a full-screen ad between islands, plus optional video ads for a second chance or double coins.
 ```
 
 **What's new**
@@ -188,7 +188,7 @@ Tägliche Belohnungen, neue Tagesaufgaben, Inselaufgaben und Erfolge, die Krista
 • Offline spielbar
 • Die Grafikqualität passt sich schwächeren Handys automatisch an
 
-Kein Konto, keine Anmeldung: Dein Fortschritt bleibt auf deinem Gerät. Werbung ist freiwillig; du siehst sie nur für eine zweite Chance oder doppelte Münzen.
+Kein Konto, keine Anmeldung: Dein Fortschritt bleibt auf deinem Gerät. Das Spiel ist kostenlos und enthält Werbung: ein kleines Banner am unteren Bildschirmrand, ab und zu eine Vollbildanzeige zwischen den Inseln und freiwillige Videowerbung für eine zweite Chance oder doppelte Münzen.
 ```
 
 **Neuerungen**
@@ -252,7 +252,7 @@ Recompensas diarias, misiones diarias nuevas, misiones de isla y logros que dan 
 • Se juega sin conexión
 • La calidad gráfica se ajusta sola en móviles modestos
 
-Sin cuenta ni registro: tu progreso se queda en tu dispositivo. Los anuncios son opcionales; solo ves uno para tener una segunda oportunidad o el doble de monedas.
+Sin cuenta ni registro: tu progreso se queda en tu dispositivo. El juego es gratis y contiene anuncios: un pequeño banner en la parte inferior de la pantalla, de vez en cuando un anuncio a pantalla completa entre islas y anuncios de vídeo opcionales para una segunda oportunidad o el doble de monedas.
 ```
 
 **Novedades**
@@ -275,10 +275,11 @@ runner,carrera infinita,isla,cristal,monedas,arcade,aventura,saltar,parkour,una 
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Category               | Game → Arcade (Play) / Games → Action, Arcade (App Store)                                                                                                                                 |
 | Tags (Play)            | Runner, Arcade, Casual, Offline                                                                                                                                                           |
-| Contains ads           | Yes (rewarded only, once AdMob IDs are set)                                                                                                                                               |
+| Contains ads           | Yes: an always-on bottom banner, an occasional full-screen ad between islands and optional rewarded video ads (AdMob)                                                                     |
 | In-app purchases       | No                                                                                                                                                                                        |
 | Content rating         | Answer the IARC questionnaire: no violence, no user content, no gambling → expected PEGI 3 / Everyone                                                                                     |
-| Privacy policy URL     | https://kursadsahin0.github.io/turkuaz-adalar/privacy.html (live once GitHub Pages is enabled, see RELEASE.md)                                                                            |
+| Privacy policy URL     | https://kursadsahin0.github.io/turkuaz-adalar/privacy.html (live)                                                                                                                         |
+| Website                | https://kursadsahin0.github.io (hosts app-ads.txt, see RELEASE.md)                                                                                                                        |
 | Developer name         | Kürşat Şahin                                                                                                                                                                              |
 | Contact e-mail         | kursatsahin565@gmail.com (same as the privacy policy)                                                                                                                                     |
 | Target audience (Play) | Age groups **13–15, 16–17, 18+**. Answer "No" to "Could the app unintentionally appeal to children?" only if the store listing and graphics stay as they are (no child-directed wording). |

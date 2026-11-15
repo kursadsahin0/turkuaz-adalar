@@ -949,6 +949,83 @@ function i18nDay(date) {
   )
 }
 
+{
+  console.log('\nInterstitial pacing')
+  const { InterstitialPacing, INTERSTITIAL_RULES } =
+    await import('../src/systems/monetization/InterstitialPacing.ts')
+  window.localStorage.clear()
+  const pacing = new InterstitialPacing(new SaveManager())
+  const minute = 60_000
+  let now = 10 * minute
+  const results = []
+  for (let island = 1; island <= 9; island += 1) {
+    pacing.recordCompletion()
+    const show = pacing.shouldShow(now)
+    results.push(show)
+    if (show) pacing.recordShown(now)
+    now += 2 * minute
+  }
+  test(
+    'interstitial: none before the 3rd island, then every 3rd',
+    results.map((r) => (r ? 1 : 0)).join('') === '001001001',
+    results.map((r) => (r ? 1 : 0)).join(''),
+  )
+
+  window.localStorage.clear()
+  const fast = new InterstitialPacing(new SaveManager())
+  for (let i = 0; i < 3; i += 1) fast.recordCompletion()
+  fast.recordShown(0 + 1)
+  for (let i = 0; i < 3; i += 1) fast.recordCompletion()
+  test(
+    'interstitial: never twice within the minimum gap',
+    !fast.shouldShow(1 + (INTERSTITIAL_RULES.minSecondsBetween - 1) * 1000) &&
+      fast.shouldShow(1 + INTERSTITIAL_RULES.minSecondsBetween * 1000),
+  )
+
+  window.localStorage.clear()
+  const quiet = new InterstitialPacing(new SaveManager())
+  for (let i = 0; i < 3; i += 1) quiet.recordCompletion()
+  const t0 = 50 * minute
+  test(
+    'interstitial: held back right after a rewarded ad',
+    !quiet.shouldShow(t0, t0 - 30_000) && quiet.shouldShow(t0, t0 - 120_000),
+  )
+
+  const reloaded = new InterstitialPacing(new SaveManager())
+  test('interstitial: progress survives a restart', reloaded.shouldShow(t0))
+}
+
+{
+  console.log('\nDynamic resolution')
+  const { DynamicResolution } = await import('../src/systems/performance/DynamicResolution.ts')
+  const feed = (dr, fps, seconds) => {
+    let last = null
+    for (let i = 0; i < seconds; i += 1) last = dr.sample(fps) ?? last
+    return last
+  }
+  const smooth = new DynamicResolution(1.5, 2)
+  feed(smooth, 60, 30)
+  test('dynamic resolution: climbs to the cap while frames are smooth', smooth.current === 2)
+  const slow = new DynamicResolution(1.5, 2)
+  feed(slow, 30, 30)
+  test(
+    'dynamic resolution: drops to the floor while frames drop',
+    slow.current === 1 && slow.atFloor,
+  )
+  const bounce = new DynamicResolution(1.5, 2)
+  feed(bounce, 60, 12) // up to 1.75
+  const raised = bounce.current
+  feed(bounce, 40, 8) // too slow at 1.75: back down
+  feed(bounce, 60, 40) // smooth again
+  test(
+    'dynamic resolution: never returns to a ratio that was too slow',
+    raised === 1.75 && bounce.current < 1.75,
+    `raised ${raised}, now ${bounce.current}`,
+  )
+  const capped = new DynamicResolution(3, 1.25)
+  test('dynamic resolution: stays within the screen cap', capped.current === 1.25)
+}
+
 console.log(`\n${passed + failed} tests: ${passed} passed, ${failed} failed`)
 if (failed === 0) {
   console.log('\n✓ All meta system tests passed!')

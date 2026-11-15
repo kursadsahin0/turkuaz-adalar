@@ -5,7 +5,10 @@ export type QualityLevel = 'low' | 'medium' | 'high'
 export interface QualitySettings {
   level: QualityLevel
   antialias: boolean
+  /** Sharpest pixel ratio this tier may reach (auto quality climbs towards it). */
   maxPixelRatio: number
+  /** Pixel ratio auto quality starts from before measuring the frame rate. */
+  startPixelRatio: number
   shadowMapSize: number
   shadowMapType: THREE.ShadowMapType
   shadowsEnabled: boolean
@@ -27,9 +30,11 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualitySettings> = {
   low: {
     level: 'low',
     antialias: false,
-    maxPixelRatio: 1,
-    shadowMapSize: 512,
-    shadowMapType: THREE.BasicShadowMap,
+    maxPixelRatio: 2,
+    startPixelRatio: 1.5,
+    shadowMapSize: 1024,
+    // PCF keeps shadow edges smooth; Basic was visibly blocky on phones.
+    shadowMapType: THREE.PCFShadowMap,
     shadowsEnabled: true,
     fogEnabled: true,
     particleMultiplier: 0.4,
@@ -41,8 +46,9 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualitySettings> = {
   medium: {
     level: 'medium',
     antialias: true,
-    maxPixelRatio: 1.5,
-    shadowMapSize: 1024,
+    maxPixelRatio: 2,
+    startPixelRatio: 1.75,
+    shadowMapSize: 1536,
     shadowMapType: THREE.PCFShadowMap,
     shadowsEnabled: true,
     fogEnabled: true,
@@ -55,7 +61,8 @@ export const QUALITY_PRESETS: Record<QualityLevel, QualitySettings> = {
   high: {
     level: 'high',
     antialias: true,
-    maxPixelRatio: 2,
+    maxPixelRatio: 2.5,
+    startPixelRatio: 2,
     shadowMapSize: 2048,
     shadowMapType: THREE.PCFSoftShadowMap,
     shadowsEnabled: true,

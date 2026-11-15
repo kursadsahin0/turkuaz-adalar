@@ -12,6 +12,11 @@ import { FloatingPad } from './FloatingPad.ts'
  */
 export class IslandScenery {
   private readonly root = new THREE.Group()
+
+  /** The scenery's scene-graph root (for instanced drawing). */
+  get object(): THREE.Object3D {
+    return this.root
+  }
   private readonly islands: FloatingIsland[] = []
   private readonly pads: FloatingPad[] = []
   private rng = new Rng(createSeed())

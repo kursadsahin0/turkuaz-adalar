@@ -17,91 +17,115 @@ mkdirSync(out, { recursive: true })
 const COLORS = {
   deepTop: '#0b657e',
   deepBottom: '#041a20',
-  turquoise: '#61f5e3',
-  turquoiseStrong: '#2fe0cd',
   mint: '#b6ffe9',
-  shade: '#0e8f86',
-  shadeDeep: '#0a5f63',
   sand: '#f1d29a',
 }
 
-/** Faceted crystal centred at (cx, cy), `size` = total height. */
-function crystal(cx, cy, size) {
-  const h = size / 2
-  const w = size * 0.36
-  const mid = cy - size * 0.08
-  const top = cy - h
-  const bottom = cy + h
+/**
+ * The Tidelark emblem, drawn on a 1024×1024 grid: a turquoise wave breaking
+ * under a sunset, with a lark gliding over the crest. `bleed` extends the
+ * sky and sea past the grid for Android's adaptive background layer.
+ */
+function emblemDefs() {
   return `
-    <g>
-      <polygon points="${cx},${top} ${cx + w},${mid} ${cx},${mid + size * 0.04}" fill="${COLORS.turquoiseStrong}"/>
-      <polygon points="${cx},${top} ${cx - w},${mid} ${cx},${mid + size * 0.04}" fill="${COLORS.mint}"/>
-      <polygon points="${cx - w},${mid} ${cx},${mid + size * 0.04} ${cx},${bottom}" fill="${COLORS.turquoise}"/>
-      <polygon points="${cx + w},${mid} ${cx},${mid + size * 0.04} ${cx},${bottom}" fill="${COLORS.shade}"/>
-      <polygon points="${cx},${top} ${cx - w * 0.38},${mid - size * 0.02} ${cx},${mid - size * 0.12}" fill="#ffffff" opacity="0.55"/>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe2a8"/>
+      <stop offset="0.42" stop-color="#ffab7e"/>
+      <stop offset="0.62" stop-color="#ff8a6e"/>
+    </linearGradient>
+    <linearGradient id="wave" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#5ff2df"/>
+      <stop offset="0.55" stop-color="#16b8b0"/>
+      <stop offset="1" stop-color="#086b73"/>
+    </linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f9ea0"/>
+      <stop offset="1" stop-color="#0b4f5a"/>
+    </linearGradient>
+    <linearGradient id="barrel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d5f68"/>
+      <stop offset="1" stop-color="#063840"/>
+    </linearGradient>`
+}
+
+function emblemScene(bleed = 0) {
+  const left = -40 - bleed
+  const right = 1064 + bleed
+  const bottom = 1064 + bleed
+  return `
+    <rect x="${-bleed}" y="${-bleed}" width="${1024 + bleed * 2}" height="${1024 + bleed * 2}" fill="url(#sky)"/>
+    <circle cx="700" cy="290" r="150" fill="#fff4d6"/>
+    <path d="M ${left} 760 L -40 760 C 200 700 420 660 620 640 C 800 624 940 650 1064 690 L ${right} 690
+             L ${right} ${bottom} L ${left} ${bottom} Z" fill="url(#sea)"/>
+    <path d="M ${left} ${bottom} L ${left} 640 L -40 640
+             C 120 560 260 420 470 380
+             C 680 340 840 440 860 600
+             C 870 690 800 760 720 750
+             C 640 740 612 660 660 620
+             C 690 596 730 610 740 640
+             C 760 560 690 500 610 510
+             C 500 524 450 640 490 760
+             C 520 850 640 900 1064 880 L ${right} 880
+             L ${right} ${bottom} Z" fill="url(#wave)"/>
+    <path d="M 740 640 C 760 560 690 500 610 510 C 500 524 450 640 490 760
+             C 470 650 530 560 620 552 C 680 548 724 590 740 640 Z" fill="url(#barrel)"/>
+    <path d="M 120 580 C 250 470 360 400 470 380 C 680 340 840 440 860 600
+             C 864 646 852 690 830 718
+             C 834 600 764 476 612 446 C 460 418 300 468 120 580 Z" fill="#effffb"/>`
+}
+
+/** The lark, a swallow-like glider seen from above, heading up and right. */
+function lark() {
+  return `
+    <g transform="translate(330 270) rotate(-24) scale(0.88)">
+      <path d="M 92 0 C 74 -11 52 -15 30 -14 C 8 -42 -36 -112 -128 -156
+               C -74 -104 -44 -52 -24 -18 L -78 -30 L -50 0 L -78 30 L -24 18
+               C -44 52 -74 104 -128 156 C -36 112 8 42 30 14 C 52 15 74 11 92 0 Z"
+            fill="#0a3442"/>
     </g>`
 }
 
-/** Two stylised swells under the crystal. */
-function waves(cx, cy, width, stroke) {
-  const half = width / 2
-  const wave = (y, opacity) =>
-    `<path d="M ${cx - half} ${y} q ${width / 8} ${-stroke * 1.6} ${width / 4} 0 t ${width / 4} 0 t ${width / 4} 0 t ${width / 4} 0"
-      fill="none" stroke="${COLORS.turquoise}" stroke-width="${stroke}" stroke-linecap="round" opacity="${opacity}"/>`
-  return wave(cy, 0.95) + wave(cy + stroke * 2.4, 0.5)
-}
-
-function background(size) {
+/** The emblem as a group, optionally clipped to a rounded square (splash, store, web). */
+function emblem({ rounded = false, id = 'e' } = {}) {
   return `
-    <defs>
-      <radialGradient id="bg" cx="50%" cy="30%" r="80%">
-        <stop offset="0" stop-color="${COLORS.deepTop}"/>
-        <stop offset="1" stop-color="${COLORS.deepBottom}"/>
-      </radialGradient>
-      <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-        <stop offset="0" stop-color="${COLORS.turquoise}" stop-opacity="0.45"/>
-        <stop offset="1" stop-color="${COLORS.turquoise}" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
-    <rect width="${size}" height="${size}" fill="url(#bg)"/>`
+    <defs>${emblemDefs()}${rounded ? `<clipPath id="${id}"><rect width="1024" height="1024" rx="230"/></clipPath>` : ''}</defs>
+    <g ${rounded ? `clip-path="url(#${id})"` : ''}>${emblemScene()}${lark()}</g>`
 }
 
-/** Full icon (iOS, legacy Android, store listing). */
-function iconSvg(size, { withBackground = true } = {}) {
-  const c = size / 2
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    ${withBackground ? background(size) : `<defs><radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="${COLORS.turquoise}" stop-opacity="0.45"/><stop offset="1" stop-color="${COLORS.turquoise}" stop-opacity="0"/></radialGradient></defs>`}
-    <circle cx="${c}" cy="${c - size * 0.06}" r="${size * 0.3}" fill="url(#glow)"/>
-    ${crystal(c, c - size * 0.07, size * 0.5)}
-    ${waves(c, c + size * 0.26, size * 0.5, size * 0.032)}
-  </svg>`
+/** Full square icon (iOS, legacy Android, store listing); the OS rounds it. */
+function iconSvg(size) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 1024 1024">${emblem()}</svg>`
 }
 
 /**
- * Android adaptive foreground. capacitor-assets already insets this layer by
- * 16.7% per side (the 66% safe zone), so the art fills most of its canvas.
+ * Android adaptive icon. The generated ic_launcher.xml insets both layers by
+ * 16.7%, so both use the same 1024 grid: the scene behind, the lark in
+ * front (launchers that animate the layers give it a little depth).
  */
 function foregroundSvg(size) {
-  const c = size / 2
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    ${crystal(c, c - size * 0.08, size * 0.62)}
-    ${waves(c, c + size * 0.32, size * 0.62, size * 0.04)}
-  </svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 1024 1024">${lark()}</svg>`
 }
 
 function backgroundSvg(size) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${background(size)}</svg>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 1024 1024">
+    <defs>${emblemDefs()}</defs>${emblemScene()}</svg>`
 }
 
-/** Splash: the mark plus the title, centred on the deep-sea gradient. */
+/** Splash: the rounded emblem and the wordmark on the deep-sea background. */
 function splashSvg(size) {
   const c = size / 2
+  const mark = size * 0.2
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-    ${background(size)}
-    <circle cx="${c}" cy="${c - size * 0.06}" r="${size * 0.12}" fill="url(#glow)"/>
-    ${crystal(c, c - size * 0.07, size * 0.17)}
-    <text x="${c}" y="${c + size * 0.125}" text-anchor="middle" font-family="Avenir Next, Helvetica, Arial, sans-serif"
-      font-weight="800" font-size="${size * 0.06}" letter-spacing="${size * 0.004}"><tspan fill="${COLORS.mint}">TIDE</tspan><tspan fill="${COLORS.sand}">LARK</tspan></text>
+    <defs>
+      <radialGradient id="bg" cx="50%" cy="40%" r="75%">
+        <stop offset="0" stop-color="${COLORS.deepTop}"/>
+        <stop offset="1" stop-color="${COLORS.deepBottom}"/>
+      </radialGradient>
+    </defs>
+    <rect width="${size}" height="${size}" fill="url(#bg)"/>
+    <svg x="${c - mark / 2}" y="${c - mark * 0.72}" width="${mark}" height="${mark}" viewBox="0 0 1024 1024">${emblem({ rounded: true, id: 'splash' })}</svg>
+    <text x="${c}" y="${c + mark * 0.62}" text-anchor="middle" font-family="Avenir Next, Helvetica, Arial, sans-serif"
+      font-weight="800" font-size="${size * 0.05}" letter-spacing="${size * 0.004}"><tspan fill="${COLORS.mint}">TIDE</tspan><tspan fill="${COLORS.sand}">LARK</tspan></text>
   </svg>`
 }
 
@@ -115,18 +139,30 @@ function featureSvg() {
         <stop offset="0" stop-color="${COLORS.deepTop}"/>
         <stop offset="1" stop-color="${COLORS.deepBottom}"/>
       </linearGradient>
-      <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-        <stop offset="0" stop-color="${COLORS.turquoise}" stop-opacity="0.45"/>
-        <stop offset="1" stop-color="${COLORS.turquoise}" stop-opacity="0"/>
-      </radialGradient>
     </defs>
     <rect width="${w}" height="${h}" fill="url(#fbg)"/>
-    <circle cx="250" cy="230" r="190" fill="url(#glow)"/>
-    ${crystal(250, 220, 260)}
-    ${waves(250, 400, 300, 16)}
-    <text x="470" y="250" font-family="Avenir Next, Helvetica, Arial, sans-serif" font-weight="800" font-size="104"><tspan fill="${COLORS.mint}">Tide</tspan><tspan fill="${COLORS.sand}">lark</tspan></text>
-    <text x="474" y="312" font-family="Avenir Next, Helvetica, Arial, sans-serif" font-weight="600" font-size="34" letter-spacing="3" fill="${COLORS.mint}" fill-opacity="0.75">ISLAND RUNNER</text>
+    <svg x="96" y="100" width="300" height="300" viewBox="0 0 1024 1024">${emblem({ rounded: true, id: 'feature' })}</svg>
+    <text x="456" y="250" font-family="Avenir Next, Helvetica, Arial, sans-serif" font-weight="800" font-size="104"><tspan fill="${COLORS.mint}">Tide</tspan><tspan fill="${COLORS.sand}">lark</tspan></text>
+    <text x="460" y="312" font-family="Avenir Next, Helvetica, Arial, sans-serif" font-weight="600" font-size="34" letter-spacing="3" fill="${COLORS.mint}" fill-opacity="0.75">ISLAND RUNNER</text>
   </svg>`
+}
+
+/**
+ * Android 12+ launch icon (windowSplashScreenAnimatedIcon). The system shows
+ * a 288dp canvas through a 192dp circle, so the rounded emblem is kept to
+ * 156dp to stay inside it. Rendered for xxxhdpi (4x); Android scales it down.
+ */
+function splashIconSvg(size) {
+  const mark = size * (156 / 288)
+  const offset = (size - mark) / 2
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <svg x="${offset}" y="${offset}" width="${mark}" height="${mark}" viewBox="0 0 1024 1024">${emblem({ rounded: true, id: 'launch' })}</svg>
+  </svg>`
+}
+
+/** Browser tab icon: the rounded emblem as a standalone SVG. */
+function faviconSvg() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">${emblem({ rounded: true, id: 'fav' })}</svg>\n`
 }
 
 async function render(name, svg, size) {
@@ -149,6 +185,16 @@ await sharp(Buffer.from(featureSvg()))
   .png()
   .toFile(join(root, 'store', 'feature-graphic-1024x500.png'))
 console.log('✓ store/icon-512.png, store/feature-graphic-1024x500.png')
+
+const launchDir = join(root, 'android', 'app', 'src', 'main', 'res', 'drawable-xxxhdpi')
+mkdirSync(launchDir, { recursive: true })
+await sharp(Buffer.from(splashIconSvg(1152)))
+  .png()
+  .toFile(join(launchDir, 'ic_splash_emblem.png'))
+console.log('✓ android drawable-xxxhdpi/ic_splash_emblem.png')
+
+writeFileSync(join(root, 'public', 'favicon.svg'), faviconSvg())
+console.log('✓ public/favicon.svg')
 
 writeFileSync(
   join(out, 'README.md'),

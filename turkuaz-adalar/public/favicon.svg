@@ -1,23 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="sea" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#b6ffe9" />
-      <stop offset="0.45" stop-color="#61f5e3" />
-      <stop offset="1" stop-color="#169a9a" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+    <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe2a8"/>
+      <stop offset="0.42" stop-color="#ffab7e"/>
+      <stop offset="0.62" stop-color="#ff8a6e"/>
     </linearGradient>
-    <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffe9bd" />
-      <stop offset="1" stop-color="#f1d29a" />
+    <linearGradient id="wave" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#5ff2df"/>
+      <stop offset="0.55" stop-color="#16b8b0"/>
+      <stop offset="1" stop-color="#086b73"/>
     </linearGradient>
-    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#61f5e3" stop-opacity="0.55" />
-      <stop offset="1" stop-color="#61f5e3" stop-opacity="0" />
-    </radialGradient>
-  </defs>
-  <rect width="64" height="64" rx="16" fill="#062c36" />
-  <circle cx="32" cy="32" r="27" fill="url(#glow)" />
-  <path d="M32 9 53 25 44 51 20 51 11 25Z" fill="url(#sea)" stroke="#e9fffa" stroke-opacity="0.45" stroke-width="1.5" />
-  <path d="M32 9 11 25h42Z" fill="#d7fff6" fill-opacity="0.36" />
-  <path d="M32 9v42M11 25l21 26 21-26" fill="none" stroke="#044a52" stroke-opacity="0.42" stroke-width="1.4" />
-  <path d="M17 53h30l-3 5H20Z" fill="url(#sand)" />
-</svg>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f9ea0"/>
+      <stop offset="1" stop-color="#0b4f5a"/>
+    </linearGradient>
+    <linearGradient id="barrel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d5f68"/>
+      <stop offset="1" stop-color="#063840"/>
+    </linearGradient><clipPath id="fav"><rect width="1024" height="1024" rx="230"/></clipPath></defs>
+    <g clip-path="url(#fav)">
+    <rect x="0" y="0" width="1024" height="1024" fill="url(#sky)"/>
+    <circle cx="700" cy="290" r="150" fill="#fff4d6"/>
+    <path d="M -40 760 L -40 760 C 200 700 420 660 620 640 C 800 624 940 650 1064 690 L 1064 690
+             L 1064 1064 L -40 1064 Z" fill="url(#sea)"/>
+    <path d="M -40 1064 L -40 640 L -40 640
+             C 120 560 260 420 470 380
+             C 680 340 840 440 860 600
+             C 870 690 800 760 720 750
+             C 640 740 612 660 660 620
+             C 690 596 730 610 740 640
+             C 760 560 690 500 610 510
+             C 500 524 450 640 490 760
+             C 520 850 640 900 1064 880 L 1064 880
+             L 1064 1064 Z" fill="url(#wave)"/>
+    <path d="M 740 640 C 760 560 690 500 610 510 C 500 524 450 640 490 760
+             C 470 650 530 560 620 552 C 680 548 724 590 740 640 Z" fill="url(#barrel)"/>
+    <path d="M 120 580 C 250 470 360 400 470 380 C 680 340 840 440 860 600
+             C 864 646 852 690 830 718
+             C 834 600 764 476 612 446 C 460 418 300 468 120 580 Z" fill="#effffb"/>
+    <g transform="translate(330 270) rotate(-24) scale(0.88)">
+      <path d="M 92 0 C 74 -11 52 -15 30 -14 C 8 -42 -36 -112 -128 -156
+               C -74 -104 -44 -52 -24 -18 L -78 -30 L -50 0 L -78 30 L -24 18
+               C -44 52 -74 104 -128 156 C -36 112 8 42 30 14 C 52 15 74 11 92 0 Z"
+            fill="#0a3442"/>
+    </g></g></svg>

@@ -8,8 +8,8 @@ The game supports three quality levels with different performance trade-offs:
 
 - **Target**: Older mobile devices (3GB RAM, low-end GPUs)
 - **Antialias**: Disabled
-- **Pixel Ratio**: 1x
-- **Shadow Map**: 512px, BasicShadowMap
+- **Pixel Ratio**: starts at 1.5x, auto range 1x–2x
+- **Shadow Map**: PCFShadowMap
 - **Particle Multiplier**: 0.4x (40% of normal particle count)
 - **Geometry Detail**: 0.5x
 - **Texture Compression**: Enabled
@@ -18,7 +18,7 @@ The game supports three quality levels with different performance trade-offs:
 
 - **Target**: Mid-range mobile devices (4-6GB RAM)
 - **Antialias**: Enabled
-- **Pixel Ratio**: 1.5x
+- **Pixel Ratio**: starts at 1.75x, auto range 1x–2x
 - **Shadow Map**: 1024px, PCFShadowMap
 - **Particle Multiplier**: 0.7x (70% of normal particle count)
 - **Geometry Detail**: 0.75x
@@ -28,11 +28,40 @@ The game supports three quality levels with different performance trade-offs:
 
 - **Target**: Flagship devices (6GB+ RAM, modern GPUs)
 - **Antialias**: Enabled
-- **Pixel Ratio**: 2x
+- **Pixel Ratio**: starts at 2x, auto range 1x–2.5x
 - **Shadow Map**: 2048px, PCFSoftShadowMap
 - **Particle Multiplier**: 1.0x (full particle count)
 - **Geometry Detail**: 1.0x
 - **Texture Compression**: Disabled
+
+## Dynamic Resolution (auto quality)
+
+With Graphics → Auto, the pixel ratio follows the frame rate during runs
+(`src/systems/performance/DynamicResolution.ts`): it drops by 0.25 when the
+average over 3 s is under 48 FPS and climbs by 0.25 after 6 s at 57 FPS or
+more, never above the screen's own pixel ratio or back to a ratio that was
+already too slow. Only when it is at 1x does auto quality drop a whole tier.
+A fixed quality setting uses the tier's maximum pixel ratio.
+
+## Draw-call budget (measured on a Samsung Galaxy A32, Mali-G52)
+
+Phones in this class are CPU-bound by WebGL draw calls, so repeated objects
+are instanced:
+
+- **Coins** (`src/game/collectibles/CoinInstancer.ts`): every coin on the
+  track is drawn with two instanced draws (body and rim) and casts no shadow.
+  ~150 coins used to cost ~450 draws a frame with their shadows.
+- **Scenery** (`src/game/world/MeshInstancer.ts`): props on every track
+  segment and on the floating islands that share a geometry and an opaque
+  built-in material become one instanced draw each. The source meshes keep
+  their transforms (sway, recycling) on a hidden layer.
+- World matrices are updated once per frame by the game loop
+  (`scene.matrixWorldAutoUpdate = false`), shared by the instancers and the draw.
+- The sun's shadow map follows the tier: 1024 (low), 1536 (medium), 2048 (high).
+
+Result on the A32 during a run: ~680 → 60–150 draw calls, JavaScript time per
+frame 16.5 → 12.5–14.5 ms, frames slower than 30 FPS 24% → ~15%, average
+35 → ~40 FPS (the A32's 90 Hz display paces frames at 45 FPS).
 
 ## Auto-Detection
 

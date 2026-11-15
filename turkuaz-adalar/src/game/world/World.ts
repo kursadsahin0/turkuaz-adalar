@@ -20,6 +20,7 @@ import type { IslandSegment } from '../platforms/IslandSegment.ts'
 import { Environment } from './Environment.ts'
 import { DistantIslands } from './islands/DistantIslands.ts'
 import { IslandScenery } from './islands/IslandScenery.ts'
+import { MeshInstancer } from './MeshInstancer.ts'
 import { Ocean } from './Ocean.ts'
 import { WorldAssets } from './WorldAssets.ts'
 
@@ -38,6 +39,7 @@ export interface WorldPropModels {
  */
 export class World {
   readonly environment: Environment
+  private instancer: MeshInstancer | null = null
   private readonly finishLine: FinishLine
   private obstaclesEnabled = true
   readonly ocean: Ocean
@@ -81,6 +83,14 @@ export class World {
   init(): void {
     this.scene.add(this.environment.root, this.ocean.mesh)
     this.reset()
+    // Repeated scenery (props on every segment, the floating islands) is
+    // drawn instanced; waterfalls keep their own animated shader.
+    this.instancer?.dispose()
+    this.instancer = new MeshInstancer(
+      this.scene,
+      [...this.field.all.map((segment) => segment.root), this.scenery.object, this.distant.object],
+      (object) => object.name.startsWith('Waterfall'),
+    )
   }
 
   reset(seed = createSeed()): void {
@@ -156,6 +166,11 @@ export class World {
     this.obstacles.update(elapsed)
     this.collectibles.update(delta, elapsed)
     this.interactions.updateVisuals(elapsed)
+  }
+
+  /** Feeds the instanced scenery; call once per frame after the scene's matrices update. */
+  syncInstances(): void {
+    this.instancer?.sync()
   }
 
   /** Applies a level's sky and fog tint; `null` restores the default look. */
@@ -255,6 +270,8 @@ export class World {
   }
 
   dispose(): void {
+    this.instancer?.dispose()
+    this.instancer = null
     this.finishLine.dispose()
     this.instancedObjects.dispose()
     this.ocean.dispose()

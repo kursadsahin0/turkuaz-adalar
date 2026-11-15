@@ -24,6 +24,9 @@ import { ProgressScreen, type ProgressData } from './screens/ProgressScreen.ts'
 import type { Screen } from './screens/Screen.ts'
 import { SettingsScreen, type SettingsData } from './screens/SettingsScreen.ts'
 
+/** Space between the bottom banner ad and the game's own controls, in CSS px. */
+const AD_BANNER_GAP = 12
+
 export interface UIManagerCallbacks {
   onPlay: () => void
   onRestart: () => void
@@ -318,6 +321,15 @@ export class UIManager {
     this.hideAll()
     this.ui.error.setMessage(message)
     this.ui.error.show()
+  }
+
+  /**
+   * Keeps every screen and the HUD above the bottom banner ad. The gap keeps
+   * the run controls from sitting right on top of the ad (no accidental taps).
+   */
+  setAdBannerHeight(height: number): void {
+    const space = height > 0 ? Math.ceil(height) + AD_BANNER_GAP : 0
+    document.documentElement.style.setProperty('--ad-banner', `${space}px`)
   }
 
   /** Shows or hides keyboard/touch control hints on every screen and the HUD. */

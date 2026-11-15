@@ -7,6 +7,10 @@
  *   ADMOB_APP_ID_IOS=ca-app-pub-1234567890123456~0987654321
  *   VITE_ADMOB_REWARDED_ANDROID=ca-app-pub-1234567890123456/1111111111
  *   VITE_ADMOB_REWARDED_IOS=ca-app-pub-1234567890123456/2222222222
+ *   VITE_ADMOB_BANNER_ANDROID=ca-app-pub-1234567890123456/3333333333
+ *   VITE_ADMOB_BANNER_IOS=ca-app-pub-1234567890123456/4444444444
+ *   VITE_ADMOB_INTERSTITIAL_ANDROID=ca-app-pub-1234567890123456/5555555555
+ *   VITE_ADMOB_INTERSTITIAL_IOS=ca-app-pub-1234567890123456/6666666666
  */
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -21,12 +25,16 @@ export const TEST_IDS = {
   ADMOB_APP_ID_IOS: 'ca-app-pub-3940256099942544~1458002511',
   VITE_ADMOB_REWARDED_ANDROID: 'ca-app-pub-3940256099942544/5224354917',
   VITE_ADMOB_REWARDED_IOS: 'ca-app-pub-3940256099942544/1712485313',
+  VITE_ADMOB_BANNER_ANDROID: 'ca-app-pub-3940256099942544/9214589741',
+  VITE_ADMOB_BANNER_IOS: 'ca-app-pub-3940256099942544/2435281174',
+  VITE_ADMOB_INTERSTITIAL_ANDROID: 'ca-app-pub-3940256099942544/1033173712',
+  VITE_ADMOB_INTERSTITIAL_IOS: 'ca-app-pub-3940256099942544/4411468910',
 }
 
 const APP_ID = /^ca-app-pub-(\d{16})~\d{10}$/
 const AD_UNIT = /^ca-app-pub-(\d{16})\/\d{10}$/
 
-/** The four IDs; missing ones are `''`. Environment variables win over the file. */
+/** The eight IDs; missing ones are `''`. Environment variables win over the file. */
 export function loadAdMobIds() {
   const env = loadEnv('production', ROOT, '')
   const read = (key) => (process.env[key] ?? env[key] ?? '').trim()

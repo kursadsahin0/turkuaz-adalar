@@ -11,6 +11,7 @@ import { ShowcaseCamera } from '../game/camera/ShowcaseCamera.ts'
 import { setLanguage, t, tc } from '../i18n/i18n.ts'
 import { MetaProgress } from '../systems/meta/MetaProgress.ts'
 import { TRIAL_CHARACTER, WelcomeGifts } from '../systems/meta/WelcomeGifts.ts'
+import { InterstitialPacing } from '../systems/monetization/InterstitialPacing.ts'
 import { IslandAssist } from '../systems/meta/IslandAssist.ts'
 import { CHARACTERS } from '../game/characters/CharacterData.ts'
 import { MonetizationManager } from '../systems/monetization/MonetizationManager.ts'
@@ -48,6 +49,7 @@ import {
 import { Haptics } from '../systems/haptics/Haptics.ts'
 import { ISLAND_STYLES, MENU_STYLE } from '../systems/audio/MusicSequencer.ts'
 import { AdaptiveQuality, type RenderQuality } from '../systems/performance/AdaptiveQuality.ts'
+import { DynamicResolution } from '../systems/performance/DynamicResolution.ts'
 import { detectQualityLevel, type QualitySettings } from '../config/QualitySettings.ts'
 import { InputManager } from '../systems/input/InputManager.ts'
 import { PhysicsWorld } from '../systems/physics/PhysicsWorld.ts'
@@ -116,6 +118,11 @@ export class Game {
   /** Island selection, daily rewards, missions and achievements. */
   private readonly menus: MetaController
   private readonly welcome: WelcomeGifts
+  /** When the island summary should hand over to a full-screen ad. */
+  private readonly interstitials: InterstitialPacing
+  /** Set by a completed island when the pacing allows an ad on the way out. */
+  private interstitialDue = false
+  private interstitialShowing = false
   private readonly assist: IslandAssist
   /** Near misses: brushing past a hazard pays a few coins (with a cooldown). */
   private nearMissCooldown = 0
@@ -138,6 +145,8 @@ export class Game {
   private sessionStartedAt = Date.now()
   private runTime = 0
   private adaptiveQuality: AdaptiveQuality | null = null
+  /** Auto quality only: the sharpest pixel ratio the device holds at a smooth frame rate. */
+  private dynamicResolution: DynamicResolution | null = null
   private lastFpsSample = 0
   readonly telemetry: Telemetry
   private readonly monetization = new MonetizationManager({
@@ -196,10 +205,19 @@ export class Game {
     // Auto quality: one FPS sample per second, only while running.
     if (this.state === 'playing' && timestamp - this.lastFpsSample >= 1000) {
       this.lastFpsSample = timestamp
-      const lower = this.adaptiveQuality?.sample(this.performanceMonitor.getFPS())
-      if (lower) {
-        this.renderer.setQualityLevel(lower)
-        this.telemetry.track('quality_auto_down', { level: lower })
+      const fps = this.performanceMonitor.getFPS()
+      const ratio = this.dynamicResolution?.sample(fps)
+      if (ratio) {
+        this.renderer.setPixelRatioLimit(ratio)
+      } else if (!this.dynamicResolution || this.dynamicResolution.atFloor) {
+        // Resolution is already at its lowest: drop a quality tier instead.
+        const lower = this.adaptiveQuality?.sample(fps)
+        if (lower) {
+          this.renderer.setQualityLevel(lower)
+          this.applyShadowQuality()
+          this.startDynamicResolution(true)
+          this.telemetry.track('quality_auto_down', { level: lower })
+        }
       }
     }
     const delta = this.time.delta
@@ -236,6 +254,10 @@ export class Game {
       )
       const mode = this.state === 'menu' ? 'menu' : 'follow'
       this.camera.update(delta, this.player.position, mode, this.time.elapsed, this.distance)
+      // World matrices are updated once here (the renderer's own pass is off),
+      // so instanced scenery and the draw itself share one traversal.
+      this.scene.scene.updateMatrixWorld()
+      this.world.syncInstances()
       if (this.state === 'menu' && this.shop.isShowcaseActive) {
         const canvas = this.renderer.canvas
         this.showcase.update(
@@ -469,6 +491,7 @@ export class Game {
     this.haptics = new Haptics(this.playerSave.settings.vibration)
     this.reminders = new Reminders(this.save, this.playerSave.settings.reminders)
     this.welcome = new WelcomeGifts(this.save)
+    this.interstitials = new InterstitialPacing(this.save)
     this.assist = new IslandAssist(this.save)
     // Nothing should buzz while the game is open.
     void this.reminders.clear()
@@ -476,7 +499,7 @@ export class Game {
     setLanguage(this.playerSave.settings.language)
     this.ui = new UIManager(container, {
       onPlay: () => this.menus.showLevelSelection(),
-      onRestart: () => this.startRun(this.currentLevel),
+      onRestart: () => this.afterInterstitial(() => this.startRun(this.currentLevel)),
       onResume: () => this.resume(),
       onQuit: () => this.quit(),
       onPause: () => this.pause(),
@@ -499,15 +522,17 @@ export class Game {
       onSettings: () => this.settingsFlow.show(),
       onSelectLevel: (id) => this.startRun(this.menus.findLevel(id)),
       onUnlockLevel: (id) => this.menus.unlockLevel(id),
-      onLevelSelect: () => {
-        this.returnToMenu()
-        this.menus.showLevelSelection()
-      },
+      onLevelSelect: () =>
+        this.afterInterstitial(() => {
+          this.returnToMenu()
+          this.menus.showLevelSelection()
+        }),
       onEquipCosmetic: (type, id) => this.shop.equip(type, id),
-      onNextLevel: () => {
-        const next = this.currentLevel ? this.levels.getNextLevel(this.currentLevel.id) : null
-        this.startRun(next && this.levels.isUnlocked(next.id) ? next : this.currentLevel)
-      },
+      onNextLevel: () =>
+        this.afterInterstitial(() => {
+          const next = this.currentLevel ? this.levels.getNextLevel(this.currentLevel.id) : null
+          this.startRun(next && this.levels.isUnlocked(next.id) ? next : this.currentLevel)
+        }),
       onPurchase: (type, id) => this.shop.purchase(type, id),
       onExchangeCrystals: () => this.shop.exchangeCrystals(),
       onRotatePreview: (deltaX) => this.shop.rotatePreview(deltaX),
@@ -554,9 +579,14 @@ export class Game {
     this.settingsFlow = new SettingsController(services, {
       setQuality: (level, auto) => {
         this.renderer.setQualityLevel(level)
+        this.applyShadowQuality()
         this.adaptiveQuality?.setEnabled(auto, level)
+        this.startDynamicResolution(auto)
       },
-      afterConsent: () => this.showMenuScreen(),
+      afterConsent: () => {
+        this.showMenuScreen()
+        this.startBanner()
+      },
       isDisposed: () => this.disposed,
     })
     this.doubleCoins = new DoubleCoinsController(services)
@@ -602,6 +632,7 @@ export class Game {
       const startLevel = (quality === 'auto' ? detectQualityLevel() : quality) as RenderQuality
       this.renderer = new Renderer(this.container, startLevel)
       this.adaptiveQuality = new AdaptiveQuality(startLevel, quality === 'auto')
+      this.startDynamicResolution(quality === 'auto')
       this.scene = new SceneManager()
       this.camera = new IsometricCameraRig(this.resolveAspect())
       this.unsubscribeResize = this.renderer.events.on('resize', (size) => {
@@ -644,6 +675,7 @@ export class Game {
         crystal,
         beacon,
       })
+      this.world.environment.setShadowMapSize(qualitySettings.shadowMapSize)
       this.fx = new VisualEffectsManager(this.scene.scene, 256, qualitySettings.particleMultiplier)
       this.chaseWave = new ChaseWave(this.scene.scene)
       this.player = new Player(this.scene.scene, this.physics)
@@ -680,7 +712,12 @@ export class Game {
       this.ui.setLoadingProgress(1, t('loading.ready'))
       this.state = 'menu'
       this.showMenuScreen()
-      void this.settingsFlow.runConsentFlow()
+      void this.settingsFlow.runConsentFlow().then(() => {
+        // Ads wait for the privacy choice; the prompt's answer starts it otherwise.
+        if (!this.consent.needsPrompt) {
+          this.startBanner()
+        }
+      })
       this.frameHandle = window.requestAnimationFrame(this.tick)
       this.logger.info('Game ready.')
     } catch (error) {
@@ -776,6 +813,8 @@ export class Game {
     }
 
     this.clearSummaryTimer()
+    // A summary left without its buttons (back, a gift's trial run) drops a pending ad.
+    this.interstitialDue = false
     const difficulty = this.playerSave.settings.difficulty
     // The weekly event island is open to everyone and outside the unlock chain.
     if (level && level.id !== EVENT_LEVEL_ID && !this.levels.isUnlocked(level.id)) {
@@ -1331,6 +1370,15 @@ export class Game {
       )
     }
     if (level && levelComplete) {
+      this.interstitials.recordCompletion()
+      this.interstitialDue = this.interstitials.shouldShow(
+        Date.now(),
+        this.monetization.lastRewardedAt,
+      )
+      if (this.interstitialDue) {
+        // Loads while the summary is on screen, so leaving it does not wait.
+        void this.monetization.prepareInterstitial()
+      }
       if (this.coins < level.completionCoins) {
         this.menus.addNotice(t('levels.starCoins', { coins: level.completionCoins }))
       }
@@ -1724,6 +1772,73 @@ export class Game {
       z -= 2
     }
     return new THREE.Vector3(x, spawn.y, z)
+  }
+
+  /**
+   * Leaving an island summary: shows the full-screen ad first when one is
+   * due (music paused while it plays), then continues. Game-over screens share
+   * these buttons but never set `interstitialDue`.
+   */
+  private afterInterstitial(next: () => void): void {
+    if (this.interstitialShowing) {
+      // A second tap while the ad opens must not start a run behind it.
+      return
+    }
+    if (!this.interstitialDue) {
+      next()
+      return
+    }
+    this.interstitialDue = false
+    this.interstitialShowing = true
+    this.audio?.suspend()
+    void this.monetization
+      .showInterstitial()
+      .catch(() => false)
+      .then((shown) => {
+        this.interstitialShowing = false
+        this.audio?.resume()
+        if (shown) {
+          this.interstitials.recordShown(Date.now())
+          this.telemetry.track('interstitial', { level: this.currentLevel?.id ?? 'endless' })
+        }
+        if (!this.disposed) {
+          next()
+        }
+      })
+  }
+
+  /** The sun's shadow map follows the quality tier (much cheaper on phones). */
+  private applyShadowQuality(): void {
+    this.world?.environment.setShadowMapSize(this.renderer.getQualitySettings().shadowMapSize)
+  }
+
+  /**
+   * Auto quality starts at the tier's start pixel ratio and lets the frame
+   * rate move it; a fixed quality simply uses the tier's maximum.
+   */
+  private startDynamicResolution(auto: boolean): void {
+    const settings = this.renderer.getQualitySettings()
+    if (!auto) {
+      this.dynamicResolution = null
+      this.renderer.setPixelRatioLimit(null)
+      return
+    }
+    const max = Math.min(this.renderer.devicePixelRatio, settings.maxPixelRatio)
+    const start = Math.min(max, settings.startPixelRatio)
+    if (this.dynamicResolution) {
+      this.dynamicResolution.reset(start, max)
+    } else {
+      this.dynamicResolution = new DynamicResolution(start, max)
+    }
+    this.renderer.setPixelRatioLimit(this.dynamicResolution.current)
+  }
+
+  /** The always-on bottom banner; the UI moves up to stay clear of it. */
+  private startBanner(): void {
+    if (this.disposed) {
+      return
+    }
+    void this.monetization.showBanner((height) => this.ui.setAdBannerHeight(height))
   }
 
   private spawnPosition(): THREE.Vector3 {

@@ -18,6 +18,18 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'never',
   },
+  plugins: {
+    SplashScreen: {
+      // Hidden from src/main.ts as soon as the game's loading screen (which
+      // looks the same) is painted. The long auto-hide is only a safety net
+      // in case the web bundle never starts.
+      launchAutoHide: true,
+      launchShowDuration: 10000,
+      launchFadeOutDuration: 250,
+      backgroundColor: '#062c36',
+      showSpinner: false,
+    },
+  },
 }
 
 export default config

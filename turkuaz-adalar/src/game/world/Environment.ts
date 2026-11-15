@@ -180,6 +180,19 @@ export class Environment {
     }
   }
 
+  /**
+   * Shadow map resolution for the current quality tier. A smaller map is far
+   * cheaper to draw on phones; the old map is freed and rebuilt at the new size.
+   */
+  setShadowMapSize(size: number): void {
+    if (this.sun.shadow.mapSize.x === size) {
+      return
+    }
+    this.sun.shadow.mapSize.set(size, size)
+    this.sun.shadow.map?.dispose()
+    this.sun.shadow.map = null
+  }
+
   dispose(): void {
     this.root.removeFromParent()
     disposeObject3D(this.root)
